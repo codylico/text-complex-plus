@@ -3,11 +3,14 @@ project(text-complex-access-plus CXX)
 
 
 set(text_complex_access_plus_FILES
-  api.cpp     api.hpp
+  api.cpp          api.hpp
+  util.cpp         util.hpp
+  offtable.cpp     offtable.hpp
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES})
 target_link_libraries(tcmplx_access_plus mmaptwo_plus)
 target_compile_features(tcmplx_access_plus
-    PUBLIC cxx_noexcept
+    PUBLIC cxx_noexcept cxx_deleted_functions cxx_final
+    PRIVATE cxx_nullptr
   )
