@@ -3,3 +3,4 @@ project(text-complex-plus CXX)
 
 add_subdirectory(mmaptwo-plus)
 add_subdirectory(tcmplx-access-plus)
+add_subdirectory(tests)
