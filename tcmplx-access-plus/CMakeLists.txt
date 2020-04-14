@@ -7,6 +7,7 @@ set(text_complex_access_plus_FILES
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES})
+target_link_libraries(tcmplx_access_plus mmaptwo_plus)
 target_compile_features(tcmplx_access_plus
     PUBLIC cxx_noexcept
   )
