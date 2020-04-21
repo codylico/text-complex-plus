@@ -20,8 +20,5 @@ add_library(munit_plus STATIC
   add_executable(tcmplx_accessP_test_offtable tca_offtable.cpp)
   target_link_libraries(tcmplx_accessP_test_offtable
     munit_plus tcmplx_access_plus)
-  target_compile_features(tcmplx_access_plus
-      PRIVATE cxx_override
-    )
 #END   OffTable test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)
