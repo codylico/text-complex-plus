@@ -37,6 +37,10 @@ namespace text_complex {
 
     // BEGIN error codes
     enum struct error {
+      /** Invalid parameter given */
+      ErrParam = -4,
+      /** File sanity check failed */
+      ErrSanitize = -3,
       /** Memory acquisition error */
       ErrMemory = -2,
       /** Initialization error */
