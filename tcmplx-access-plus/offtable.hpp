@@ -17,8 +17,7 @@ namespace text_complex {
      *
      * Each row describes a data table in a TrueType font file.
      */
-    TCMPLX_AP_API
-    struct offset_line final {
+    struct TCMPLX_AP_API offset_line final {
       /**
        * \brief Table name.
        */
@@ -39,8 +38,7 @@ namespace text_complex {
     //END   offset line
 
     //BEGIN offset table
-    TCMPLX_AP_API
-    class offset_table final {
+    class TCMPLX_AP_API offset_table final {
     private:
       struct offset_line* p;
       size_t n;
