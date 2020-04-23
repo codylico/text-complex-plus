@@ -35,6 +35,10 @@ namespace text_complex {
        */
       constexpr util_unique_ptr(void) noexcept;
       /**
+       * @brief Null-pointer constructor. The pointer is empty.
+       */
+      constexpr util_unique_ptr(std::nullptr_t ) noexcept;
+      /**
        * @brief Capture constructor.
        * @param p a pointer to the object to give to the `util_unique_ptr`.
        */
@@ -129,6 +133,10 @@ namespace text_complex {
        * @brief Default constructor. The pointer is empty.
        */
       constexpr util_unique_ptr(void) noexcept;
+      /**
+       * @brief Null-pointer constructor. The pointer is empty.
+       */
+      constexpr util_unique_ptr(std::nullptr_t ) noexcept;
       /**
        * @brief Capture constructor.
        * @param p a pointer to the object to give to the `util_unique_ptr`.

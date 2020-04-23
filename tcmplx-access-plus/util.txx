@@ -18,6 +18,12 @@ namespace text_complex {
     }
 
     template <typename t>
+    constexpr util_unique_ptr<t>::util_unique_ptr(std::nullptr_t) noexcept
+        : p(nullptr)
+    {
+    }
+
+    template <typename t>
     util_unique_ptr<t>::util_unique_ptr(t* r) noexcept
         : p(r)
     {
@@ -120,6 +126,12 @@ namespace text_complex {
     //BEGIN util_unique_ptr<t[]> / rule-of-six
     template <typename t>
     constexpr util_unique_ptr<t[]>::util_unique_ptr(void) noexcept
+        : p(nullptr)
+    {
+    }
+
+    template <typename t>
+    constexpr util_unique_ptr<t[]>::util_unique_ptr(std::nullptr_t) noexcept
         : p(nullptr)
     {
     }
