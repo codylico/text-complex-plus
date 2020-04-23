@@ -72,8 +72,11 @@ namespace text_complex {
        * @return an object holding the given pointer
        * @note calls `this->release()`
        */
-      template <typename u, typename v=decltype(u(util_declval<t*>()))>
-      operator u(void) && noexcept(noexcept(u(util_declval<t*>())));
+      template <
+          typename u,
+          typename v = decltype(u().reset(util_declval<t*>()))
+        >
+      operator u(void) && noexcept(noexcept(u().reset(util_declval<t*>())));
 
       /**
        * @brief Relinquish ownership of the contained object.
@@ -171,8 +174,11 @@ namespace text_complex {
        * @return an object holding the given pointer
        * @note calls `this->release()`
        */
-      template <typename u, typename v=decltype(u(util_declval<t*>()))>
-      operator u(void) && noexcept(noexcept(u(util_declval<t*>())));
+      template <
+          typename u,
+          typename v = decltype(u().reset(util_declval<t*>()))
+        >
+      operator u(void) && noexcept(noexcept(u().reset(util_declval<t*>())));
 
       /**
        * @brief Relinquish ownership of the contained object.

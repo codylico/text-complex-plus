@@ -75,9 +75,11 @@ namespace text_complex {
     template <typename t>
     template <typename u, typename v>
     util_unique_ptr<t>::operator u(void) &&
-        noexcept(noexcept(u(util_declval<t*>())))
+      noexcept(noexcept(u().reset(util_declval<t*>())))
     {
-      return u(release());
+      u out;
+      static_cast<v>(out.reset(release()) );
+      return out;
     }
 
     template <typename t>
@@ -189,9 +191,11 @@ namespace text_complex {
     template <typename t>
     template <typename u, typename v>
     util_unique_ptr<t[]>::operator u(void) &&
-        noexcept(noexcept(u(util_declval<t*>())))
+      noexcept(noexcept(u().reset(util_declval<t*>())))
     {
-      return u(release());
+      u out;
+      static_cast<v>(out.reset(release()) );
+      return out;
     }
 
     template <typename t>
