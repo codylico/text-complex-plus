@@ -10,10 +10,12 @@
 
 namespace text_complex {
   namespace access {
-    //BEGIN allocation
+    //BEGIN metaprogramming
     template <typename t>
     t&& util_declval(void) noexcept;
+    //END   metaprogramming
 
+    //BEGIN allocation
     /**
      * @brief Exportable unique pointer.
      * @note Leave this class alone. Use `std::unique_ptr` instead.
