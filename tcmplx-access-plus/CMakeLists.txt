@@ -14,3 +14,7 @@ target_compile_features(tcmplx_access_plus
     PUBLIC cxx_noexcept cxx_deleted_functions cxx_final
     PRIVATE cxx_nullptr
   )
+if (WIN32 AND BUILD_SHARED_LIBS)
+  target_compile_definitions(tcmplx_access_plus
+    PUBLIC "TCMPLX_AP_WIN32_DLL")
+endif(WIN32 AND BUILD_SHARED_LIBS)
