@@ -29,6 +29,8 @@ struct x_with_a_dtor {
   }
 };
 
+static MunitPlusResult test_util_alloc
+    (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_util_unique_cycle
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_util_unique_stdptr
@@ -43,6 +45,8 @@ static MunitPlusResult test_util_unique_a_index
     (const MunitPlusParameter params[], void* data);
 
 static MunitPlusTest tests_util[] = {
+  {(char*)"alloc", test_util_alloc, nullptr,nullptr,
+    MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
   {(char*)"unique/cycle", test_util_unique_cycle, nullptr,nullptr,
     MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
   {(char*)"unique/stdptr", test_util_unique_stdptr, nullptr,nullptr,
@@ -62,6 +66,28 @@ static MunitPlusSuite const suite_util = {
   (char*)"access/util/", tests_util, nullptr, 1, MUNIT_PLUS_SUITE_OPTION_NONE
 };
 
+
+
+MunitPlusResult test_util_alloc
+  (const MunitPlusParameter params[], void* data)
+{
+  (void)params;
+  (void)data;
+  void* ptr[3];
+  unsigned long int lg = munit_plus_rand_uint32();
+  ptr[0] = text_complex::access::util_op_new(0u);
+  munit_plus_assert_ptr_null(ptr[0]);
+  ptr[0] = text_complex::access::util_op_new(sizeof(unsigned long int));
+  munit_plus_assert_ptr_not_null(ptr[0]);
+  /* store and retrieve number */{
+    unsigned long int* const lgptr = static_cast<unsigned long int*>(ptr[0]);
+    *lgptr = lg;
+    munit_plus_assert_ulong(*lgptr,==,lg);
+  }
+  text_complex::access::util_op_delete(ptr[0]);
+  text_complex::access::util_op_delete(nullptr);
+  return MUNIT_PLUS_OK;
+}
 
 MunitPlusResult test_util_unique_cycle
     (const MunitPlusParameter params[], void* data)

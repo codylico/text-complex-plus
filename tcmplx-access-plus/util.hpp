@@ -10,9 +10,23 @@
 
 namespace text_complex {
   namespace access {
-    //BEGIN allocation
     template <typename t>
     t&& util_declval(void) noexcept;
+
+    /**
+     * @brief Allocate some memory.
+     * @param sz number of bytes to allocate on the "heap"
+     * @return a pointer to the memory on success, `nullptr` on failure
+     */
+    TCMPLX_AP_API
+    void* util_op_new(std::size_t sz) noexcept;
+
+    /**
+     * @brief Free some memory.
+     * @param p the memory to free
+     */
+    TCMPLX_AP_API
+    void util_op_delete(void* p) noexcept;
 
     /**
      * @brief Exportable unique pointer.
