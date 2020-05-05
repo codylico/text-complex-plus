@@ -38,6 +38,8 @@ static MunitPlusResult test_seq_eof_const
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_seq_seek
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_seq_whence
+    (const MunitPlusParameter params[], void* data);
 
 static void* test_seq_null_setup
     (const MunitPlusParameter params[], void* user_data);
@@ -63,6 +65,12 @@ static MunitPlusTest tests_seq[] = {
       test_seq_setup,test_seq_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"null_seek", test_seq_seek,
+      test_seq_null_setup,test_seq_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"whence", test_seq_whence,
+      test_seq_setup,test_seq_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"null_whence", test_seq_whence,
       test_seq_null_setup,test_seq_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
@@ -279,6 +287,101 @@ MunitPlusResult test_seq_seek
   }
   return MUNIT_PLUS_OK;
 }
+
+MunitPlusResult test_seq_whence
+  (const MunitPlusParameter params[], void* data)
+{
+  struct test_seq_fixture* const fixt =
+    static_cast<struct test_seq_fixture*>(data);
+  struct text_complex::access::sequential* const p = fixt->seq;
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  munit_plus_logf(MUNIT_PLUS_LOG_INFO,
+    "inspecting until %" MUNIT_PLUS_SIZE_MODIFIER "u", fixt->len);
+  /* */{
+    int j;
+    std::size_t i = 0u;
+    std::size_t const fail = ~(std::size_t)0u;
+    for (j = 0; j < 20; ++j) {
+      long int const dist = munit_plus_rand_int_range(-32767, 32767);
+      text_complex::access::seq_whence whence =
+        static_cast<text_complex::access::seq_whence>(
+            munit_plus_rand_int_range(0,2)
+          );
+      std::size_t landing_i;
+      /* predict where the read position should land */
+      switch (whence) {
+      case text_complex::access::seq_whence::Set:
+        landing_i = (dist < 0) ? fail : static_cast<std::size_t>(dist);
+        break;
+      case text_complex::access::seq_whence::Cur:
+        if (dist < 0) {
+          std::size_t pdist = static_cast<std::size_t>(-dist);
+          landing_i = (pdist > i) ? fail : i-pdist;
+        } else {
+          std::size_t pdist = static_cast<std::size_t>(dist);
+          landing_i = (pdist > fixt->len-i) ? fail : i+pdist;
+        }
+        break;
+      case text_complex::access::seq_whence::End:
+        if (dist > 0)
+          landing_i = fail;
+        else {
+          std::size_t pdist = static_cast<std::size_t>(-dist);
+          landing_i = (pdist > fixt->len) ? fail : fixt->len-pdist;
+        }
+        break;
+      }
+      if (landing_i > fixt->len) {
+        /* expect failure */
+        long int res = p->seek(dist, whence);
+        if (res >= -1L)
+          munit_plus_logf(MUNIT_PLUS_LOG_WARNING,
+            "breaks past %" MUNIT_PLUS_SIZE_MODIFIER "u to "
+            "%" MUNIT_PLUS_SIZE_MODIFIER "u (%li,%i)",
+            i,landing_i,dist,static_cast<int>(whence));
+        munit_plus_assert_long(res,<,-1L);
+      } else if (landing_i == fixt->len) {
+        int b;
+        int const d = -1;
+        long int res = p->seek(dist,whence);
+        if (res != static_cast<long int>(landing_i))
+          munit_plus_logf(MUNIT_PLUS_LOG_WARNING,
+            "breaks from %" MUNIT_PLUS_SIZE_MODIFIER "u to "
+            "%" MUNIT_PLUS_SIZE_MODIFIER "u (%li,%i)",
+            i,landing_i,dist,static_cast<int>(whence));
+        munit_plus_assert_long(static_cast<long int>(landing_i),==,res);
+        i = landing_i;
+        b = p->get_byte();
+        if (b!=d)
+          munit_plus_logf(MUNIT_PLUS_LOG_WARNING,
+            "breaks at the end (%" MUNIT_PLUS_SIZE_MODIFIER "u)", i);
+        munit_plus_assert_int(b,==,d);
+      } else {
+        /* expect success */
+        int b;
+        int const d = tcmplxAtest_gen_datum(fixt->gen, landing_i, fixt->seed);
+        long int res = p->seek(dist,whence);
+        if (res != static_cast<long int>(landing_i))
+          munit_plus_logf(MUNIT_PLUS_LOG_WARNING,
+            "breaks from %" MUNIT_PLUS_SIZE_MODIFIER "u to "
+            "%" MUNIT_PLUS_SIZE_MODIFIER "u (%li,%i)",
+            i,landing_i,dist,static_cast<int>(whence));
+        munit_plus_assert_long(static_cast<long int>(landing_i),==,res);
+        i = landing_i;
+        b = p->get_byte();
+        if (b!=d)
+          munit_plus_logf(MUNIT_PLUS_LOG_WARNING,
+            "breaks at %" MUNIT_PLUS_SIZE_MODIFIER "u", i);
+        munit_plus_assert_int(b,==,d);
+        i += 1u;
+      }
+    }
+  }
+  return MUNIT_PLUS_OK;
+}
+
 
 
 

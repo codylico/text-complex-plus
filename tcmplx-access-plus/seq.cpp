@@ -140,6 +140,94 @@ namespace text_complex {
         return out;
       } else /* end of stream, so */return -1;
     }
+
+    long int sequential::seek(long int i, seq_whence whence) noexcept {
+      long int l_out;
+      switch (whence) {
+      case seq_whence::Set:
+        {
+          if (i < 0)
+            l_out = -2L;
+          else {
+            size_t const out = set_pos(static_cast<size_t>(i));
+            if (out == ~(size_t)0u) {
+              l_out = -2L;
+            } else if (out >
+                static_cast<size_t>(std::numeric_limits<long int>::max()))
+            {
+              l_out = -1L;
+            } else l_out = (long int)out;
+          }
+        }break;
+      case seq_whence::Cur:
+      case seq_whence::End:
+        {
+          constexpr unsigned long int nonzero =
+            static_cast<unsigned long int>(std::numeric_limits<size_t>::max());
+          size_t here = (whence == seq_whence::Cur) ? pos : (
+              (fh != NULL) ? fh->length() : 0u
+            );
+          if (i == 0) {
+            /* do nothing */
+          } else if (i < 0) {
+            long int i_prime[2];
+            /* break apart any LONG_MIN values */{
+              constexpr long int branch =
+                (std::numeric_limits<long int>::min()/2);
+              if (i <= branch) {
+                i_prime[0] = i-branch;
+                i_prime[1] = branch;
+              } else {
+                i_prime[0] = 0;
+                i_prime[1] = i;
+              }
+            }
+            /* */{
+              int j;
+              for (j = 0; j < 2; ++j) {
+                if (((unsigned long int)-i_prime[j]) > nonzero) {
+                  /* negative overflow */
+                  break;
+                } else {
+                  size_t const n_prime = (size_t)-i_prime[j];
+                  if (here >= n_prime)
+                    here -= n_prime;
+                  else break;
+                }
+              }
+              if (j < 2) {
+                l_out = -2L;
+                break;
+              }
+            }
+          } else if (((unsigned long int)i) > nonzero) {
+            /* positive overflow */
+            l_out = -2L;
+            break;
+          } else {
+            size_t n_prime = (size_t)i;
+            if (n_prime > std::numeric_limits<size_t>::max() - here) {
+              l_out = -2L;
+              break;
+            } else here += n_prime;
+          }
+          /* perform seek */{
+            size_t const out = set_pos(static_cast<size_t>(here));
+            if (out == ~(size_t)0u) {
+              l_out = -2L;
+            } else if (out >
+                static_cast<size_t>(std::numeric_limits<long int>::max()))
+            {
+              l_out = -1L;
+            } else l_out = (long int)out;
+          }
+        }break;
+      default:
+        l_out = -2L;
+        break;
+      }
+      return l_out;
+    }
     //END   sequential / public
 
     //BEGIN sequential / private

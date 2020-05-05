@@ -16,6 +16,26 @@ namespace mmaptwo {
 
 namespace text_complex {
   namespace access {
+    //BEGIN sequential whence
+    /**
+     * @brief Sequential seek starting position.
+     */
+    enum struct seq_whence : int {
+      /**
+       * @brief Count from zero.
+       */
+      Set = 0,
+      /**
+       * @brief Count from current position.
+       */
+      Cur = 1,
+      /**
+       * @brief Count from the end.
+       */
+      End = 2
+    };
+    //END   sequential whence
+
     //BEGIN sequential
     /**
      * @brief Adapter providing sequential access to bytes from a mmaptwo
@@ -100,6 +120,13 @@ namespace text_complex {
        * @return the new position, ~0 otherwise
        */
       size_t set_pos(size_t i) noexcept;
+      /**
+       * @brief Configure the read position.
+       * @param i a read position
+       * @param whence a @link seq_whence @endlink value
+       * @return the new position, negative otherwise
+       */
+      long int seek(long int i, seq_whence whence) noexcept;
       /**
        * @brief Read a single byte from the sequential.
        * @return the byte on success, -1 at end of stream, -2 otherwise
