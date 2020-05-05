@@ -24,4 +24,10 @@ target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus)
   target_link_libraries(tcmplx_accessP_test_offtable
     munit_plus tcmplx_access_plus)
 #END   OffTable test
+
+#BEGIN Seq test
+  add_executable(tcmplx_accessP_test_seq tca_seq.cpp)
+  target_link_libraries(tcmplx_accessP_test_seq
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus mmaptwo_plus)
+#END   Seq test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)
