@@ -20,8 +20,7 @@ namespace text_complex {
     /**
      * @brief Adapter providing sequential access to bytes from a mmaptwo
      */
-    TCMPLX_AP_API
-    class sequential final {
+    class TCMPLX_AP_API sequential final {
     private:
       mmaptwo::mmaptwo_i* fh;
       mmaptwo::page_i* hpage;
