@@ -18,6 +18,12 @@ namespace text_complex {
     }
 
     template <typename t>
+    constexpr util_unique_ptr<t>::util_unique_ptr(std::nullptr_t) noexcept
+        : p(nullptr)
+    {
+    }
+
+    template <typename t>
     util_unique_ptr<t>::util_unique_ptr(t* r) noexcept
         : p(r)
     {
@@ -69,9 +75,11 @@ namespace text_complex {
     template <typename t>
     template <typename u, typename v>
     util_unique_ptr<t>::operator u(void) &&
-        noexcept(noexcept(u(util_declval<t*>())))
+      noexcept(noexcept(u().reset(util_declval<t*>())))
     {
-      return u(release());
+      u out;
+      static_cast<v>(out.reset(release()) );
+      return out;
     }
 
     template <typename t>
@@ -120,6 +128,12 @@ namespace text_complex {
     //BEGIN util_unique_ptr<t[]> / rule-of-six
     template <typename t>
     constexpr util_unique_ptr<t[]>::util_unique_ptr(void) noexcept
+        : p(nullptr)
+    {
+    }
+
+    template <typename t>
+    constexpr util_unique_ptr<t[]>::util_unique_ptr(std::nullptr_t) noexcept
         : p(nullptr)
     {
     }
@@ -177,9 +191,11 @@ namespace text_complex {
     template <typename t>
     template <typename u, typename v>
     util_unique_ptr<t[]>::operator u(void) &&
-        noexcept(noexcept(u(util_declval<t*>())))
+      noexcept(noexcept(u().reset(util_declval<t*>())))
     {
-      return u(release());
+      u out;
+      static_cast<v>(out.reset(release()) );
+      return out;
     }
 
     template <typename t>

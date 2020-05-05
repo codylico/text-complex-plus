@@ -46,7 +46,7 @@ static MunitPlusSuite const suite_offtable = {
 MunitPlusResult test_offtable_cycle
   (const MunitPlusParameter params[], void* data)
 {
-  struct text_complex::access::offset_table* ptr[2];
+  text_complex::access::offset_table* ptr[2];
   (void)params;
   (void)data;
   ptr[0] = text_complex::access::offtable_new(12);
@@ -71,7 +71,7 @@ void* test_offtable_setup(const MunitPlusParameter params[], void* user_data) {
 
 void test_offtable_teardown(void* fixture) {
   text_complex::access::offtable_destroy(
-      static_cast<struct text_complex::access::offset_table*>(fixture)
+      static_cast<text_complex::access::offset_table*>(fixture)
     );
   return;
 }
@@ -79,9 +79,9 @@ void test_offtable_teardown(void* fixture) {
 MunitPlusResult test_offtable_item
   (const MunitPlusParameter params[], void* data)
 {
-  struct text_complex::access::offset_table* const offtable =
-    (struct text_complex::access::offset_table*)data;
-  struct text_complex::access::offset_table const* const offtable_c = offtable;
+  text_complex::access::offset_table* const offtable =
+    (text_complex::access::offset_table*)data;
+  text_complex::access::offset_table const* const offtable_c = offtable;
   if (offtable == nullptr)
     return MUNIT_PLUS_SKIP;
   (void)params;
