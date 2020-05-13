@@ -7,6 +7,7 @@
 #include "../mmaptwo-plus/mmaptwo.hpp"
 #include <stdexcept>
 #include <new>
+#include "munit-plus/munit.hpp"
 
 class tcmplxAtest_mmtp : public mmaptwo::page_i {
 public:
@@ -117,4 +118,10 @@ mmaptwo::mmaptwo_i* tcmplxAtest_gen_maptwo
     (int n, size_t maxsize, unsigned int seed)
 {
   return new tcmplxAtest_mmt(maxsize,n,seed);
+}
+
+int testfont_rand_int_range(int a, int b) {
+  if (a == b)
+    return a;
+  else return munit_plus_rand_int_range(a,b);
 }

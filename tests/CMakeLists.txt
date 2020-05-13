@@ -6,7 +6,7 @@ add_library(munit_plus STATIC
   munit-plus/munit.cpp munit-plus/munit.hpp)
 add_library(tcmplx_accessP_testfont STATIC
   testfont.cpp testfont.hpp)
-target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus)
+target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus munit_plus)
 
 #BEGIN API test
   add_executable(tcmplx_accessP_test_api tca_api.cpp)
