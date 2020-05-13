@@ -25,11 +25,40 @@ namespace text_complex {
     void* util_op_new(std::size_t sz) noexcept;
 
     /**
+     * @brief Allocate some memory.
+     * @param n number of elements to allocate on the "heap"
+     * @param sz size of each element
+     * @return a pointer to the memory on success, `nullptr` on failure
+     */
+    TCMPLX_AP_API
+    void* util_op_new_count(std::size_t n, std::size_t sz ) noexcept;
+
+    /**
      * @brief Free some memory.
      * @param p the memory to free
      */
     TCMPLX_AP_API
     void util_op_delete(void* p) noexcept;
+
+    /**
+     * @brief Allocate and initialize some memory.
+     * @param n number of instances to allocate on the "heap"
+     * @param args per-item construction arguments
+     * @return a pointer to the memory on success, `nullptr` on failure
+     * @note Calls `util_op_new`.
+     */
+    template <typename t, typename ...u>
+    void* util_op_new_type(std::size_t n, u&&... args)
+      noexcept(noexcept(t(util_declval<u>()...)));
+
+    /**
+     * @brief Free some memory.
+     * @param n number of items in the memory
+     * @param p the memory to free
+     * @note Calls `util_op_delete`.
+     */
+    template <typename t>
+    void util_op_delete_type(std::size_t sz, t* p) noexcept;
 
     /**
      * @brief Exportable unique pointer.
@@ -233,6 +262,42 @@ namespace text_complex {
 
     template <typename t, typename ...a>
     util_unique_ptr<t> util_make_unique(a&&...);
+    //END   allocation
+
+    //BEGIN char array
+    /**
+     * @brief Move bytes of data.
+     * @param dst destination character array
+     * @param src source character array
+     * @param sz byte count
+     */
+    TCMPLX_AP_API
+    void util_memmove(void* dst, void const* src, size_t sz);
+    //END   char array
+
+    //BEGIN limits
+    /**
+     * @brief Compute the signed maximum for `std::streamsize`.
+     * @return a maximum value
+     */
+    TCMPLX_AP_API
+    size_t util_ssize_max(void);
+
+    /**
+     * @brief Compute the signed maximum for `long int`.
+     * @return a maximum value
+     */
+    TCMPLX_AP_API
+    long int util_long_max(void);
+
+    /**
+     * @brief Compute the signed minimum for `long int`.
+     * @return a minimum value
+     * @note Handle with caution.
+     */
+    TCMPLX_AP_API
+    long int util_long_min(void);
+    //END   limits
   };
 };
 

@@ -10,6 +10,48 @@
 
 namespace text_complex {
   namespace access {
+    //BEGIN allocation
+    template <typename t, typename ...u>
+    void* util_op_new_type(std::size_t n, u&& ...args)
+      noexcept(noexcept(t(util_declval<u>()...)))
+    {
+      t* out = util_op_new_count(n, sizeof(t));
+      if (out) {
+        if (noexcept(t(util_declval<u>()...))) {
+          std::size_t i;
+          for (i = 0u; i < n; ++i) {
+            new (out+i) t(args...);
+          }
+        } else {
+          std::size_t i;
+          for (i = 0u; i < n; ++i) {
+            try {
+              new (out+i) t(args...);
+            } catch (...) {
+              std::size_t j;
+              for (j = i; j > 0u; --j) {
+                out[j-1u].~t();
+              }
+              util_op_delete(out);
+              throw;
+            }
+          }
+        }
+      }
+      return out;
+    }
+
+    template <typename t>
+    void util_op_delete_type(std::size_t n, t* p) noexcept {
+      std::size_t i;
+      for (i = 0u; i < n; ++i) {
+        p[i].~t();
+      }
+      util_op_delete(p);
+      return;
+    }
+    //END   allocation
+
     //BEGIN util_unique_ptr<t> / rule-of-six
     template <typename t>
     constexpr util_unique_ptr<t>::util_unique_ptr(void) noexcept
