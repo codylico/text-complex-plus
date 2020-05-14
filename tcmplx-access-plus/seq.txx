@@ -40,6 +40,7 @@ namespace text_complex {
       (basic_sequentialbuf<ch,tr>&& other)
     {
       transfer(static_cast<basic_sequentialbuf<ch,tr>&&>(other));
+      return *this;
     }
 
     template <class ch, class tr>
@@ -408,7 +409,10 @@ namespace text_complex {
               ? seq_whence::End : seq_whence::Cur)
             );
         long int const seek_res =
-          seq->seek((off-gdiff)*seq_encode_len-loss, whence);
+          seq->seek(
+                static_cast<long int>((off-gdiff)*seq_encode_len-loss),
+                whence
+            );
         if (seek_res < -1) {
           return seek_type(offset_type(-1));
         } else if (seek_res == -1) {
@@ -625,7 +629,9 @@ namespace text_complex {
 
     //BEGIN sequential istream / rule-of-six
     template <typename ch, typename tr>
-    basic_isequentialstream<ch,tr>::basic_isequentialstream(void) {
+    basic_isequentialstream<ch,tr>::basic_isequentialstream(void)
+      : std::basic_istream<ch,tr>(nullptr)
+    {
       seq_rdbuf = util_make_unique<basic_sequentialbuf<ch,tr> >();
       std::basic_istream<ch,tr>::rdbuf(seq_rdbuf.get());
       return;
@@ -637,6 +643,7 @@ namespace text_complex {
     template <typename ch, typename tr>
     basic_isequentialstream<ch,tr>::basic_isequentialstream
         (basic_isequentialstream<ch,tr>&& rhs)
+      : std::basic_istream<ch,tr>(nullptr)
     {
       transfer(static_cast<basic_isequentialstream<ch,tr>&&>(rhs));
       return;
@@ -683,6 +690,7 @@ namespace text_complex {
     template <typename ch, typename tr>
     basic_isequentialstream<ch,tr>::basic_isequentialstream
         (mmaptwo::mmaptwo_i* fh)
+      : std::basic_istream<ch,tr>(nullptr)
     {
       seq_rdbuf = util_make_unique<basic_sequentialbuf<ch,tr> >();
       std::basic_istream<ch,tr>::rdbuf(seq_rdbuf.get());
