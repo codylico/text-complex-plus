@@ -65,5 +65,13 @@ mmaptwo::mmaptwo_i* tcmplxAtest_gen_maptwo
  * @return a number
  */
 int testfont_rand_int_range(int a, int b);
+/**
+ * @brief Like `munit_plus_rand_int_range`, but protects against
+ *   empty intervals.
+ * @param a min
+ * @param b max
+ * @return a number
+ */
+std::size_t testfont_rand_size_range(std::size_t a, std::size_t b);
 
 #endif /*hg_TCMPLXAP_TESTFONT_Hpp_*/

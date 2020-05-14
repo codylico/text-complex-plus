@@ -174,6 +174,11 @@ namespace text_complex {
     };
     //END   offset table
 
+    //BEGIN offset table / exports
+    template
+    class TCMPLX_AP_API util_unique_ptr<offset_table>;
+    //END   offset table / exports
+
     //BEGIN offset table / namespace local
     /**
      * \brief Non-throwing offset table allocator.

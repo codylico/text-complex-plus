@@ -29,6 +29,8 @@ struct test_seq_fixture {
   size_t len;
 };
 
+template <typename t>
+static t test_seq_wchar_cast(wchar_t v);
 
 static MunitPlusResult test_seq_cycle
     (const MunitPlusParameter params[], void* data);
@@ -81,6 +83,15 @@ static void* test_seq_setup
 static void* test_seq_mapper_setup
     (const MunitPlusParameter params[], void* user_data);
 static void test_seq_teardown(void* fixture);
+
+template <typename t>
+t test_seq_wchar_cast(wchar_t v) {
+#if (defined _MSC_VER)
+  return v >= 256u ? -1 : static_cast<t>(v);
+#else
+  return (v < 0 || v > 127) ? -1 : static_cast<t>(v);
+#endif
+}
 
 
 static MunitPlusTest tests_seq[] = {
@@ -180,7 +191,7 @@ static MunitPlusSuite const suite_seq = {
 MunitPlusResult test_seq_cycle
   (const MunitPlusParameter params[], void* data)
 {
-  struct text_complex::access::sequential* ptr[2];
+  text_complex::access::sequential* ptr[2];
   (void)params;
   (void)data;
   ptr[0] = text_complex::access::seq_new(nullptr);
@@ -189,9 +200,9 @@ MunitPlusResult test_seq_cycle
       text_complex::access::seq_unique(nullptr);
   munit_plus_assert_not_null(ptr[0]);
   munit_plus_assert_not_null(ptr[1]);
-  munit_plus_assert_not_null(ptr[2]);
+  munit_plus_assert_not_null(ptr2.get());
   munit_plus_assert_ptr_not_equal(ptr[0],ptr[1]);
-  munit_plus_assert_ptr_not_equal(ptr[0],ptr[2]);
+  munit_plus_assert_ptr_not_equal(ptr[0],ptr2.get());
   text_complex::access::seq_destroy(ptr[0]);
   delete ptr[1];
   return MUNIT_PLUS_OK;
@@ -253,8 +264,8 @@ MunitPlusResult test_seq_null_eof
 {
   struct test_seq_fixture* const fixt =
     static_cast<struct test_seq_fixture*>(data);
-  struct text_complex::access::sequential* const p = fixt->seq;
-  struct text_complex::access::sequential const* const p_c = p;
+  text_complex::access::sequential* const p = fixt->seq;
+  text_complex::access::sequential const* const p_c = p;
   bool use_const = (munit_plus_rand_int_range(0,1) != 0);
   if (p == nullptr)
     return MUNIT_PLUS_SKIP;
@@ -278,7 +289,7 @@ MunitPlusResult test_seq_eof
 {
   struct test_seq_fixture* const fixt =
     static_cast<struct test_seq_fixture*>(data);
-  struct text_complex::access::sequential* const p = fixt->seq;
+  text_complex::access::sequential* const p = fixt->seq;
   if (p == nullptr)
     return MUNIT_PLUS_SKIP;
   (void)params;
@@ -312,8 +323,8 @@ MunitPlusResult test_seq_eof_const
 {
   struct test_seq_fixture* const fixt =
     static_cast<struct test_seq_fixture*>(data);
-  struct text_complex::access::sequential* const p = fixt->seq;
-  struct text_complex::access::sequential const* const p_c = fixt->seq;
+  text_complex::access::sequential* const p = fixt->seq;
+  text_complex::access::sequential const* const p_c = fixt->seq;
   if (p == nullptr)
     return MUNIT_PLUS_SKIP;
   (void)params;
@@ -346,7 +357,7 @@ MunitPlusResult test_seq_seek
 {
   struct test_seq_fixture* const fixt =
     static_cast<struct test_seq_fixture*>(data);
-  struct text_complex::access::sequential* const p = fixt->seq;
+  text_complex::access::sequential* const p = fixt->seq;
   if (p == nullptr)
     return MUNIT_PLUS_SKIP;
   (void)params;
@@ -401,7 +412,7 @@ MunitPlusResult test_seq_whence
 {
   struct test_seq_fixture* const fixt =
     static_cast<struct test_seq_fixture*>(data);
-  struct text_complex::access::sequential* const p = fixt->seq;
+  text_complex::access::sequential* const p = fixt->seq;
   if (p == nullptr)
     return MUNIT_PLUS_SKIP;
   (void)params;
@@ -828,8 +839,8 @@ MunitPlusResult test_seqstream_setbuf
   munit_plus_logf(MUNIT_PLUS_LOG_INFO,
     "inspecting until %" MUNIT_PLUS_SIZE_MODIFIER "u", fixt->len);
   /* */{
-    std::size_t tell_next = testfont_rand_int_range(0,fixt->len);
-    std::size_t seek_next = testfont_rand_int_range(0,fixt->len);
+    std::size_t tell_next = testfont_rand_size_range(0,fixt->len);
+    std::size_t seek_next = testfont_rand_size_range(0,fixt->len);
     bool seek_check = true;
     std::size_t buff_point = 0u;
     size_t i;
@@ -901,7 +912,7 @@ MunitPlusResult test_seqwstream_eof
     for (i = 0u; i < fixt->len; ++i) {
       std::wint_t b;
       int const pre_d = tcmplxAtest_gen_datum(fixt->gen, i, fixt->seed);
-      std::wint_t const d = (pre_d > 127) ? -1 : pre_d;
+      std::wint_t const d = test_seq_wchar_cast<std::wint_t>(pre_d);
       munit_plus_assert_llong(v.tellg(),==,i);
       if (!v.get(pre_b)) {
         b = -1;
@@ -977,7 +988,7 @@ MunitPlusResult test_seqwstream_seek
         /* expect success (sort of) */
         std::wint_t b;
         int const pre_d = tcmplxAtest_gen_datum(fixt->gen, i, fixt->seed);
-        std::wint_t const d = (pre_d > 127) ? -1 : pre_d;
+        std::wint_t const d = test_seq_wchar_cast<std::wint_t>(pre_d);
         v.seekg(i);
         bool const bool_v = static_cast<bool>(v);
         if (!bool_v)
@@ -1081,7 +1092,7 @@ MunitPlusResult test_seqwstream_whence
         std::wint_t b;
         int const pre_d = tcmplxAtest_gen_datum
           (fixt->gen, landing_i, fixt->seed);
-        std::wint_t const d = (pre_d > 127) ? -1 : pre_d;
+        std::wint_t const d = test_seq_wchar_cast<std::wint_t>(pre_d);
         v.seekg(dist,dir);
         bool const bool_v = static_cast<bool>(v);
         if (!bool_v)
@@ -1125,8 +1136,8 @@ MunitPlusResult test_seqwstream_setbuf
   munit_plus_logf(MUNIT_PLUS_LOG_INFO,
     "inspecting until %" MUNIT_PLUS_SIZE_MODIFIER "u", fixt->len);
   /* */{
-    std::size_t tell_next = testfont_rand_int_range(0,fixt->len);
-    std::size_t seek_next = testfont_rand_int_range(0,fixt->len);
+    std::size_t tell_next = testfont_rand_size_range(0,fixt->len);
+    std::size_t seek_next = testfont_rand_size_range(0,fixt->len);
     bool seek_check = true;
     std::size_t buff_point = 0u;
     size_t i;
@@ -1154,7 +1165,7 @@ MunitPlusResult test_seqwstream_setbuf
       }
       std::wint_t b;
       int const pre_d = tcmplxAtest_gen_datum(fixt->gen, i, fixt->seed);
-      std::wint_t const d = (pre_d > 127) ? -1 : pre_d;
+      std::wint_t const d = test_seq_wchar_cast<std::wint_t>(pre_d);
       munit_plus_assert_llong(v.tellg(),==,i);
       if (!v.get(pre_b)) {
         b = -1;
