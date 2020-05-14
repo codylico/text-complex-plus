@@ -204,10 +204,10 @@ namespace text_complex {
     }
 
     template <typename t>
-    template <typename u, typename v=decltype(util_declval<u>().release())>
+    template <typename u, typename v>
     util_unique_ptr<t[]>::util_unique_ptr(u&& r)
         noexcept(noexcept(util_declval<u>().release()))
-        : p(r.release())
+        : p(static_cast<v>(r.release()))
     {
       return;
     }
