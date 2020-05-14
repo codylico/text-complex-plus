@@ -55,9 +55,9 @@ MunitPlusResult test_offtable_cycle
       text_complex::access::offtable_unique(12);
   munit_plus_assert_not_null(ptr[0]);
   munit_plus_assert_not_null(ptr[1]);
-  munit_plus_assert_not_null(ptr[2]);
+  munit_plus_assert_not_null(ptr2.get());
   munit_plus_assert_ptr_not_equal(ptr[0],ptr[1]);
-  munit_plus_assert_ptr_not_equal(ptr[0],ptr[2]);
+  munit_plus_assert_ptr_not_equal(ptr[0],ptr2.get());
   text_complex::access::offtable_destroy(ptr[0]);
   delete ptr[1];
   return MUNIT_PLUS_OK;

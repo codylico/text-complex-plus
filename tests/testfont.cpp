@@ -53,8 +53,8 @@ public:
         data[i] = (unsigned char)tcmplxAtest_gen_datum(gen, i+off, seed);
       }
       try {
-        struct tcmplxAtest_mmtp* const out =
-          new struct tcmplxAtest_mmtp(siz,off,data);
+        tcmplxAtest_mmtp* const out =
+          new tcmplxAtest_mmtp(siz,off,data);
         return out;
       } catch (std::bad_alloc const& ) {
         delete[] data;
@@ -71,6 +71,8 @@ public:
   }
 };
 
+static
+int testfont_clamp_size(std::size_t z);
 
 
 int tcmplxAtest_gen_datum(int n, size_t i, unsigned int seed) {
@@ -124,4 +126,18 @@ int testfont_rand_int_range(int a, int b) {
   if (a == b)
     return a;
   else return munit_plus_rand_int_range(a,b);
+}
+
+int testfont_clamp_size(std::size_t z) {
+  if (z > static_cast<unsigned int>(std::numeric_limits<int>::max())) {
+    return std::numeric_limits<int>::max();
+  } else return static_cast<int>(z);
+}
+
+std::size_t testfont_rand_size_range(std::size_t a, std::size_t b) {
+  if (a == b)
+    return a;
+  else return munit_plus_rand_int_range(
+      testfont_clamp_size(a), testfont_clamp_size(b)
+    );
 }
