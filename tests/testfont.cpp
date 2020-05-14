@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <new>
 #include "munit-plus/munit.hpp"
+#include <limits>
 
 class tcmplxAtest_mmtp : public mmaptwo::page_i {
 public:
