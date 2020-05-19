@@ -8,6 +8,7 @@
 #include "mmaptwo.hpp"
 #include <cstdlib>
 #include <stdexcept>
+#include <cerrno>
 
 namespace mmaptwo {
   /**
@@ -59,7 +60,6 @@ namespace mmaptwo {
 #  include <fcntl.h>
 #  include <sys/mman.h>
 #  include <sys/stat.h>
-#  include <cerrno>
 #  include <limits>
 
 namespace mmaptwo {
@@ -173,10 +173,8 @@ namespace mmaptwo {
      * \param siz size of the map to acquire
      * \param off offset into the file data
      * \return pointer to a page interface on success, `nullptr` otherwise
-     * \throws `std::invalid_argument`, `std::length_error`,
-     *   and `std::runtime_error`
      */
-    page_i* acquire(size_t siz, size_t off) override;
+    page_i* acquire(size_t siz, size_t off) noexcept override;
 
     /**
      * \brief Check the length of the mappable area.
@@ -232,7 +230,6 @@ namespace mmaptwo {
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
 #  include <climits>
-#  include <cerrno>
 #  include <cstring>
 
 namespace mmaptwo {
@@ -282,7 +279,7 @@ namespace mmaptwo {
      * \throws `std::invalid_argument`, `std::runtime_error`,
      *   and `std::length_error`
      */
-    page_i* acquire(size_t siz, size_t off) override;
+    page_i* acquire(size_t siz, size_t off) noexcept override;
 
     /**
      * \brief Check the length of the mapped area.
@@ -724,8 +721,8 @@ namespace mmaptwo {
     }
     if (sz == 0)/* then fail */ {
       ::close(fd);
-      errno = EDOM;
-      throw std::runtime_error
+      errno = ERANGE;
+      throw std::range_error
         ( "mmaptwo::mmaptwo_unix::mmaptwo_unix:"
           " size of zero invalid");
     }
@@ -744,7 +741,7 @@ namespace mmaptwo {
     return;
   }
 
-  page_i* mmaptwo_unix::acquire(size_t sz, size_t pre_off) {
+  page_i* mmaptwo_unix::acquire(size_t sz, size_t pre_off) noexcept {
     size_t off;
     /* repair input size and offset */{
       if (pre_off > this->len
@@ -752,14 +749,23 @@ namespace mmaptwo {
       ||  sz == 0u)
       {
         errno = EDOM;
-        throw std::invalid_argument
-          ( "mmaptwo::mmaptwo_unix::acquire: "
-            "size and offset out of range");
+        return nullptr;
       }
       off = pre_off + this->offnum;
     }
-    return new page_unix(fd, mt, sz, off, pre_off);
+    try {
+      return new page_unix(fd, mt, sz, off, pre_off);
+    } catch (std::length_error const& ) {
+      return nullptr;
+    } catch (std::runtime_error const& ) {
+      return nullptr;
+    } catch (std::bad_alloc const& ) {
+      if (errno == 0)
+        errno = ENOMEM;
+      return nullptr;
+    }
   }
+
   page_unix::page_unix
     (int fd, struct mode_tag mt, size_t sz, size_t off, size_t pre_off)
   {
@@ -851,6 +857,7 @@ namespace mmaptwo {
       if (xsz < off) {
         /* reject non-ending zero parameter */
         ::CloseHandle(fd);
+        errno = ERANGE;
         throw std::invalid_argument
           ( "mmaptwo::mmaptwo_win32::mmaptwo_win32: "
             "offset too far from start of file");
@@ -858,6 +865,11 @@ namespace mmaptwo {
     } else if (sz == 0) {
       /* reject non-ending zero parameter */
       ::CloseHandle(fd);
+#if (defined EINVAL)
+      errno = EINVAL;
+#else
+      errno = EDOM;
+#endif /*EINVAL*/
       throw std::invalid_argument
         ( "mmaptwo::mmaptwo_win32::mmaptwo_win32: "
           "non-ending zero parameter rejected");
@@ -952,7 +964,7 @@ namespace mmaptwo {
     return;
   }
 
-  page_i* mmaptwo_win32::acquire(size_t sz, size_t pre_off) {
+  page_i* mmaptwo_win32::acquire(size_t sz, size_t pre_off) noexcept {
     size_t off;
     /* repair input size and offset */{
       size_t const shifted_len = this->len - this->offnum;
@@ -961,13 +973,25 @@ namespace mmaptwo {
       ||  sz == 0u)
       {
         errno = EDOM;
-        throw std::invalid_argument
-          ( "mmaptwo::mmaptwo_win32::acquire: "
-            "size and offset out of range");
+        return nullptr;
       }
       off = pre_off + this->offnum;
     }
-    return new page_win32(fmd, mt, sz, off, pre_off);
+    try {
+      return new page_win32(fmd, mt, sz, off, pre_off);
+    } catch (std::bad_alloc const& ) {
+#if (defined ENOMEM)
+      errno = ENOMEM;
+#else
+      if (errno == 0)
+        errno = ERANGE;
+#endif /*ENOMEM*/
+      return nullptr;
+    } catch (std::length_error const& ) {
+      return nullptr;
+    } catch (std::runtime_error const& ) {
+      return nullptr;
+    }
   }
   page_win32::page_win32
     (HANDLE fmd, struct mode_tag mt, size_t sz, size_t off, size_t pre_off)
@@ -1007,6 +1031,12 @@ namespace mmaptwo {
         (::SIZE_T)(fullsize) /* dwNumberOfBytesToMap */
       );
     if (!ptr) {
+#if (defined ENOMEM)
+      errno = ENOMEM;
+#else
+      if (errno == 0)
+        errno = ERANGE;
+#endif /*ENOMEM*/
       throw std::runtime_error
         ("mmapio::page_win32::page_win32: MapViewOfFile failure");
     }
@@ -1053,6 +1083,17 @@ namespace mmaptwo {
 };
 
 namespace mmaptwo {
+  //BEGIN error handling
+  int get_errno(void) noexcept {
+    return errno;
+  }
+
+  void set_errno(int x) noexcept {
+    errno = x;
+    return;
+  }
+  //END   error handling
+
   //BEGIN configuration functions
   int get_os(void) noexcept {
     return (int)(MMAPTWO_PLUS_OS);

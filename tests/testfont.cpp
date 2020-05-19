@@ -9,6 +9,7 @@
 #include <new>
 #include "munit-plus/munit.hpp"
 #include <limits>
+#include <cerrno>
 
 class tcmplxAtest_mmtp : public mmaptwo::page_i {
 public:
@@ -42,11 +43,13 @@ public:
       ), gen(g), seed(s)
   {
   }
-  mmaptwo::page_i* acquire(std::size_t siz, std::size_t off) {
+  mmaptwo::page_i* acquire(std::size_t siz, std::size_t off) noexcept {
     if (off >= len
     ||  siz > (len-off))
     {
-      throw std::out_of_range("tcmplxAtest_mmt::acquire");
+      /*throw std::out_of_range("tcmplxAtest_mmt::acquire");*/
+      mmaptwo::set_errno(EDOM);
+      return nullptr;
     } else {
       size_t i;
       unsigned char* data = new unsigned char[siz];
@@ -59,7 +62,12 @@ public:
         return out;
       } catch (std::bad_alloc const& ) {
         delete[] data;
-        throw;
+#if (defined ENOMEM)
+        mmaptwo::set_errno(ENOMEM);
+#else
+        mmaptwo::set_errno(ERANGE);
+#endif /*ENOMEM*/
+        return nullptr;
       }
     }
     return nullptr;

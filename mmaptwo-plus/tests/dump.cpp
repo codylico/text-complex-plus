@@ -5,6 +5,7 @@
 #include <limits>
 #include <cctype>
 #include <iomanip>
+#include <system_error>
 
 int main(int argc, char **argv) {
   mmaptwo::mmaptwo_i* mi;
@@ -38,6 +39,8 @@ int main(int argc, char **argv) {
       ? (size_t)std::strtoul(argv[6],nullptr,0)
       : 0u;
     pager = mi->acquire(sub_len, sub_off);
+    if (!pager)
+      throw std::system_error(mmaptwo::get_errno(), std::generic_category());
   } catch (std::exception const& e) {
     delete mi;
     std::cerr << "failed to map file '" << fname << "':" << std::endl;
@@ -46,6 +49,7 @@ int main(int argc, char **argv) {
   }
   /* output the data */{
     size_t len = pager->length();
+    size_t const off = pager->offset();
     unsigned char* bytes = (unsigned char*)pager->get();
     if (bytes != NULL) {
       size_t i;
@@ -55,7 +59,8 @@ int main(int argc, char **argv) {
         size_t j = 0;
         if (i)
           std::cout << std::endl;
-        std::cout << std::setw(4) << std::setbase(16) << i << ':';
+        std::cout << std::setw(4) << std::setbase(16) << std::setfill('0')
+          << static_cast<long unsigned int>(i + off) << ':';
         for (j = 0; j < 16; ++j) {
           if (j%4 == 0) {
             std::cout << " ";

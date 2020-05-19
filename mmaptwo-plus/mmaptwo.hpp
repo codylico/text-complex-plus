@@ -72,8 +72,7 @@ namespace mmaptwo {
   /**
    * \brief Memory reading part of memory-mapped input-output interface.
    */
-  MMAPTWO_PLUS_API
-  class page_i {
+  class MMAPTWO_PLUS_API page_i {
   public:
     /**
      * \brief Destructor; frees the space.
@@ -111,8 +110,7 @@ namespace mmaptwo {
   /**
    * \brief File acquisition part of memory-mapped input-output interface.
    */
-  MMAPTWO_PLUS_API
-  class mmaptwo_i {
+  class MMAPTWO_PLUS_API mmaptwo_i {
   public:
     /**
      * \brief Destructor; closes the file.
@@ -125,10 +123,8 @@ namespace mmaptwo {
      * \param siz size of the map to acquire
      * \param off offset into the file data
      * \return pointer to a page interface on success, `nullptr` otherwise
-     * \throws `std::bad_alloc`, `std::length_error`, `std::runtime_error`,
-     *   `std::invalid_argument` from the default implementation.
      */
-    virtual page_i* acquire(size_t siz, size_t off) = 0;
+    virtual page_i* acquire(size_t siz, size_t off) noexcept = 0;
 
     /**
      * \brief Check the length of the mappable area.
@@ -143,6 +139,21 @@ namespace mmaptwo {
     virtual size_t offset(void) const noexcept = 0;
   };
 
+  /* BEGIN error handling */
+  /**
+   * \brief Get the `errno` value from this library.
+   * \return an error number
+   */
+  MMAPTWO_PLUS_API
+  int get_errno(void) noexcept;
+
+  /**
+   * \brief Set an `errno` value to this library.
+   * \param x the value to set
+   */
+  MMAPTWO_PLUS_API
+  void set_errno(int x) noexcept;
+  /* END   error handling */
 
   /* BEGIN configurations */
   /**
