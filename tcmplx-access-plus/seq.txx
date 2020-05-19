@@ -557,14 +557,12 @@ namespace text_complex {
          * recompute sequential position from
          * seq_startpos, seq_startmb, eback(), and gptr()
          */
-        /* TODO use int std::codecvt<...>.length(state&,char*,char*,size_t) */
         std::size_t const start = seq_startpos;
         std::size_t const count =
           static_cast<std::size_t>(this->gptr()-this->eback());
         std::size_t in_pos = 0u;
         size_t finishpos = start;
         using cvt_type = std::codecvt<ch,char,std::mbstate_t>;
-        using cvt_result = typename cvt_type::result;
         int retellg_res = 0;
         cvt_type const& cvt =
           std::use_facet<cvt_type>(this->getloc());
@@ -580,31 +578,19 @@ namespace text_complex {
             retellg_res = -1;
           } else {
             ch in_one;
-            ch *const to = &in_one;
-            ch *const to_end = to+1;
-            ch *to_next = to;
             char one = static_cast<char>(static_cast<unsigned char>(inch&255));
-            char const *from = &one, *from_end = (&one)+1, *from_next = &one;
-            cvt_result const res =
-              cvt.in(mb,from,from_end,from_next,to,to_end,to_next);
-            switch (res) {
-            case cvt_type::noconv:
-              (*to_next) = static_cast<ch>(inch&255);
-              to_next += 1;
-              finishpos += 1u;
-              break;
-            case cvt_type::ok:
-              finishpos += 1u;
-              break;
-            case cvt_type::error:
+            char const *from = &one, *from_end = (&one)+1;
+            int const len_res =
+              cvt.length(mb, from, from_end, count-in_pos);
+            if (len_res < 0) {
               retellg_res = -1;
-              break;
-            case cvt_type::partial:
+            } else {
               finishpos += 1u;
-              break;
             }
-            in_pos += static_cast<std::size_t>(to_next-to);
-            error_loss = (to_next==to) ? (error_loss+1u) : 0u;
+            in_pos += static_cast<std::size_t>(len_res);
+            error_loss = (len_res<=0) ? (error_loss+1u) : 0u;
+            if (error_loss >= 63u)
+              break;
           }
         }/*end while*/
         sb_retellp = this->eback()+in_pos;
