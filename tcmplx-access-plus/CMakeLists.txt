@@ -3,7 +3,7 @@ project(text-complex-access-plus CXX)
 
 
 set(text_complex_access_plus_FILES
-  api.cpp          api.hpp
+  api.cpp          api.hpp           api.txx
   util.cpp         util.hpp
   offtable.cpp     offtable.hpp
   seq.cpp          seq.hpp           seq.txx

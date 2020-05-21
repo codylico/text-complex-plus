@@ -13,6 +13,13 @@ int main(int argc, char **argv) {
       char const* v_text = api_error_toa(v);
       std::cout << "error value " << pre_v << ": "
         << (v_text ? v_text : "(nil)") << std::endl;
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+      try {
+        throw access::api_exception(v);
+      } catch (std::exception const& e) {
+        std::cout << "\tas except: " << e.what() << std::endl;
+      }
+#endif /*TextComplexAccessP_NO_EXCEPT*/
     }
   }
   return 0;

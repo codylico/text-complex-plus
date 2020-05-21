@@ -8,7 +8,6 @@
 
 #include <climits>
 #include <cstddef>
-#include <exception>
 
 #ifdef TCMPLX_AP_WIN32_DLL
 #  ifdef TCMPLX_AP_WIN32_DLL_INTERNAL
@@ -69,5 +68,34 @@ namespace text_complex {
     //END   configurations
   };
 };
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+#include <exception>
+
+namespace text_complex {
+  namespace access {
+    //BEGIN api exception
+    /**
+     * @brief Exception thrown by text-complex API functions.
+     */
+    class api_exception : public std::exception {
+    private:
+      api_error v;
+
+    public /* rule-of-three */:
+      api_exception(api_error value = api_error::ErrUnknown) noexcept;
+      api_exception(api_exception const& ) noexcept;
+      api_exception& operator=(api_exception const&) noexcept;
+      ~api_exception(void) noexcept override;
+
+    public /* exception-override */:
+      char const* what(void) const noexcept override;
+    };
+    //END   api exception
+  };
+};
+#endif //TextComplexAccessP_NO_EXCEPT
+
+#include "api.txx"
 
 #endif //hg_TextComplexAccessP_api_H_
