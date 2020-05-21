@@ -37,6 +37,8 @@ namespace text_complex {
 
     // BEGIN error codes
     enum struct api_error {
+      /** Error occured, not sure how to describe it */
+      ErrUnknown = -5,
       /** Invalid parameter given */
       ErrParam = -4,
       /** File sanity check failed */
@@ -48,6 +50,13 @@ namespace text_complex {
       /** Success code */
       Success = 0
     };
+
+    /**
+     * @brief Convert an error code to a string.
+     * @return a corresponding string, or `nullptr` if unavailable.
+     */
+    TCMPLX_AP_API
+    char const* api_error_toa(api_error v) noexcept;
     // END   error codes
 
     /**
