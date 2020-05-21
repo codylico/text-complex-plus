@@ -35,7 +35,7 @@ namespace text_complex {
 #endif /*UINT_MAX*/
     using std::size_t;
 
-    // BEGIN error codes
+    //BEGIN error codes
     enum struct api_error {
       /** Error occured, not sure how to describe it */
       ErrUnknown = -5,
@@ -57,14 +57,16 @@ namespace text_complex {
      */
     TCMPLX_AP_API
     char const* api_error_toa(api_error v) noexcept;
-    // END   error codes
+    //END   error codes
 
+    //BEGIN configurations
     /**
      * \brief Check the library's version.
      * \return a version string
      */
     TCMPLX_AP_API
     char const* api_version(void) noexcept;
+    //END   configurations
   };
 };
 
