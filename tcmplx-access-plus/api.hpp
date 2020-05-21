@@ -36,7 +36,7 @@ namespace text_complex {
     using std::size_t;
 
     // BEGIN error codes
-    enum struct error {
+    enum struct api_error {
       /** Invalid parameter given */
       ErrParam = -4,
       /** File sanity check failed */

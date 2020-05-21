@@ -10,7 +10,7 @@ namespace text_complex {
   namespace access {
     //BEGIN configurations
     char const* api_version(void) noexcept {
-      return "0.0";
+      return "0.1";
     }
     //END   configurations
   };
