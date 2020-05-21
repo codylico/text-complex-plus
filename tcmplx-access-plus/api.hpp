@@ -8,7 +8,6 @@
 
 #include <climits>
 #include <cstddef>
-#include <exception>
 
 #ifdef TCMPLX_AP_WIN32_DLL
 #  ifdef TCMPLX_AP_WIN32_DLL_INTERNAL
@@ -35,8 +34,10 @@ namespace text_complex {
 #endif /*UINT_MAX*/
     using std::size_t;
 
-    // BEGIN error codes
-    enum struct error {
+    //BEGIN error codes
+    enum struct api_error {
+      /** Error occured, not sure how to describe it */
+      ErrUnknown = -5,
       /** Invalid parameter given */
       ErrParam = -4,
       /** File sanity check failed */
@@ -48,15 +49,53 @@ namespace text_complex {
       /** Success code */
       Success = 0
     };
-    // END   error codes
 
+    /**
+     * @brief Convert an error code to a string.
+     * @return a corresponding string, or `nullptr` if unavailable.
+     */
+    TCMPLX_AP_API
+    char const* api_error_toa(api_error v) noexcept;
+    //END   error codes
+
+    //BEGIN configurations
     /**
      * \brief Check the library's version.
      * \return a version string
      */
     TCMPLX_AP_API
     char const* api_version(void) noexcept;
+    //END   configurations
   };
 };
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+#include <exception>
+
+namespace text_complex {
+  namespace access {
+    //BEGIN api exception
+    /**
+     * @brief Exception thrown by text-complex API functions.
+     */
+    class api_exception : public std::exception {
+    private:
+      api_error v;
+
+    public /* rule-of-three */:
+      api_exception(api_error value = api_error::ErrUnknown) noexcept;
+      api_exception(api_exception const& ) noexcept;
+      api_exception& operator=(api_exception const&) noexcept;
+      ~api_exception(void) noexcept override;
+
+    public /* exception-override */:
+      char const* what(void) const noexcept override;
+    };
+    //END   api exception
+  };
+};
+#endif //TextComplexAccessP_NO_EXCEPT
+
+#include "api.txx"
 
 #endif //hg_TextComplexAccessP_api_H_
