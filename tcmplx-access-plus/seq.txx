@@ -232,9 +232,6 @@ namespace text_complex {
         sb_error_loss = 0u;
         this->setg(to,to,to);
         return 0;
-      } else if (seq_noconv && false) {
-        /* TODO copy bytes */
-        return 0;
       } else {
         using cvt_type = std::codecvt<ch,char,std::mbstate_t>;
         using cvt_result = typename cvt_type::result;
@@ -250,7 +247,6 @@ namespace text_complex {
         if (seq->set_pos(seq_startpos) != seq_startpos) {
           return -1;
         }
-        std::size_t finishpos = seq_startpos;
         while (to_next < to_end && sync_res == 0) {
           int inch = seq->get_byte();
           if (inch == -1)

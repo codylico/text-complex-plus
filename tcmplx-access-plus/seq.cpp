@@ -257,17 +257,7 @@ namespace text_complex {
             pagestart = n_pos - pagediff;
             pagelen =
               ((len-pagestart<pagesize*2u) ? len-pagestart : pagesize*2u);
-            try {
-              n_hpage = fh->acquire(pagelen, pagestart);
-            } catch (std::runtime_error const& ) {
-              n_hpage = nullptr;
-            } catch (std::length_error const& ) {
-              n_hpage = nullptr;
-            } catch (std::invalid_argument const& ) {
-              n_hpage = nullptr;
-            } catch (std::bad_alloc const& ) {
-              n_hpage = nullptr;
-            }
+            n_hpage = fh->acquire(pagelen, pagestart);
             if (n_hpage) {
               n_off = pagestart;
               n_last = pagelen+pagestart;
