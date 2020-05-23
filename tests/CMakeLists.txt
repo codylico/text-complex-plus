@@ -25,6 +25,12 @@ target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus munit_plus)
     munit_plus tcmplx_access_plus)
 #END   OffTable test
 
+#BEGIN Woff2 test
+  add_executable(tcmplx_accessP_test_woff2 tca_woff2.cpp)
+  target_link_libraries(tcmplx_accessP_test_woff2
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
+#END   Woff2 test
+
 #BEGIN Seq test
   add_executable(tcmplx_accessP_test_seq tca_seq.cpp)
   target_link_libraries(tcmplx_accessP_test_seq

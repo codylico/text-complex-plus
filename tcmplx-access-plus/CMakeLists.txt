@@ -7,6 +7,7 @@ set(text_complex_access_plus_FILES
   util.cpp         util.hpp
   offtable.cpp     offtable.hpp
   seq.cpp          seq.hpp           seq.txx
+  woff2.cpp        woff2.hpp
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES})
