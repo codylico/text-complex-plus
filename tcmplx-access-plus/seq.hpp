@@ -144,6 +144,11 @@ namespace text_complex {
     };
     //END   sequential
 
+    //BEGIN sequential / exports
+    template
+    class TCMPLX_AP_API util_unique_ptr<sequential>;
+    //END   sequential / exports
+
     //BEGIN sequential / namespace local
     /**
      * @brief Non-throwing sequential allocator.
