@@ -35,7 +35,10 @@ namespace text_complex {
     using std::size_t;
 
     //BEGIN error codes
-    enum struct api_error {
+    /**
+     * @brief Library error codes.
+     */
+    enum struct api_error : int {
       /** Error occured, not sure how to describe it */
       ErrUnknown = -5,
       /** Invalid parameter given */
