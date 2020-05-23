@@ -6,7 +6,9 @@
 #define hg_TCMPLXAP_TESTFONT_Hpp_
 
 #include <cstddef>
+#include <string>
 
+struct MunitPlusArgument_;
 namespace mmaptwo {
   class mmaptwo_i;
 };
@@ -30,6 +32,10 @@ enum tcmplxAtest_testfont {
    */
   tcmplxAtest_Pseudorandom = 3,
   tcmplxAtest_MAX
+};
+
+struct tcmplxAtest_arg {
+  std::string font_path;
 };
 
 /**
@@ -73,5 +79,10 @@ int testfont_rand_int_range(int a, int b);
  * @return a number
  */
 std::size_t testfont_rand_size_range(std::size_t a, std::size_t b);
+/**
+ * @brief Get an argument list for munit-plus.
+ * @return the argument list
+ */
+struct MunitPlusArgument_ const* tcmplxAtest_get_args(void);
 
 #endif /*hg_TCMPLXAP_TESTFONT_Hpp_*/

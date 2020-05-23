@@ -10,6 +10,24 @@
 #include "munit-plus/munit.hpp"
 #include <limits>
 #include <cerrno>
+#include <cstdio>
+
+
+
+static
+bool tcmplxAtest_arg_fp_parse
+  ( const MunitPlusSuite* suite, void* user_data, int* arg, int argc,
+    char* const argv[]);
+static
+void tcmplxAtest_arg_fp_help
+  ( const MunitPlusArgument* argument, void* user_data);
+
+MunitPlusArgument const tcmplxAtest_arglist[] = {
+  { (char*)"font-path", tcmplxAtest_arg_fp_parse, tcmplxAtest_arg_fp_help },
+  { NULL, NULL, NULL }
+};
+
+
 
 class tcmplxAtest_mmtp : public mmaptwo::page_i {
 public:
@@ -149,4 +167,38 @@ std::size_t testfont_rand_size_range(std::size_t a, std::size_t b) {
   else return munit_plus_rand_int_range(
       testfont_clamp_size(a), testfont_clamp_size(b)
     );
+}
+
+struct MunitPlusArgument_ const* tcmplxAtest_get_args(void) {
+  return tcmplxAtest_arglist;
+}
+
+bool tcmplxAtest_arg_fp_parse
+  ( const MunitPlusSuite* suite, void* user_data, int* a, int argc,
+    char* const argv[])
+{
+  int &arg = *a;
+  struct tcmplxAtest_arg& tfa =
+    *static_cast<struct tcmplxAtest_arg*>(user_data);
+  ++arg;
+  if (arg < argc) {
+    try {
+      tfa.font_path = argv[arg];
+    } catch (std::bad_alloc const& ) {
+      std::fprintf(stdout, "File name broke --font-path.\n");
+      return false;
+    }
+    return true;
+  } else {
+    std::fprintf(stdout, "Missing file name for --font-path.\n");
+    return false;
+  }
+}
+
+void tcmplxAtest_arg_fp_help
+  ( const MunitPlusArgument* argument, void* user_data)
+{
+  std::fprintf(stdout, " --font-path\n"
+    "           Path of font file against which to test.\n");
+  return;
 }
