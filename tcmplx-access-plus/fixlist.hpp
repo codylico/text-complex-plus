@@ -121,8 +121,8 @@ namespace text_complex {
 
     public:
       /**
-       * @brief Query the size of the table.
-       * @return the number of lines in this table
+       * @brief Query the size of the list.
+       * @return the number of lines in this list
        */
       size_t size(void) const noexcept;
       /**
@@ -138,16 +138,16 @@ namespace text_complex {
        */
       prefix_line const& operator[](size_t i) const noexcept;
       /**
-       * @brief Write to an offset table.
-       * @param x the table to write
+       * @brief Write to a prefix list.
+       * @param x the list to write
        * @param i an array index
        * @return a reference to an offset line
        * @throw std::out_of_range on bad index
        */
       prefix_line& at(size_t i);
       /**
-       * @brief Read from an offset table.
-       * @param x the table to read
+       * @brief Read from a prefix list.
+       * @param x the list to read
        * @param i an array index
        * @return a pointer to an offset line on success, NULL otherwise
        * @throw std::out_of_range on bad index
