@@ -36,4 +36,10 @@ target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus munit_plus)
   target_link_libraries(tcmplx_accessP_test_seq
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus mmaptwo_plus)
 #END   Seq test
+
+#BEGIN FixList test
+  add_executable(tcmplx_accessP_test_fixlist tca_fixlist.cpp)
+  target_link_libraries(tcmplx_accessP_test_fixlist
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus mmaptwo_plus)
+#END   FixList test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)

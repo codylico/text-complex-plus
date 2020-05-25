@@ -1,0 +1,102 @@
+/**
+ * @brief Test program for prefix list
+ */
+#include "../tcmplx-access-plus/fixlist.hpp"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include "munit-plus/munit.hpp"
+#include <memory>
+
+
+static MunitPlusResult test_fixlist_cycle
+    (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_fixlist_item
+    (const MunitPlusParameter params[], void* data);
+static void* test_fixlist_setup
+    (const MunitPlusParameter params[], void* user_data);
+static void test_fixlist_teardown(void* fixture);
+
+
+static MunitPlusTest tests_fixlist[] = {
+  {(char*)"cycle", test_fixlist_cycle,
+      nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_SINGLE_ITERATION,
+      nullptr},
+  {(char*)"item", test_fixlist_item,
+      test_fixlist_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
+};
+
+static MunitPlusSuite const suite_fixlist = {
+  (char*)"access/fixlist/", tests_fixlist, nullptr,
+      1, MUNIT_PLUS_SUITE_OPTION_NONE
+};
+
+
+
+
+MunitPlusResult test_fixlist_cycle
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::prefix_list* ptr[2];
+  (void)params;
+  (void)data;
+  ptr[0] = text_complex::access::fixlist_new(288);
+  ptr[1] = new text_complex::access::prefix_list(288);
+  std::unique_ptr<text_complex::access::prefix_list> ptr2 =
+      text_complex::access::fixlist_unique(288);
+  munit_plus_assert_not_null(ptr[0]);
+  munit_plus_assert_not_null(ptr[1]);
+  munit_plus_assert_not_null(ptr2.get());
+  munit_plus_assert_ptr_not_equal(ptr[0],ptr[1]);
+  munit_plus_assert_ptr_not_equal(ptr[0],ptr2.get());
+  text_complex::access::fixlist_destroy(ptr[0]);
+  delete ptr[1];
+  return MUNIT_PLUS_OK;
+}
+
+void* test_fixlist_setup(const MunitPlusParameter params[], void* user_data) {
+  return text_complex::access::fixlist_new(
+        static_cast<std::size_t>(munit_plus_rand_int_range(4,256))
+      );
+}
+
+void test_fixlist_teardown(void* fixture) {
+  text_complex::access::fixlist_destroy(
+      static_cast<struct text_complex::access::prefix_list*>(fixture)
+    );
+  return;
+}
+
+MunitPlusResult test_fixlist_item
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::prefix_list* const p =
+    static_cast<text_complex::access::prefix_list*>(data);
+  text_complex::access::prefix_list const* const p_c = p;
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  struct text_complex::access::prefix_line const* dsp[4];
+  std::size_t sz = p->size();
+  munit_plus_assert_size(sz,>=,4);
+  munit_plus_assert_size(sz,<=,256);
+  std::size_t i = static_cast<std::size_t>(
+        munit_plus_rand_int_range(0,static_cast<int>(sz)-1)
+      );
+  dsp[0] = &(*p)[i];
+  dsp[1] = &(*p_c)[i];
+  dsp[2] = &p->at(i);
+  dsp[3] = &p_c->at(i);
+  munit_plus_assert_not_null(dsp[0]);
+  munit_plus_assert_ptr(dsp[0],==,dsp[1]);
+  munit_plus_assert_ptr(dsp[0],==,dsp[2]);
+  munit_plus_assert_ptr(dsp[0],==,dsp[3]);
+  return MUNIT_PLUS_OK;
+}
+
+
+int main(int argc, char **argv) {
+  return munit_plus_suite_main(&suite_fixlist, nullptr, argc, argv);
+}
