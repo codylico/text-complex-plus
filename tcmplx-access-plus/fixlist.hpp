@@ -191,7 +191,30 @@ namespace text_complex {
     TCMPLX_AP_API
     void fixlist_destroy(prefix_list* x) noexcept;
     //END   prefix list / allocation (namespace local)
+
+    //BEGIN prefix list / namespace local
+    /**
+     * @brief Generate prefix codes given a prefix list.
+     * @param dst list to populate with codes
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
+     */
+    TCMPLX_AP_API
+    void fixlist_gen_codes(prefix_list& dst, api_error& ae) noexcept;
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Generate prefix codes given a prefix list.
+     * @param dst list to populate with codes
+     * @throw api_exception on code length error
+     */
+    TCMPLX_AP_API
+    void fixlist_gen_codes(prefix_list& dst);
+#endif //TextComplexAccessP_NO_EXCEPT
+    //END   prefix list / namespace local
   };
 };
+
+#include "fixlist.txx"
 
 #endif //hg_TextComplexAccessP_FixList_H_

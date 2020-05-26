@@ -7,15 +7,27 @@
 #include <cstring>
 #include "munit-plus/munit.hpp"
 #include <memory>
+#include "testfont.hpp"
 
 
 static MunitPlusResult test_fixlist_cycle
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_fixlist_item
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_fixlist_gen_codes
+    (const MunitPlusParameter params[], void* data);
 static void* test_fixlist_setup
     (const MunitPlusParameter params[], void* user_data);
+static void* test_fixlist_gen_setup
+    (const MunitPlusParameter params[], void* user_data);
 static void test_fixlist_teardown(void* fixture);
+
+
+static MunitPlusParameterEnum test_fixlist_gen_params[] = {
+  { (char*)"prefixes", nullptr },
+  { nullptr, nullptr },
+};
+
 
 
 static MunitPlusTest tests_fixlist[] = {
@@ -25,6 +37,9 @@ static MunitPlusTest tests_fixlist[] = {
   {(char*)"item", test_fixlist_item,
       test_fixlist_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
+  {(char*)"gen_codes", test_fixlist_gen_codes,
+      test_fixlist_gen_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      test_fixlist_gen_params},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
 
@@ -62,6 +77,27 @@ void* test_fixlist_setup(const MunitPlusParameter params[], void* user_data) {
       );
 }
 
+
+void* test_fixlist_gen_setup
+    (const MunitPlusParameter params[], void* user_data)
+{
+  tcmplxAtest_fixlist_lex lex;
+  text_complex::access::prefix_list* out;
+  if (lex.start(munit_plus_parameters_get(params, "prefixes"))) {
+    lex.start("3*5,2,4*2");
+  }
+  out = text_complex::access::fixlist_new(lex.size());
+  if (out) {
+    size_t i;
+    for (i = 0; i < lex.size(); ++i) {
+      (*out)[i].len = lex.next();
+      (*out)[i].value = i;
+    }
+  }
+  return out;
+}
+
+
 void test_fixlist_teardown(void* fixture) {
   text_complex::access::fixlist_destroy(
       static_cast<struct text_complex::access::prefix_list*>(fixture)
@@ -93,6 +129,38 @@ MunitPlusResult test_fixlist_item
   munit_plus_assert_ptr(dsp[0],==,dsp[1]);
   munit_plus_assert_ptr(dsp[0],==,dsp[2]);
   munit_plus_assert_ptr(dsp[0],==,dsp[3]);
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_fixlist_gen_codes
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::prefix_list* const p =
+    static_cast<text_complex::access::prefix_list*>(data);
+  text_complex::access::prefix_list const* const p_c = p;
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+  text_complex::access::fixlist_gen_codes(*p);
+#else
+  text_complex::access::api_error ae;
+  text_complex::access::fixlist_gen_codes(*p, ae);
+  munit_assert_int(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+  /* inspect the new codes */{
+    size_t i;
+    size_t const len = p->size();
+    munit_plus_logf(MUNIT_PLUS_LOG_DEBUG,
+      "total %" MUNIT_PLUS_SIZE_MODIFIER "u", len);
+    for (i = 0; i < len; ++i) {
+      struct text_complex::access::prefix_line const& line = (*p)[i];
+      munit_plus_logf(MUNIT_PLUS_LOG_DEBUG,
+        "  [%" MUNIT_PLUS_SIZE_MODIFIER "u] = {%#x, l %u, v %lu}",
+        i, line.code, line.len, line.value);
+      munit_plus_assert_uint((line.code>>(line.len)), ==, 0u);
+    }
+  }
   return MUNIT_PLUS_OK;
 }
 

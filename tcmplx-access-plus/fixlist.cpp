@@ -188,5 +188,49 @@ namespace text_complex {
       return this->p[i];
     }
     //END   prefix_list / array-compat
+
+    //BEGIN prefix_list / namespace local
+    void fixlist_gen_codes(prefix_list& dst, api_error& ae) noexcept {
+      size_t counts[16] = {0u};
+      unsigned int code_mins[16] = {0u};
+      /* step 1. compute histogram */{
+        size_t i;
+        size_t const sz = dst.size();
+        for (i = 0u; i < sz; ++i) {
+          unsigned short const len = dst[i].len;
+          if (len >= 16u) {
+            ae = api_error::ErrFixLenRange; return;
+          } else counts[len] += 1u;
+        }
+      }
+      /* step 2. find the minimum code for each length */{
+        unsigned int next_code = 0u;
+        unsigned int cap_tracker = 1u;
+        int j;
+        /* ignore length zero */
+        for (j = 1; j < 16; ++j) {
+          next_code <<= 1;
+          cap_tracker <<= 1;
+          code_mins[j] = next_code;
+          if (counts[j] > cap_tracker-next_code) {
+            ae = api_error::ErrFixCodeAlloc; return;
+          } else next_code += counts[j];
+        }
+      }
+      /* step 3. "allocate" codes in order */{
+        size_t i;
+        size_t const sz = dst.size();
+        for (i = 0u; i < sz; ++i) {
+          struct prefix_line& line = dst[i];
+          unsigned short const len = line.len;
+          if (len > 0) {
+            line.code = code_mins[len];
+            code_mins[len] += 1u;
+          } else line.code = 0u;
+        }
+      }
+      return;
+    }
+    //END   prefix_list / namespace local
   };
 };

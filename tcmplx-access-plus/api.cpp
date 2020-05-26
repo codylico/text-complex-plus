@@ -17,6 +17,10 @@ namespace text_complex {
     //BEGIN error codes
     char const* api_error_toa(api_error v) noexcept {
       switch (v) {
+      case api_error::ErrFixCodeAlloc:
+        return "Prefix code lengths of same bit count were too numerous";
+      case api_error::ErrFixLenRange:
+        return "Prefix code lengths were too large";
       case api_error::ErrParam:
         return "Invalid parameter given";
       case api_error::ErrSanitize:

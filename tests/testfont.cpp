@@ -202,3 +202,81 @@ void tcmplxAtest_arg_fp_help
     "           Path of font file against which to test.\n");
   return;
 }
+
+
+tcmplxAtest_fixlist_lex::tcmplxAtest_fixlist_lex(void) noexcept
+  : p(nullptr), total(0u), left(0u), prefix_len(0)
+{
+  return;
+}
+
+int tcmplxAtest_fixlist_lex::start(char const* s) noexcept {
+  this->p = nullptr;
+  this->total = 0u;
+  this->left = 0u;
+  this->prefix_len = -2;
+  if (s == nullptr) return -1;
+  else {
+    char const* q;
+    for (q = s; *q != '\0'; ++q) {
+      char* ep;
+      size_t r_count = 1u;
+      unsigned long int n = std::strtoul(q, &ep, 0);
+      if ((*ep) != '\0' && (*ep) != ',' && (*ep) != '*') {
+        return -1;
+      } else if (n >
+          static_cast<unsigned long>(std::numeric_limits<int>::max()))
+      {
+        /* overflow, so */return -2;
+      } else {
+        /* this is the prefix_len */
+      }
+      q = ep;
+      if ((*q) == '*') {
+        ++q;
+        unsigned long int new_r = std::strtoul(q, &ep, 0);
+        if (((*ep) != '\0' && (*ep) != ',')) {
+          return -1;
+        } else if (new_r >
+            (std::numeric_limits<size_t>::max() - this->total))
+        {
+          /* overflow, so */return -2;
+        } else if (new_r > 0u) {
+          /* this is the repeat_count */
+          r_count = (size_t)new_r;
+        }
+        q = ep;
+      }
+      this->total += r_count;
+      if (*q == '\0') break;
+    }
+  }
+  this->p = s;
+  return 0;
+}
+
+int tcmplxAtest_fixlist_lex::next(void) noexcept {
+  if (this->prefix_len == -2 || this->left == 0u) {
+    /* start */
+    char const* q = this->p;
+    char* ep;
+    size_t r_count = 1u;
+    if ((*q) == '\0')
+      return -1;
+    this->prefix_len = (int)std::strtoul(q, &ep, 0);
+    q = ep;
+    if ((*q) == '*') {
+      ++q;
+      unsigned long int new_r = std::strtoul(q, &ep, 0);
+      if (new_r > 0u) {
+        r_count = (size_t)new_r;
+      }
+      q = ep;
+    }
+    this->left = r_count;
+    if (*q == ',') ++q;
+    this->p = q;
+  }
+  this->left -= 1u;
+  return this->prefix_len;
+}

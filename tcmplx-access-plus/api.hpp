@@ -39,6 +39,10 @@ namespace text_complex {
      * @brief Library error codes.
      */
     enum struct api_error : int {
+      /** Prefix code lengths of same bit count were too numerous */
+      ErrFixCodeAlloc = -7,
+      /** Prefix code lengths were too large */
+      ErrFixLenRange = -6,
       /** Error occured, not sure how to describe it */
       ErrUnknown = -5,
       /** Invalid parameter given */

@@ -38,6 +38,34 @@ struct tcmplxAtest_arg {
   std::string font_path;
 };
 
+class tcmplxAtest_fixlist_lex {
+private:
+  char const* p;
+  std::size_t total;
+  std::size_t left;
+  int prefix_len;
+public:
+  tcmplxAtest_fixlist_lex(void) noexcept;
+  /**
+   * @brief Start a code string parsing.
+   * @param s the string to parse
+   * @return zero on success, other nonzero on parse error
+   */
+  int start(char const* s) noexcept;
+  /**
+   * @brief Acquire the next code length from a string.
+   * @return a length, or -1 at end of parser
+   */
+  int next(void) noexcept;
+  std::size_t size(void) const noexcept;
+};
+
+inline
+std::size_t tcmplxAtest_fixlist_lex::size(void) const noexcept {
+  return total;
+}
+
+
 /**
  * @brief Generate some data.
  * @param n @link tcmplxAtest_testfont @endlink
