@@ -100,7 +100,7 @@ void* test_fixlist_gen_setup
 
 void test_fixlist_teardown(void* fixture) {
   text_complex::access::fixlist_destroy(
-      static_cast<struct text_complex::access::prefix_list*>(fixture)
+      static_cast<text_complex::access::prefix_list*>(fixture)
     );
   return;
 }
