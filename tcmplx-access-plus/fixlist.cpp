@@ -163,7 +163,7 @@ namespace text_complex {
     }
     //END   prefix_list / range-based
 
-    //BEGIN prefix_list / public
+    //BEGIN prefix_list / array-compat
     size_t prefix_list::size(void) const noexcept {
       return this->n;
     }
@@ -187,6 +187,6 @@ namespace text_complex {
         throw std::out_of_range("text_complex::access::prefix_list::at");
       return this->p[i];
     }
-    //END   prefix_list / public
+    //END   prefix_list / array-compat
   };
 };

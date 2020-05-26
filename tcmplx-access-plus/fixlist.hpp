@@ -119,7 +119,7 @@ namespace text_complex {
        */
       prefix_line const* end(void) const noexcept;
 
-    public:
+    public /* array-compat */:
       /**
        * @brief Query the size of the list.
        * @return the number of lines in this list
@@ -167,7 +167,7 @@ namespace text_complex {
     class TCMPLX_AP_API util_unique_ptr<prefix_list>;
     //END   prefix list / exports
 
-    //BEGIN prefix list / namespace local
+    //BEGIN prefix list / allocation (namespace local)
     /**
      * @brief Non-throwing prefix list allocator.
      * @param n number of prefix code lines
@@ -190,7 +190,7 @@ namespace text_complex {
      */
     TCMPLX_AP_API
     void fixlist_destroy(prefix_list* x) noexcept;
-    //END   prefix list / namespace local
+    //END   prefix list / allocation (namespace local)
   };
 };
 
