@@ -28,8 +28,7 @@ namespace text_complex {
       size_t n;
       struct prefix_line const* v;
     } const fixlist_ps[] = {
-      { sizeof(fixlist_ps_BrotliComplex)/sizeof(struct prefix_line),
-        fixlist_ps_BrotliComplex }
+      { 6u, fixlist_ps_BrotliComplex },
     };
 
     //BEGIN prefix_list / rule-of-six
