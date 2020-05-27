@@ -22,6 +22,35 @@ namespace text_complex {
       {0x2   /*10*/, 2u, 0 },
       {0xf /*1111*/, 4u, 0 }
     };
+    static
+    struct prefix_line const fixlist_ps_BrotliS1[] = {
+      {  0    /*-*/, 0u, 0 },
+    };
+    static
+    struct prefix_line const fixlist_ps_BrotliS2[] = {
+      {  0    /*0*/, 1u, 0 },
+      {0x1    /*1*/, 1u, 0 }
+    };
+    static
+    struct prefix_line const fixlist_ps_BrotliS3[] = {
+      {  0    /*0*/, 1u, 0 },
+      {0x2   /*10*/, 2u, 0 },
+      {0x3   /*11*/, 2u, 0 }
+    };
+    static
+    struct prefix_line const fixlist_ps_BrotliS4A[] = {
+      {  0   /*00*/, 2u, 0 },
+      {0x1   /*01*/, 2u, 0 },
+      {0x2   /*10*/, 2u, 0 },
+      {0x3   /*11*/, 2u, 0 }
+    };
+    static
+    struct prefix_line const fixlist_ps_BrotliS4B[] = {
+      {  0    /*0*/, 1u, 0 },
+      {0x2   /*10*/, 2u, 0 },
+      {0x6  /*110*/, 3u, 0 },
+      {0x7  /*111*/, 3u, 0 }
+    };
 
     static
     struct {
@@ -29,6 +58,11 @@ namespace text_complex {
       struct prefix_line const* v;
     } const fixlist_ps[] = {
       { 6u, fixlist_ps_BrotliComplex },
+      { 1u, fixlist_ps_BrotliS1 },
+      { 2u, fixlist_ps_BrotliS2 },
+      { 3u, fixlist_ps_BrotliS3 },
+      { 4u, fixlist_ps_BrotliS4A },
+      { 4u, fixlist_ps_BrotliS4B }
     };
 
     //BEGIN prefix_list / rule-of-six
