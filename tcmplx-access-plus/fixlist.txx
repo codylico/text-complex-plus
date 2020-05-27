@@ -20,6 +20,15 @@ namespace text_complex {
         throw api_exception(ae);
       } else return;
     }
+
+    inline
+    void fixlist_preset(prefix_list& dst, prefix_preset i) {
+      api_error ae;
+      fixlist_preset(dst, i, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT    
   };
 };

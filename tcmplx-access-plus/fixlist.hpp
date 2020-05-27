@@ -11,6 +11,18 @@
 
 namespace text_complex {
   namespace access {
+    //BEGIN prefix preset identifiers
+    /**
+     * @brief Identifiers for prefix code list presets.
+     */
+    enum struct prefix_preset : unsigned int {
+      /**
+       * @brief Alphabet for Brotli complex prefix codes.
+       */
+      BrotliComplex = 0
+    };
+    //END   prefix preset identifiers
+
     //BEGIN prefix code line
     /**
      * @brief A single line from a prefix code list.
@@ -210,6 +222,28 @@ namespace text_complex {
      */
     TCMPLX_AP_API
     void fixlist_gen_codes(prefix_list& dst);
+#endif //TextComplexAccessP_NO_EXCEPT
+
+    /**
+     * @brief Assign a prefix list with a preset code-value list.
+     * @param dst list to populate with lengths
+     * @param i preset identifier
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
+     */
+    TCMPLX_AP_API
+    void fixlist_preset
+      (prefix_list& dst, prefix_preset i, api_error& ae) noexcept;
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Assign a prefix list with a preset code-value list.
+     * @param dst list to populate with lengths
+     * @param i preset identifier
+     * @throw api_exception on storage or code length error
+     */
+    TCMPLX_AP_API
+    void fixlist_preset(prefix_list& dst, prefix_preset i);
 #endif //TextComplexAccessP_NO_EXCEPT
     //END   prefix list / namespace local
   };

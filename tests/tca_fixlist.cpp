@@ -16,6 +16,8 @@ static MunitPlusResult test_fixlist_item
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_fixlist_gen_codes
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_fixlist_preset
+    (const MunitPlusParameter params[], void* data);
 static void* test_fixlist_setup
     (const MunitPlusParameter params[], void* user_data);
 static void* test_fixlist_gen_setup
@@ -40,6 +42,9 @@ static MunitPlusTest tests_fixlist[] = {
   {(char*)"gen_codes", test_fixlist_gen_codes,
       test_fixlist_gen_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       test_fixlist_gen_params},
+  {(char*)"preset", test_fixlist_preset,
+      test_fixlist_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
 
@@ -161,6 +166,47 @@ MunitPlusResult test_fixlist_gen_codes
       munit_plus_assert_uint((line.code>>(line.len)), ==, 0u);
     }
   }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_fixlist_preset
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::prefix_list* const p =
+    static_cast<text_complex::access::prefix_list*>(data);
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  text_complex::access::prefix_preset x =
+    static_cast<text_complex::access::prefix_preset>(
+          testfont_rand_int_range(0,0)
+        );
+  struct text_complex::access::prefix_line dsp[2];
+  /* generate once */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    text_complex::access::fixlist_preset(*p, x);
+#else
+    text_complex::access::api_error ae;
+    text_complex::access::fixlist_preset(*p, x, ae);
+    munit_assert_int(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+  }
+  std::size_t sz = p->size();
+  munit_plus_assert_size(sz,>,0);
+  std::size_t i = testfont_rand_size_range(0,sz-1);
+  dsp[0] = (*p)[i];
+  /* generate again */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    text_complex::access::fixlist_preset(*p, x);
+#else
+    text_complex::access::api_error ae;
+    text_complex::access::fixlist_preset(*p, x, ae);
+    munit_plus_assert_int(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    munit_plus_assert_size(p->size(),==,sz);
+  }
+  dsp[1] = (*p)[i];
+  munit_plus_assert_memory_equal(sizeof(dsp[0]), &dsp[0],&dsp[1]);
   return MUNIT_PLUS_OK;
 }
 

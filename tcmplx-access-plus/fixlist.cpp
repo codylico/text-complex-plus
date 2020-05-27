@@ -8,9 +8,30 @@
 #include <new>
 #include <stdexcept>
 #include <limits>
+#include <cstring>
+#include <utility>
 
 namespace text_complex {
   namespace access {
+    static
+    struct prefix_line const fixlist_ps_BrotliComplex[] = {
+      {  0    /*0*/, 2u, 0 },
+      {0xe /*1110*/, 4u, 0 },
+      {0x6  /*110*/, 3u, 0 },
+      {0x1   /*01*/, 2u, 0 },
+      {0x2   /*10*/, 2u, 0 },
+      {0xf /*1111*/, 4u, 0 }
+    };
+
+    static
+    struct {
+      size_t n;
+      struct prefix_line const* v;
+    } const fixlist_ps[] = {
+      { sizeof(fixlist_ps_BrotliComplex)/sizeof(struct prefix_line),
+        fixlist_ps_BrotliComplex }
+    };
+
     //BEGIN prefix_list / rule-of-six
     prefix_list::prefix_list(size_t n)
       : p(nullptr), n(0u)
@@ -227,6 +248,29 @@ namespace text_complex {
             line.code = code_mins[len];
             code_mins[len] += 1u;
           } else line.code = 0u;
+        }
+      }
+      ae = api_error::Success;
+      return;
+    }
+
+    void fixlist_preset
+      (prefix_list& dst, prefix_preset i, api_error& ae) noexcept
+    {
+      size_t const n = sizeof(fixlist_ps)/sizeof(fixlist_ps[0]);
+      if (static_cast<unsigned int>(i) >= n) {
+        ae = api_error::ErrParam; return;
+      }
+      /* allocate */{
+        unsigned int const i_u = static_cast<unsigned int>(i);
+        size_t const sz = fixlist_ps[i_u].n;
+        try {
+          prefix_list n_list(sz);
+          std::memcpy(&n_list[0], fixlist_ps[i_u].v,
+            sizeof(struct prefix_line)*sz);
+          dst = std::move(n_list);
+        } catch (std::bad_alloc const& ) {
+          ae = api_error::ErrMemory; return;
         }
       }
       ae = api_error::Success;
