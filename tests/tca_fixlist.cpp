@@ -151,7 +151,7 @@ MunitPlusResult test_fixlist_gen_codes
 #else
   text_complex::access::api_error ae;
   text_complex::access::fixlist_gen_codes(*p, ae);
-  munit_assert_int(ae,==,text_complex::access::api_error::Success);
+  munit_plus_assert_int(ae,==,text_complex::access::api_error::Success);
 #endif /*TextComplexAccessP_NO_EXCEPT*/
   /* inspect the new codes */{
     size_t i;
