@@ -229,6 +229,7 @@ namespace text_complex {
           } else line.code = 0u;
         }
       }
+      ae = api_error::Success;
       return;
     }
     //END   prefix_list / namespace local
