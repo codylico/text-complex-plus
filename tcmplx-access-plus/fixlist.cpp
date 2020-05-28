@@ -253,7 +253,7 @@ namespace text_complex {
         for (i = 0u; i < sz; ++i) {
           unsigned short const len = dst[i].len;
           if (len >= 16u) {
-            ae = api_error::ErrFixLenRange; return;
+            ae = api_error::FixLenRange; return;
           } else counts[len] += 1u;
         }
       }
@@ -267,7 +267,7 @@ namespace text_complex {
           cap_tracker <<= 1;
           code_mins[j] = next_code;
           if (counts[j] > cap_tracker-next_code) {
-            ae = api_error::ErrFixCodeAlloc; return;
+            ae = api_error::FixCodeAlloc; return;
           } else next_code += counts[j];
         }
       }
@@ -292,7 +292,7 @@ namespace text_complex {
     {
       size_t const n = sizeof(fixlist_ps)/sizeof(fixlist_ps[0]);
       if (static_cast<unsigned int>(i) >= n) {
-        ae = api_error::ErrParam; return;
+        ae = api_error::Param; return;
       }
       /* allocate */{
         unsigned int const i_u = static_cast<unsigned int>(i);
@@ -303,7 +303,7 @@ namespace text_complex {
             sizeof(struct prefix_line)*sz);
           dst = std::move(n_list);
         } catch (std::bad_alloc const& ) {
-          ae = api_error::ErrMemory; return;
+          ae = api_error::Memory; return;
         }
       }
       ae = api_error::Success;

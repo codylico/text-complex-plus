@@ -40,19 +40,19 @@ namespace text_complex {
      */
     enum struct api_error : int {
       /** Prefix code lengths of same bit count were too numerous */
-      ErrFixCodeAlloc = -7,
+      FixCodeAlloc = -7,
       /** Prefix code lengths were too large */
-      ErrFixLenRange = -6,
+      FixLenRange = -6,
       /** Error occured, not sure how to describe it */
-      ErrUnknown = -5,
+      Unknown = -5,
       /** Invalid parameter given */
-      ErrParam = -4,
+      Param = -4,
       /** File sanity check failed */
-      ErrSanitize = -3,
+      Sanitize = -3,
       /** Memory acquisition error */
-      ErrMemory = -2,
+      Memory = -2,
       /** Initialization error */
-      ErrInit = -1,
+      Init = -1,
       /** Success code */
       Success = 0
     };
@@ -90,7 +90,7 @@ namespace text_complex {
       api_error v;
 
     public /* rule-of-three */:
-      api_exception(api_error value = api_error::ErrUnknown) noexcept;
+      api_exception(api_error value = api_error::Unknown) noexcept;
       api_exception(api_exception const& ) noexcept;
       api_exception& operator=(api_exception const&) noexcept;
       ~api_exception(void) noexcept override;

@@ -10,24 +10,24 @@ namespace text_complex {
   namespace access {
     //BEGIN configurations
     char const* api_version(void) noexcept {
-      return "0.1";
+      return "0.2";
     }
     //END   configurations
 
     //BEGIN error codes
     char const* api_error_toa(api_error v) noexcept {
       switch (v) {
-      case api_error::ErrFixCodeAlloc:
+      case api_error::FixCodeAlloc:
         return "Prefix code lengths of same bit count were too numerous";
-      case api_error::ErrFixLenRange:
+      case api_error::FixLenRange:
         return "Prefix code lengths were too large";
-      case api_error::ErrParam:
+      case api_error::Param:
         return "Invalid parameter given";
-      case api_error::ErrSanitize:
+      case api_error::Sanitize:
         return "File sanity check failed";
-      case api_error::ErrMemory:
+      case api_error::Memory:
         return "Memory acquisition error";
-      case api_error::ErrInit:
+      case api_error::Init:
         return "Initialization error";
       case api_error::Success:
         return "Success";

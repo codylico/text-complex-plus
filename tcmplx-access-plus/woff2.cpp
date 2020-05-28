@@ -153,13 +153,13 @@ namespace text_complex {
     {
       int const q_tag = seq->get_byte();
       if (q_tag < 0)
-        throw api_exception(api_error::ErrSanitize);
+        throw api_exception(api_error::Sanitize);
       if ((q_tag&63) == 63) {
         int i;
         for (i = 0; i < 4; ++i) {
           int const ch = seq->get_byte();
           if (ch < 0)
-            throw api_exception(api_error::ErrSanitize);
+            throw api_exception(api_error::Sanitize);
           else tag_text[i] = (unsigned char)(ch&255);
         }
       } else {
@@ -175,11 +175,11 @@ namespace text_complex {
       for (i = 0; i < 5; ++i) {
         int const ch = seq->get_byte();
         if (ch < 0)
-          throw api_exception(api_error::ErrSanitize);
+          throw api_exception(api_error::Sanitize);
         else if (out == 0u && ch == 0x80)
-          throw api_exception(api_error::ErrSanitize);
+          throw api_exception(api_error::Sanitize);
         else if (i == 4 && ((ch&0x80) || (out > 0x1ffFFff))) {
-          throw api_exception(api_error::ErrSanitize);
+          throw api_exception(api_error::Sanitize);
         } else {
           out = ((out<<7)|static_cast<uint32>(ch&0x7f));
           if (!(ch&0x80))
@@ -283,7 +283,7 @@ namespace text_complex {
       std::unique_ptr<sequential> seq = seq_unique(fh);
       std::unique_ptr<offset_table> offsets;
       if (!seq) {
-        throw api_exception(api_error::ErrInit);
+        throw api_exception(api_error::Init);
       }
       /* acquire the header */{
         unsigned char wheader[48];
@@ -295,23 +295,23 @@ namespace text_complex {
           else wheader[i] = static_cast<unsigned char>(ch&255);
         }
         if (i < 48) {
-          throw api_exception(api_error::ErrSanitize);
+          throw api_exception(api_error::Sanitize);
         }
         /* inspect the signature */{
           unsigned char sig[4] = {0x77, 0x4F, 0x46, 0x32};
           if (std::memcmp(sig, wheader, 4) != 0) {
-            throw api_exception(api_error::ErrSanitize);
+            throw api_exception(api_error::Sanitize);
           }
         }
         unsigned short table_count;
         /* parse out the table count */{
           table_count = woff2_read_u16be(wheader+12);
           if (table_count > std::numeric_limits<size_t>::max()) {
-            throw api_exception(api_error::ErrMemory);
+            throw api_exception(api_error::Memory);
           } else {
             offsets = offtable_unique(table_count);
             if (!offsets)
-              throw api_exception(api_error::ErrMemory);
+              throw api_exception(api_error::Memory);
           }
         }
         /* iterate through the table directory */{
@@ -336,7 +336,7 @@ namespace text_complex {
               line.offset = next_offset;
               line.length = use_len;
               if (use_len > 0xFFffFFff-next_offset) {
-                throw api_exception(api_error::ErrSanitize);
+                throw api_exception(api_error::Sanitize);
               }
               next_offset += use_len;
             }
@@ -346,7 +346,7 @@ namespace text_complex {
       if (sane_tf) {
         /* TODO sanitize the rest */
         if (false) {
-          throw api_exception(api_error::ErrSanitize);
+          throw api_exception(api_error::Sanitize);
         }
       }
       this->offsets = offsets.release();
