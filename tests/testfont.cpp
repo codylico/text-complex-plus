@@ -100,6 +100,8 @@ public:
 
 static
 int testfont_clamp_size(std::size_t z);
+static
+int testfont_clamp_uint(unsigned int z);
 
 
 int tcmplxAtest_gen_datum(int n, size_t i, unsigned int seed) {
@@ -166,6 +168,20 @@ std::size_t testfont_rand_size_range(std::size_t a, std::size_t b) {
     return a;
   else return munit_plus_rand_int_range(
       testfont_clamp_size(a), testfont_clamp_size(b)
+    );
+}
+
+int testfont_clamp_uint(unsigned int z) {
+  if (z > static_cast<unsigned int>(std::numeric_limits<int>::max())) {
+    return std::numeric_limits<int>::max();
+  } else return static_cast<int>(z);
+}
+
+unsigned int testfont_rand_uint_range(unsigned int a, unsigned int b) {
+  if (a == b)
+    return a;
+  else return munit_plus_rand_int_range(
+      testfont_clamp_uint(a), testfont_clamp_uint(b)
     );
 }
 

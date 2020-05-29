@@ -42,4 +42,10 @@ target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus munit_plus)
   target_link_libraries(tcmplx_accessP_test_fixlist
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus mmaptwo_plus)
 #END   FixList test
+
+#BEGIN RingDist test
+  add_executable(tcmplx_accessP_test_ringdist tca_ringdist.cpp)
+  target_link_libraries(tcmplx_accessP_test_ringdist
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
+#END   RingDist test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)

@@ -17,6 +17,10 @@ namespace text_complex {
     //BEGIN error codes
     char const* api_error_toa(api_error v) noexcept {
       switch (v) {
+      case api_error::RingDistOverflow:
+        return "Numeric overflow produced by a distance code conversion";
+      case api_error::RingDistUnderflow:
+        return  "Numeric underflow produced by a distance code conversion";
       case api_error::FixCodeAlloc:
         return "Prefix code lengths of same bit count were too numerous";
       case api_error::FixLenRange:

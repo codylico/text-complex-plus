@@ -39,6 +39,10 @@ namespace text_complex {
      * @brief Library error codes.
      */
     enum struct api_error : int {
+      /** Numeric overflow produced by a distance code conversion */
+      RingDistOverflow = -9,
+      /** Negative or zero distance produced by a distance code conversion */
+      RingDistUnderflow = -8,
       /** Prefix code lengths of same bit count were too numerous */
       FixCodeAlloc = -7,
       /** Prefix code lengths were too large */
