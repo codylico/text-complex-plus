@@ -23,6 +23,13 @@ namespace text_complex {
     void ringdist_record
       (uint32* ring, unsigned short& i, uint32 v);
     /**
+     * @brief Compute the number of bits in a number.
+     * @param n this number
+     * @return a bit count
+     */
+    static
+    unsigned int ringdist_bitlen(uint32 n);
+    /**
      * @brief Retrieve a back distance from a ring buffer.
      * @param ring the buffer
      * @param i current buffer index
@@ -38,6 +45,15 @@ namespace text_complex {
       ring[i] = v;
       i = (i+1u)%4u;
       return;
+    }
+
+    unsigned int ringdist_bitlen(uint32 n) {
+      unsigned int out = 0u;
+      while (n > 0) {
+        n >>= 1;
+        out += 1u;
+      }
+      return out;
     }
 
     uint32 ringdist_retrieve
@@ -278,6 +294,103 @@ namespace text_complex {
         }
         ae = api_error::Success;
         return out;
+      }
+    }
+
+    unsigned int distance_ring::encode
+      (uint32 back_dist, uint32& extra, api_error& ae) noexcept
+    {
+      if (back_dist == 0u) {
+        /* zero not allowed */
+        ae = api_error::RingDistUnderflow;
+        return ~0u;
+      } else if (back_dist >= 0xFFffFFfc) {
+        /* overflow will result in calculation */
+        ae = api_error::RingDistOverflow;
+        return ~0u;
+      }
+      ae = api_error::Success;
+      /* check special cache */if (this->special_size) {
+        unsigned int j;
+        for (j = 0u; j < 4u; ++j) {
+          if (back_dist == this->ring[j]) {
+            unsigned int const last =
+              (this->i+3u)%4u/* == (i minus 1) mod 4 */;
+            extra = 0u;
+            if (last != j) {
+              ringdist_record(this->ring, this->i, back_dist);
+            }
+            return (last+4u-j)%4u/* == (last minus j) mod 4 */;
+          }
+        }
+        /* check proximity to last cache item */{
+          uint32 const last = ringdist_retrieve(this->ring, this->i, 1u);
+          uint32 const last_min = ((last > 3u) ? last-3u : 1u);
+          uint32 const last_max =
+            ((last < 0xFFffFFfd) ? last+3u : 0xFFffFFff);
+          if (back_dist >= last_min && back_dist < last) {
+            extra = 0u;
+            ringdist_record(this->ring, this->i, back_dist);
+            switch (last-back_dist) {
+            case 1u: return 4u;
+            case 2u: return 6u;
+            case 3u: return 8u;
+            }
+          } else if (back_dist > last && back_dist <= last_max) {
+            extra = 0u;
+            ringdist_record(this->ring, this->i, back_dist);
+            switch (back_dist-last) {
+            case 1u: return 5u;
+            case 2u: return 7u;
+            case 3u: return 9u;
+            }
+          }
+        }
+        /* check proximity to second cache item */{
+          uint32 const second = ringdist_retrieve(this->ring, this->i, 2u);
+          uint32 const second_min = ((second > 3u) ? second-3u : 1u);
+          uint32 const second_max =
+            ((second < 0xFFffFFfd) ? second+3u : 0xFFffFFff);
+          if (back_dist >= second_min && back_dist < second) {
+            extra = 0u;
+            ringdist_record(this->ring, this->i, back_dist);
+            switch (second-back_dist) {
+            case 1u: return 10u;
+            case 2u: return 12u;
+            case 3u: return 14u;
+            }
+          } else if (back_dist > second && back_dist <= second_max) {
+            extra = 0u;
+            ringdist_record(this->ring, this->i, back_dist);
+            switch (back_dist-second) {
+            case 1u: return 11u;
+            case 2u: return 13u;
+            case 3u: return 15u;
+            }
+          }
+        }
+      }
+      /* check direct distances */
+      if (back_dist < this->direct_one) {
+        extra = 0u;
+        ringdist_record(this->ring, this->i, back_dist);
+        return (back_dist-1u)+(this->special_size);
+      } else {
+        constexpr uint32 One32 = 1u;
+        uint32 const sd = back_dist - this->direct_one;
+        unsigned int const lowcode = (sd & this->postmask);
+        uint32 const ox = ((sd-lowcode)>>this->postfix)+4u;
+        unsigned int const ndistbits = ringdist_bitlen(ox)-2u;
+        uint32 const out_extra = (ox&((One32<<ndistbits)-1u));
+        unsigned int const midcode_x = ((ox>>ndistbits)&1u)<<this->postfix;
+        unsigned int const dcode =
+            (((ndistbits-1u)<<(this->bit_adjust)) | midcode_x | lowcode)
+          + this->sum_direct;
+        /* record the new flat distance */{
+          ringdist_record(this->ring, this->i, back_dist);
+        }
+        extra = out_extra;
+        return dcode;
       }
     }
     //END   distance_ring / public

@@ -123,6 +123,31 @@ namespace text_complex {
        */
       uint32 decode(unsigned int dcode, uint32 extra);
 
+      /**
+       * @brief Convert a flat backward distance to a distance code.
+       * @param back_dist backward distance to convert
+       * @param[out] extra any extra bits required by the code
+       * @param[out] ae @em error-code api_error::Success on success,
+       *   nonzero otherwise
+       * @return a distance code, or
+       *   `std::numeric_limits<unsigned int>::max()` on error
+       * @note On successful conversion, the distance ring buffer is advanced
+       *   as necessary.
+       */
+      unsigned int encode
+        (uint32 back_dist, uint32& extra, api_error& ae) noexcept;
+
+      /**
+       * @brief Convert a flat backward distance to a distance code.
+       * @param back_dist backward distance to convert
+       * @param[out] extra any extra bits required by the code
+       * @return a distance code
+       * @throw api_exception on code length error
+       * @note On successful conversion, the distance ring buffer is advanced
+       *   as necessary.
+       */
+      unsigned int encode(uint32 back_dist, uint32& extra);
+
     private /* rule-of-six */:
       void duplicate(distance_ring const& ) noexcept;
       void transfer(distance_ring&& ) noexcept;

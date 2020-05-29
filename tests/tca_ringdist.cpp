@@ -42,6 +42,8 @@ static MunitPlusResult test_ringdist_1951_decode
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_ringdist_7932_decode
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ringdist_encode
+    (const MunitPlusParameter params[], void* data);
 static void* test_ringdist_1951_setup
     (const MunitPlusParameter params[], void* user_data);
 static void* test_ringdist_7932_setup
@@ -73,6 +75,12 @@ static MunitPlusTest tests_ringdist[] = {
   {(char*)"7932/decode", test_ringdist_7932_decode,
       test_ringdist_7932_setup,test_ringdist_teardown,
       MUNIT_PLUS_TEST_OPTION_TODO,test_ringdist_params},
+  {(char*)"1951/encode", test_ringdist_encode,
+      test_ringdist_1951_setup,test_ringdist_teardown,
+      MUNIT_PLUS_TEST_OPTION_SINGLE_ITERATION,nullptr},
+  {(char*)"7932/encode", test_ringdist_encode,
+      test_ringdist_7932_setup,test_ringdist_teardown,
+      MUNIT_PLUS_TEST_OPTION_NONE,test_ringdist_params},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
 
@@ -298,6 +306,50 @@ MunitPlusResult test_ringdist_7932_decode
     return MUNIT_PLUS_SKIP;
   (void)params;
   return MUNIT_PLUS_SKIP;
+}
+
+MunitPlusResult test_ringdist_encode
+  (const MunitPlusParameter params[], void* data)
+{
+  struct test_ringdist_params *const fixt =
+    static_cast<struct test_ringdist_params*>(data);
+  text_complex::access::distance_ring* const p =
+    (fixt) ? fixt->rd.get() : nullptr;
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* round-trip test */{
+    int j;
+    text_complex::access::distance_ring q
+      (fixt->special_tf, fixt->direct_count, fixt->postfix_size);
+    q = *p;
+    for (j = 0; j < 100; ++j) {
+      unsigned int back_dist = testfont_rand_uint_range(1u,32768u);
+      text_complex::access::uint32 decomposed_extra;
+      unsigned int decomposed_code;
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+      decomposed_code = p->encode(back_dist, decomposed_extra);
+      munit_plus_assert_uint(decomposed_code,!=,
+        std::numeric_limits<unsigned int>::max());
+      munit_plus_assert_uint32(
+          q.decode(decomposed_code,decomposed_extra),
+            ==,back_dist
+        );
+#else
+      text_complex::access::api_error ae;
+      decomposed_code = p->encode(back_dist, decomposed_extra, ae);
+      munit_plus_assert_int(ae,==,text_complex::access::api_error::Success);
+      munit_plus_assert_uint(decomposed_code,!=,
+        std::numeric_limits<unsigned int>::max());
+      munit_plus_assert_uint32(
+          q.decode(decomposed_code,decomposed_extra,ae),
+            ==,back_dist
+        );
+      munit_plus_assert_int(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    }
+  }
+  return MUNIT_PLUS_OK;
 }
 
 

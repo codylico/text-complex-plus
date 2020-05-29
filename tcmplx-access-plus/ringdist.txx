@@ -20,6 +20,19 @@ namespace text_complex {
         throw api_exception(ae);
       } else return out;
     }
+
+    inline
+    unsigned int distance_ring::encode(uint32 back_dist, uint32& extra) {
+      api_error ae;
+      unsigned int a_extra;
+      unsigned int const out = encode(back_dist, a_extra, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else {
+        extra = a_extra;
+        return out;
+      }
+    }
 #endif //TextComplexAccessP_NO_EXCEPT
   };
 };
