@@ -224,8 +224,11 @@ namespace text_complex {
         ae = api_error::Success;
         return out;
       } else if (dcode < this->sum_direct) {
+        uint32 const out = (dcode - this->special_size) + 1u;
+        this->ring[this->i] = out;
+        this->i = (this->i+1u)%4u;
         ae = api_error::Success;
-        return (dcode - this->special_size) + 1u;
+        return out;
       } else {
         unsigned int const xcode = dcode - this->sum_direct;
         unsigned int const bit_size = bit_count(dcode);
