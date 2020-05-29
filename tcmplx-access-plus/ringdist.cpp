@@ -226,30 +226,18 @@ namespace text_complex {
       } else if (dcode < this->sum_direct) {
         ae = api_error::Success;
         return (dcode - this->special_size) + 1u;
-      } else if (this->special_size)/* RFC 7932 branch */{
+      } else {
         unsigned int const xcode = dcode - this->sum_direct;
         unsigned int const bit_size = bit_count(dcode);
         uint32 const high = (uint32)(xcode>>(this->postfix));
         uint32 const low = (uint32)(xcode&this->postmask);
         uint32 const offset = ((2u | (high&1)) << bit_size) - 4u;
-        /* possible mistake in rfc7932? */
-          uint32 const out =
-            ((offset + extra)<<this->postfix) + low + this->direct_one;
+        uint32 const out =
+          ((offset + extra)<<this->postfix) + low + this->direct_one;
         /* record the new flat distance */{
           this->ring[this->i] = out;
           this->i = (this->i+1u)%4u;
         }
-        ae = api_error::Success;
-        return out;
-      } else/* RFC 1951 branch */{
-        unsigned int const xcode = dcode - this->sum_direct;
-        unsigned int const bit_size = bit_count(dcode);
-        uint32 const high = (uint32)(xcode>>(this->postfix));
-        uint32 const low = (uint32)(xcode&this->postmask);
-        uint32 const offset = ((2u | (high&1)) << bit_size) - 4u;
-        /* to better match rfc1951 */
-          uint32 const out =
-            ((offset + low)<<this->postfix) + extra + this->direct_one;
         ae = api_error::Success;
         return out;
       }
