@@ -45,12 +45,12 @@ namespace text_complex {
       /**
        * @brief Copy constructor.
        */
-      distance_ring(distance_ring const& );
+      distance_ring(distance_ring const& ) noexcept;
       /**
        * @brief Copy assignment operator.
        * @return this distance ring
        */
-      distance_ring& operator=(distance_ring const& );
+      distance_ring& operator=(distance_ring const& ) noexcept;
       /**
        * @brief Move constructor.
        */
@@ -124,7 +124,7 @@ namespace text_complex {
       uint32 decode(unsigned int dcode, uint32 extra);
 
     private /* rule-of-six */:
-      void duplicate(distance_ring const& );
+      void duplicate(distance_ring const& ) noexcept;
       void transfer(distance_ring&& ) noexcept;
       void transfer(distance_ring const& ) = delete;
     };

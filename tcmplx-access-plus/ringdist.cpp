@@ -66,7 +66,7 @@ namespace text_complex {
       return;
     }
 
-    distance_ring::distance_ring(distance_ring const& other)
+    distance_ring::distance_ring(distance_ring const& other) noexcept
       : i(0),
         special_size(0u),
         sum_direct(0u), direct_one(1u),
@@ -77,7 +77,9 @@ namespace text_complex {
       return;
     }
 
-    distance_ring& distance_ring::operator=(distance_ring const& other) {
+    distance_ring& distance_ring::operator=
+        (distance_ring const& other) noexcept
+    {
       duplicate(other);
       return *this;
     }
@@ -98,7 +100,8 @@ namespace text_complex {
       return *this;
     }
 
-    void distance_ring::duplicate(distance_ring const& other) {
+    void distance_ring::duplicate(distance_ring const& other) noexcept{
+      std::memmove(ring, other.ring, sizeof(ring));
       i = other.i;
       special_size = other.special_size;
       sum_direct = other.sum_direct;
@@ -110,6 +113,7 @@ namespace text_complex {
     }
 
     void distance_ring::transfer(distance_ring&& other) noexcept {
+      std::memmove(ring, other.ring, sizeof(ring));
       i = other.i;
       special_size = other.special_size;
       sum_direct = other.sum_direct;
