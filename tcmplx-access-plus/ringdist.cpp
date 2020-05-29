@@ -13,6 +13,24 @@
 
 namespace text_complex {
   namespace access {
+    /**
+     * @brief Record a back distance in a ring buffer.
+     * @param ring the buffer
+     * @param i index
+     * @param v the value to record
+     */
+    static
+    void ringdist_record
+      (uint32* ring, unsigned short& i, uint32 v);
+
+    //BEGIN distance_ring / static
+    void ringdist_record(uint32* ring, unsigned short& i, uint32 v) {
+      ring[i] = v;
+      i = (i+1u)%4u;
+      return;
+    }
+    //END   distance_ring / static
+
     //BEGIN distance_ring / rule-of-six
     distance_ring::distance_ring(bool s_tf, unsigned int d, unsigned int p)
       : i(0),
@@ -218,15 +236,13 @@ namespace text_complex {
           } break;
         }
         if (dcode != 0u) {
-          this->ring[this->i] = out;
-          this->i = (this->i+1u)%4u;
+          ringdist_record(ring, i, out);
         }
         ae = api_error::Success;
         return out;
       } else if (dcode < this->sum_direct) {
         uint32 const out = (dcode - this->special_size) + 1u;
-        this->ring[this->i] = out;
-        this->i = (this->i+1u)%4u;
+        ringdist_record(ring, i, out);
         ae = api_error::Success;
         return out;
       } else {
@@ -238,8 +254,7 @@ namespace text_complex {
         uint32 const out =
           ((offset + extra)<<this->postfix) + low + this->direct_one;
         /* record the new flat distance */{
-          this->ring[this->i] = out;
-          this->i = (this->i+1u)%4u;
+          ringdist_record(ring, i, out);
         }
         ae = api_error::Success;
         return out;
