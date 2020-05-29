@@ -235,10 +235,19 @@ MunitPlusResult test_ringdist_1951_decode
     }
   }
   /* inspect */{
-    munit_plus_assert_uint(
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    munit_plus_assert_uint32(
         p->decode(decomposed_code,decomposed_extra),
           ==,back_dist
       );
+#else
+    text_complex::access::api_error ae;
+    munit_plus_assert_uint32(
+        p->decode(decomposed_code,decomposed_extra,ae),
+          ==,back_dist
+      );
+    munit_plus_assert_int(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
   }
   return MUNIT_PLUS_OK;
 }

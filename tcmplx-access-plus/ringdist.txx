@@ -13,7 +13,7 @@ namespace text_complex {
   namespace access {
 #if  (!(defined TextComplexAccessP_NO_EXCEPT))
     inline
-    uint32 distance_ring::decode(unsigned int dcode, unsigned int extra) {
+    uint32 distance_ring::decode(unsigned int dcode, uint32 extra) {
       api_error ae;
       uint32 const out = decode(dcode, extra, ae);
       if (ae < api_error::Success) {

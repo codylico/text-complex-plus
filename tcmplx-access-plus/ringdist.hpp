@@ -110,7 +110,7 @@ namespace text_complex {
        *   as necessary.
        */
       uint32 decode
-        (unsigned int dcode, unsigned int extra, api_error& ae) noexcept;
+        (unsigned int dcode, uint32 extra, api_error& ae) noexcept;
 
       /**
        * @brief Convert a distance code to a flat backward distance.
@@ -121,7 +121,7 @@ namespace text_complex {
        * @note On successful conversion, the distance ring buffer is advanced
        *   as necessary.
        */
-      uint32 decode(unsigned int dcode, unsigned int extra);
+      uint32 decode(unsigned int dcode, uint32 extra);
 
     private /* rule-of-six */:
       void duplicate(distance_ring const& );

@@ -22,12 +22,28 @@ namespace text_complex {
     static
     void ringdist_record
       (uint32* ring, unsigned short& i, uint32 v);
+    /**
+     * @brief Retrieve a back distance from a ring buffer.
+     * @param ring the buffer
+     * @param i current buffer index
+     * @param nlast position of value to retrieve (2 for second last, ...)
+     * @return the recorded value
+     */
+    static inline
+    uint32 ringdist_retrieve
+      (uint32* ring, unsigned int i, unsigned int nlast);
 
     //BEGIN distance_ring / static
     void ringdist_record(uint32* ring, unsigned short& i, uint32 v) {
       ring[i] = v;
       i = (i+1u)%4u;
       return;
+    }
+
+    uint32 ringdist_retrieve
+      (uint32* ring, unsigned int i, unsigned int nlast)
+    {
+      return ring[(i+4u-nlast)%4u];
     }
     //END   distance_ring / static
 
@@ -155,7 +171,7 @@ namespace text_complex {
     }
 
     uint32 distance_ring::decode
-      (unsigned int dcode, unsigned int extra, api_error& ae) noexcept
+      (unsigned int dcode, uint32 extra, api_error& ae) noexcept
     {
       if (dcode < this->special_size) {
         uint32 out;
@@ -167,7 +183,7 @@ namespace text_complex {
         case 7:
         case 8:
         case 9:
-          out = this->ring[this->i];
+          out = ringdist_retrieve(this->ring, this->i, 1u);
           break;
         case 1:
         case 10:
@@ -176,13 +192,13 @@ namespace text_complex {
         case 13:
         case 14:
         case 15:
-          out = this->ring[(this->i+1u)%4u];
+          out = ringdist_retrieve(this->ring, this->i, 2u);
           break;
         case 2:
-          out = this->ring[(this->i+2u)%4u];
+          out = ringdist_retrieve(this->ring, this->i, 3u);
           break;
         case 3:
-          out = this->ring[(this->i+3u)%4u];
+          out = ringdist_retrieve(this->ring, this->i, 4u);
           break;
         }
         /* adjust */switch (dcode) {
