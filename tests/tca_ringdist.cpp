@@ -9,6 +9,7 @@
 #include <memory>
 #include <new>
 #include "testfont.hpp"
+#include <limits>
 
 
 struct test_ringdist_params {
@@ -48,6 +49,14 @@ static void* test_ringdist_7932_setup
 static void test_ringdist_teardown(void* fixture);
 
 
+
+static MunitPlusParameterEnum test_ringdist_params[] = {
+  { (char*)"NDIRECT", nullptr },
+  { (char*)"NPOSTFIX", nullptr },
+  { nullptr, nullptr }
+};
+
+
 static MunitPlusTest tests_ringdist[] = {
   {(char*)"cycle", test_ringdist_cycle,
       nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_SINGLE_ITERATION,
@@ -57,13 +66,13 @@ static MunitPlusTest tests_ringdist[] = {
       MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
   {(char*)"7932/bit_count", test_ringdist_7932_bit_count,
       test_ringdist_7932_setup,test_ringdist_teardown,
-      MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
+      MUNIT_PLUS_TEST_OPTION_NONE,test_ringdist_params},
   {(char*)"1951/decode", test_ringdist_1951_decode,
       test_ringdist_1951_setup,test_ringdist_teardown,
       MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
   {(char*)"7932/decode", test_ringdist_7932_decode,
       test_ringdist_7932_setup,test_ringdist_teardown,
-      MUNIT_PLUS_TEST_OPTION_TODO,nullptr},
+      MUNIT_PLUS_TEST_OPTION_TODO,test_ringdist_params},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
 
@@ -119,8 +128,34 @@ void* test_ringdist_7932_setup
   out.reset(new (std::nothrow) struct test_ringdist_params);
   if (out) {
     out->special_tf = true;
-    out->direct_count = testfont_rand_uint_range(0u,120u);
-    out->postfix_size = testfont_rand_uint_range(0u,3u);
+    /* inspect params */{
+      /* NDIRECT */{
+        char const* p = munit_plus_parameters_get(params, "NDIRECT");
+        char* ep = nullptr;
+        unsigned long int n = ~0lu;
+        if (p != nullptr) {
+          n = std::strtoul(p,&ep,0);
+        }
+        if (ep != nullptr && *ep == '\0'
+        &&  n < std::numeric_limits<unsigned int>::max())
+        {
+          out->direct_count = (unsigned int)n;
+        } else out->direct_count = testfont_rand_uint_range(0u,120u);
+      }
+      /* NPOSTFIX */{
+        char const* p = munit_plus_parameters_get(params, "NPOSTFIX");
+        char* ep = nullptr;
+        unsigned long int n = ~0lu;
+        if (p != nullptr) {
+          n = std::strtoul(p,&ep,0);
+        }
+        if (ep != nullptr && *ep == '\0'
+        &&  n < std::numeric_limits<unsigned int>::max())
+        {
+          out->postfix_size = (unsigned int)n;
+        } else out->postfix_size = testfont_rand_uint_range(0u,3u);
+      }
+    }
     out->rd = text_complex::access::ringdist_unique
       (out->special_tf, out->direct_count, out->postfix_size);
     if (!out->rd)
