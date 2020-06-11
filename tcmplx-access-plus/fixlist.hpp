@@ -193,7 +193,7 @@ namespace text_complex {
        * @brief Read from a prefix list.
        * @param x the list to read
        * @param i an array index
-       * @return a pointer to an offset line on success, NULL otherwise
+       * @return a pointer to a prefix line on success, NULL otherwise
        * @throw std::out_of_range on bad index
        */
       prefix_line const& at(size_t i) const;
