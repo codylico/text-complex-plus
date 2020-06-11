@@ -10,6 +10,7 @@ set(text_complex_access_plus_FILES
   woff2.cpp        woff2.hpp
   fixlist.cpp      fixlist.hpp       fixlist.txx
   ringdist.cpp     ringdist.hpp      ringdist.txx
+  inscopy.cpp      inscopy.hpp
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES})

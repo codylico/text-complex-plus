@@ -48,4 +48,10 @@ target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus munit_plus)
   target_link_libraries(tcmplx_accessP_test_ringdist
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
 #END   RingDist test
+
+#BEGIN InsCopy test
+  add_executable(tcmplx_accessP_test_inscopy tca_inscopy.cpp)
+  target_link_libraries(tcmplx_accessP_test_inscopy
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
+#END   InsCopy test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)
