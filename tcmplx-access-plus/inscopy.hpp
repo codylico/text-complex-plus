@@ -78,6 +78,10 @@ namespace text_complex {
        * @brief First value for copy length.
        */
       unsigned short copy_first;
+      /**
+       * @brief Alphabet value.
+       */
+      unsigned short int code;
     };
 
     /**
