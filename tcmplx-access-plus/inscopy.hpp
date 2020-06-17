@@ -165,6 +165,17 @@ namespace text_complex {
        *   or `nullptr` for empty tables
        */
       inscopy_row const* end(void) const noexcept;
+      /**
+       * @brief `begin` method for range-based `for`.
+       * @return a pointer to the first row, or `nullptr` for empty tables
+       */
+      inscopy_row* begin(void) noexcept;
+      /**
+       * @brief `end` method for range-based `for`.
+       * @return a pointer to one-past the last row,
+       *   or `nullptr` for empty tables
+       */
+      inscopy_row* end(void) noexcept;
 
     public /* array-compat */:
       /**
@@ -186,6 +197,20 @@ namespace text_complex {
        * @throw std::out_of_range on bad index
        */
       inscopy_row const& at(size_t i) const;
+      /**
+       * @brief Array index operator.
+       * @param i array index
+       * @return a reference to the row at the given index
+       */
+      inscopy_row& operator[](size_t i) noexcept;
+      /**
+       * @brief Read from a insert copy table.
+       * @param x the list to read
+       * @param i an array index
+       * @return a pointer to an insert copy row on success, NULL otherwise
+       * @throw std::out_of_range on bad index
+       */
+      inscopy_row& at(size_t i);
 
     private /* rule-of-six */:
       void duplicate(insert_copy_table const& );

@@ -18,6 +18,8 @@ static MunitPlusResult test_inscopy_cycle
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_inscopy_item
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_inscopy_item_c
+    (const MunitPlusParameter params[], void* data);
 static void* test_inscopy_setup
     (const MunitPlusParameter params[], void* user_data);
 static void test_inscopy_teardown(void* fixture);
@@ -28,6 +30,9 @@ static MunitPlusTest tests_inscopy[] = {
       nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"item", test_inscopy_item,
+      test_inscopy_setup,test_inscopy_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"item_const", test_inscopy_item_c,
       test_inscopy_setup,test_inscopy_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
@@ -111,7 +116,61 @@ MunitPlusResult test_inscopy_item
 {
   text_complex::access::insert_copy_table* const p =
     static_cast<text_complex::access::insert_copy_table*>(data);
-  text_complex::access::insert_copy_table const* const p_c = p;
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  switch (p->size()) {
+  case 286: /* Deflate */
+    {
+      /* test literals */{
+        struct text_complex::access::inscopy_row& row =
+          (*p)[testfont_rand_size_range(0,255)];
+        munit_plus_assert_op
+          (row.type, ==, text_complex::access::inscopy_type::Literal);
+      }
+      /* test stop */{
+        struct text_complex::access::inscopy_row& row = (*p)[256];
+        munit_plus_assert_op
+          (row.type, ==, text_complex::access::inscopy_type::Stop);
+      }
+      /* test length */{
+        size_t i = testfont_rand_size_range(257,285);
+        struct text_complex::access::inscopy_row& row = (*p)[i];
+        munit_plus_assert_op
+          (row.type, ==, text_complex::access::inscopy_type::Insert);
+        munit_plus_assert_uint(row.insert_bits, <=, 5);
+        munit_plus_logf(MUNIT_PLUS_LOG_DEBUG, "[%u] = {bits: %u, first: %u}",
+          static_cast<unsigned int>(i),
+          row.insert_bits, row.insert_first);
+      }
+    }break;
+  case 704: /* Brotli */
+    {
+      size_t i = testfont_rand_size_range(0,703);
+      struct text_complex::access::inscopy_row& row = (*p)[i];
+      munit_plus_assert_int(row.zero_distance_tf, ==, i<128);
+      munit_plus_assert_op
+        (row.type, ==, text_complex::access::inscopy_type::InsertCopy);
+      munit_plus_logf(MUNIT_PLUS_LOG_DEBUG,
+        "[%u] = {bits: %u, first: %u, copy_bits: %u, copy_first: %u}",
+        static_cast<unsigned int>(i),
+        row.insert_bits, row.insert_first,
+        row.copy_bits, row.copy_first);
+    }break;
+  default:
+    munit_plus_errorf(
+      "Unexpected table length %" MUNIT_PLUS_SIZE_MODIFIER "u.",
+      p->size()
+      );
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_inscopy_item_c
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::insert_copy_table const* const p =
+    static_cast<text_complex::access::insert_copy_table*>(data);
   if (p == nullptr)
     return MUNIT_PLUS_SKIP;
   (void)params;

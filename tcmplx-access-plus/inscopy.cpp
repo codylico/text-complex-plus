@@ -297,6 +297,14 @@ namespace text_complex {
     inscopy_row const* insert_copy_table::end(void) const noexcept {
       return this->p+this->n;
     }
+
+    inscopy_row* insert_copy_table::begin(void) noexcept {
+      return this->p;
+    }
+
+    inscopy_row* insert_copy_table::end(void) noexcept {
+      return this->p+this->n;
+    }
     //END   insert_copy_table / range-based
 
     //BEGIN insert_copy_table / array-compat
@@ -309,6 +317,16 @@ namespace text_complex {
     }
 
     inscopy_row const& insert_copy_table::at(size_t i) const {
+      if (i >= this->n)
+        throw std::out_of_range("text_complex::access::insert_copy_table::at");
+      return this->p[i];
+    }
+
+    inscopy_row& insert_copy_table::operator[](size_t i) noexcept {
+      return this->p[i];
+    }
+
+    inscopy_row& insert_copy_table::at(size_t i) {
       if (i >= this->n)
         throw std::out_of_range("text_complex::access::insert_copy_table::at");
       return this->p[i];
