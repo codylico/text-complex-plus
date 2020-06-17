@@ -94,9 +94,17 @@ namespace text_complex {
         unsigned short copy_start : 5;
       } lookup_matrix[11] = {
         {true,  0, 0}, {true,  0, 8},
-        {false, 0, 0}, {false, 0, 8}, {false, 0,16},
-        {false, 8, 0}, {false, 8, 8}, {false, 8,16},
-        {false,16, 0}, {false,16, 8}, {false,16,16}
+        {false, 0, 0}, {false, 0, 8}, /*          */
+        {false, 8, 0}, {false, 8, 8}, /*          */
+        /*          */ /*          */ /*          */
+
+        /*          */ /*          */ {false, 0,16},
+        /*          */ /*          */ /*          */
+        {false,16, 0}, /*          */ /*          */
+
+        /*          */ /*          */ /*          */
+        /*          */ /*          */ {false, 8,16},
+        /*          */ {false,16, 8}, {false,16,16}
       };
       static constexpr struct tab insert_tabs[24] = {
         {0,  0}, {0,  1}, {0,   2}, {0,   3}, {0,   4}, {0,    5},
