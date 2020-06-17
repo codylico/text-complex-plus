@@ -15,7 +15,7 @@ namespace text_complex {
     /**
      * @brief Type of insert copy table to generate.
      */
-    enum struct inscopy_preset : int {
+    enum struct insert_copy_preset : int {
       /**
        * @brief Select the DEFLATE 285-code literal-length alphabet.
        */
@@ -29,7 +29,7 @@ namespace text_complex {
     /**
      * @brief Type of insert copy table row.
      */
-    enum struct inscopy_type : unsigned char {
+    enum struct insert_copy_type : unsigned char {
       /**
        * @brief DEFLATE literal value.
        */
@@ -51,11 +51,11 @@ namespace text_complex {
     /**
      * @brief Single row of an insert copy table.
      */
-    struct inscopy_row final {
+    struct insert_copy_row final {
       /**
        * @brief What type of value this row indicates.
        */
-      inscopy_type type;
+      insert_copy_type type;
       /**
        * @brief Whether this row indicates a reused (thus omitted)
        *   back distance.
@@ -89,23 +89,23 @@ namespace text_complex {
      */
     class TCMPLX_AP_API insert_copy_table final {
     private:
-      struct inscopy_row* p;
+      struct insert_copy_row* p;
       size_t n;
 
     public /* container-compat */:
       typedef size_t size_type;
-      typedef struct inscopy_row value_type;
-      typedef struct inscopy_row* iterator;
-      typedef struct inscopy_row const* const_iterator;
+      typedef struct insert_copy_row value_type;
+      typedef struct insert_copy_row* iterator;
+      typedef struct insert_copy_row const* const_iterator;
 
     public /*rule-of-six*/:
       /**
        * @brief Constructor.
-       * @param t table preset type
+       * @param n row count
        * @throw `std::bad_alloc` if something breaks, or
        *   @link api_exception @endlink for an invalid table type
        */
-      insert_copy_table(inscopy_preset t);
+      insert_copy_table(size_t n = 0u);
       /**
        * @brief Destructor.
        */
@@ -162,24 +162,24 @@ namespace text_complex {
        * @brief `begin` method for range-based `for`.
        * @return a pointer to the first row, or `nullptr` for empty tables
        */
-      inscopy_row const* begin(void) const noexcept;
+      insert_copy_row const* begin(void) const noexcept;
       /**
        * @brief `end` method for range-based `for`.
        * @return a pointer to one-past the last row,
        *   or `nullptr` for empty tables
        */
-      inscopy_row const* end(void) const noexcept;
+      insert_copy_row const* end(void) const noexcept;
       /**
        * @brief `begin` method for range-based `for`.
        * @return a pointer to the first row, or `nullptr` for empty tables
        */
-      inscopy_row* begin(void) noexcept;
+      insert_copy_row* begin(void) noexcept;
       /**
        * @brief `end` method for range-based `for`.
        * @return a pointer to one-past the last row,
        *   or `nullptr` for empty tables
        */
-      inscopy_row* end(void) noexcept;
+      insert_copy_row* end(void) noexcept;
 
     public /* array-compat */:
       /**
@@ -192,7 +192,7 @@ namespace text_complex {
        * @param i array index
        * @return a reference to the row at the given index
        */
-      inscopy_row const& operator[](size_t i) const noexcept;
+      insert_copy_row const& operator[](size_t i) const noexcept;
       /**
        * @brief Read from a insert copy table.
        * @param x the list to read
@@ -200,13 +200,13 @@ namespace text_complex {
        * @return a pointer to an insert copy row on success, NULL otherwise
        * @throw std::out_of_range on bad index
        */
-      inscopy_row const& at(size_t i) const;
+      insert_copy_row const& at(size_t i) const;
       /**
        * @brief Array index operator.
        * @param i array index
        * @return a reference to the row at the given index
        */
-      inscopy_row& operator[](size_t i) noexcept;
+      insert_copy_row& operator[](size_t i) noexcept;
       /**
        * @brief Read from a insert copy table.
        * @param x the list to read
@@ -214,7 +214,7 @@ namespace text_complex {
        * @return a pointer to an insert copy row on success, NULL otherwise
        * @throw std::out_of_range on bad index
        */
-      inscopy_row& at(size_t i);
+      insert_copy_row& at(size_t i);
 
     private /* rule-of-six */:
       void duplicate(insert_copy_table const& );
@@ -236,7 +236,7 @@ namespace text_complex {
      * @return a insert copy table on success, `nullptr` otherwise
      */
     TCMPLX_AP_API
-    insert_copy_table* inscopy_new(inscopy_preset t) noexcept;
+    insert_copy_table* inscopy_new(size_t n = 0u) noexcept;
 
     /**
      * @brief Non-throwing insert copy table allocator.
@@ -244,8 +244,7 @@ namespace text_complex {
      * @return a insert copy table on success, `nullptr` otherwise
      */
     TCMPLX_AP_API
-    util_unique_ptr<insert_copy_table> inscopy_unique
-        (inscopy_preset t) noexcept;
+    util_unique_ptr<insert_copy_table> inscopy_unique(size_t n = 0u) noexcept;
 
     /**
      * @brief Destroy a insert copy table.
@@ -254,7 +253,33 @@ namespace text_complex {
     TCMPLX_AP_API
     void inscopy_destroy(insert_copy_table* x) noexcept;
     //END   insert copy table / allocation (namespace local)
+
+    //BEGIN insert copy table / namespace local
+    /**
+     * @brief Assign an insert-copy table with a preset code-value list.
+     * @param dst list to populate with lengths
+     * @param i preset identifier
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
+     */
+    TCMPLX_AP_API
+    void inscopy_preset
+      (insert_copy_table& dst, insert_copy_preset i, api_error& ae) noexcept;
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Assign an insert-copy table with a preset code-value list.
+     * @param dst list to populate with lengths
+     * @param i preset identifier
+     * @throw api_exception on storage or coding error
+     */
+    TCMPLX_AP_API
+    void inscopy_preset(insert_copy_table& dst, insert_copy_preset i);
+#endif //TextComplexAccessP_NO_EXCEPT
+    //END   insert copy table / namespace local
   };
 };
+
+#include "inscopy.txx"
 
 #endif //hg_TextComplexAccessP_InsCopy_H_

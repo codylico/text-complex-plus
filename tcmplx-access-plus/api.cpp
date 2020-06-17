@@ -4,13 +4,16 @@
  * \author Cody Licorish (svgmovement@gmail.com)
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
+#if (defined TextComplexAccessP_NO_EXCEPT)
+#  undef TextComplexAccessP_NO_EXCEPT
+#endif //TextComplexAccessP_NO_EXCEPT
 #include "api.hpp"
 
 namespace text_complex {
   namespace access {
     //BEGIN configurations
     char const* api_version(void) noexcept {
-      return "0.3-alpha";
+      return "0.3.1-alpha";
     }
     //END   configurations
 

@@ -18,23 +18,23 @@ namespace text_complex {
      * @param r array of 286 rows
      */
     static
-    void inscopy_1951_fill(inscopy_row* r);
+    void inscopy_1951_fill(insert_copy_row* r);
     /**
      * @brief Fill an insert-copy table with the Brotli
      *   length alphabet cross product.
      * @param r array of 704 rows
      */
     static
-    void inscopy_7932_fill(inscopy_row* r);
+    void inscopy_7932_fill(insert_copy_row* r);
     
     //BEGIN insert_copy_table / static
-    void inscopy_1951_fill(inscopy_row* r) {
+    void inscopy_1951_fill(insert_copy_row* r) {
       size_t i;
       unsigned short first_insert = 3u;
       unsigned short bits = 0u;
       /* put literals */for (i = 0u; i < 256u; ++i) {
         r[i].code = static_cast<unsigned short>(i);
-        r[i].type = inscopy_type::Literal;
+        r[i].type = insert_copy_type::Literal;
         r[i].zero_distance_tf = 0;
         r[i].insert_bits = 0;
         r[i].copy_bits = 0;
@@ -43,7 +43,7 @@ namespace text_complex {
       }
       /* put stop code */{ /* i=256; */
         r[i].code = static_cast<unsigned short>(i);
-        r[i].type = inscopy_type::Stop;
+        r[i].type = insert_copy_type::Stop;
         r[i].zero_distance_tf = 0;
         r[i].insert_bits = 0;
         r[i].copy_bits = 0;
@@ -53,7 +53,7 @@ namespace text_complex {
       }
       /* put some zero-bit insert codes */for (; i < 261u; ++i) {
         r[i].code = static_cast<unsigned short>(i);
-        r[i].type = inscopy_type::Insert;
+        r[i].type = insert_copy_type::Insert;
         r[i].zero_distance_tf = 0;
         r[i].insert_bits = 0;
         r[i].copy_bits = 0;
@@ -63,7 +63,7 @@ namespace text_complex {
       }
       /* put most of the other insert codes */for (; i < 285u; ++i) {
         r[i].code = static_cast<unsigned short>(i);
-        r[i].type = inscopy_type::Insert;
+        r[i].type = insert_copy_type::Insert;
         r[i].zero_distance_tf = 0;
         r[i].insert_bits = bits;
         r[i].copy_bits = 0;
@@ -76,7 +76,7 @@ namespace text_complex {
       }
       /* put code 285 */{ /* i=285; */
         r[i].code = static_cast<unsigned short>(i);
-        r[i].type = inscopy_type::Insert;
+        r[i].type = insert_copy_type::Insert;
         r[i].zero_distance_tf = 0;
         r[i].insert_bits = 0;
         r[i].copy_bits = 0;
@@ -87,7 +87,7 @@ namespace text_complex {
       return;
     }
 
-    void inscopy_7932_fill(inscopy_row* r) {
+    void inscopy_7932_fill(insert_copy_row* r) {
       size_t i;
       struct tab {
         unsigned char bits;
@@ -131,7 +131,7 @@ namespace text_complex {
         unsigned int const copy_code =
           lookup_matrix[j].copy_start + (i&7);
         /* fill table row */
-        r[i].type = inscopy_type::InsertCopy;
+        r[i].type = insert_copy_type::InsertCopy;
         r[i].zero_distance_tf = lookup_matrix[j].zero_dist_tf;
         r[i].insert_bits = insert_tabs[insert_code].bits;
         r[i].insert_first = insert_tabs[insert_code].first;
@@ -144,23 +144,10 @@ namespace text_complex {
     //END   insert_copy_table / static
 
     //BEGIN insert_copy_table / rule-of-six
-    insert_copy_table::insert_copy_table(inscopy_preset t)
+    insert_copy_table::insert_copy_table(size_t n)
       : p(nullptr), n(0u)
     {
       resize(n);
-      switch (t) {
-      case inscopy_preset::Deflate:
-        resize(286);
-        inscopy_1951_fill(p);
-        break;
-      case inscopy_preset::Brotli:
-        resize(704);
-        inscopy_7932_fill(p);
-        break;
-      default:
-        throw api_exception(api_error::Param);
-        break;
-      }
       return;
     }
 
@@ -213,7 +200,7 @@ namespace text_complex {
     }
 
     void insert_copy_table::transfer(insert_copy_table&& other) noexcept {
-      inscopy_row* new_p;
+      insert_copy_row* new_p;
       size_t new_n;
       /* release */{
         new_p = other.p;
@@ -232,7 +219,7 @@ namespace text_complex {
     }
 
     void insert_copy_table::resize(size_t n) {
-      struct inscopy_row *ptr;
+      struct insert_copy_row *ptr;
       if (n == 0u) {
         if (this->p) {
           delete[] this->p;
@@ -242,11 +229,11 @@ namespace text_complex {
         return;
       }
       if (n >= std::numeric_limits<size_t>::max()/
-          sizeof(struct inscopy_row))
+          sizeof(struct insert_copy_row))
       {
         throw std::bad_alloc();
       }
-      ptr = new struct inscopy_row[n];
+      ptr = new struct insert_copy_row[n];
       if (this->p) {
         delete[] this->p;
       }
@@ -273,9 +260,9 @@ namespace text_complex {
       return ::operator delete(p);
     }
 
-    insert_copy_table* inscopy_new(inscopy_preset t) noexcept {
+    insert_copy_table* inscopy_new(size_t n) noexcept {
       try {
-        return new insert_copy_table(t);
+        return new insert_copy_table(n);
       } catch (api_exception const& ) {
         return nullptr;
       } catch (std::bad_alloc const& ) {
@@ -283,10 +270,8 @@ namespace text_complex {
       }
     }
 
-    util_unique_ptr<insert_copy_table> inscopy_unique
-        (inscopy_preset t) noexcept
-    {
-      return util_unique_ptr<insert_copy_table>(inscopy_new(t));
+    util_unique_ptr<insert_copy_table> inscopy_unique(size_t n) noexcept {
+      return util_unique_ptr<insert_copy_table>(inscopy_new(n));
     }
 
     void inscopy_destroy(insert_copy_table* x) noexcept {
@@ -297,19 +282,19 @@ namespace text_complex {
     //END   insert_copy_table / allocation
 
     //BEGIN insert_copy_table / range-based
-    inscopy_row const* insert_copy_table::begin(void) const noexcept {
+    insert_copy_row const* insert_copy_table::begin(void) const noexcept {
       return this->p;
     }
 
-    inscopy_row const* insert_copy_table::end(void) const noexcept {
+    insert_copy_row const* insert_copy_table::end(void) const noexcept {
       return this->p+this->n;
     }
 
-    inscopy_row* insert_copy_table::begin(void) noexcept {
+    insert_copy_row* insert_copy_table::begin(void) noexcept {
       return this->p;
     }
 
-    inscopy_row* insert_copy_table::end(void) noexcept {
+    insert_copy_row* insert_copy_table::end(void) noexcept {
       return this->p+this->n;
     }
     //END   insert_copy_table / range-based
@@ -319,26 +304,54 @@ namespace text_complex {
       return this->n;
     }
 
-    inscopy_row const& insert_copy_table::operator[](size_t i) const noexcept {
+    insert_copy_row const& insert_copy_table::operator[](size_t i) const noexcept {
       return this->p[i];
     }
 
-    inscopy_row const& insert_copy_table::at(size_t i) const {
+    insert_copy_row const& insert_copy_table::at(size_t i) const {
       if (i >= this->n)
         throw std::out_of_range("text_complex::access::insert_copy_table::at");
       return this->p[i];
     }
 
-    inscopy_row& insert_copy_table::operator[](size_t i) noexcept {
+    insert_copy_row& insert_copy_table::operator[](size_t i) noexcept {
       return this->p[i];
     }
 
-    inscopy_row& insert_copy_table::at(size_t i) {
+    insert_copy_row& insert_copy_table::at(size_t i) {
       if (i >= this->n)
         throw std::out_of_range("text_complex::access::insert_copy_table::at");
       return this->p[i];
     }
     //END   insert_copy_table / array-compat
 
+    //BEGIN insert copy table / namespace local
+    void inscopy_preset
+      (insert_copy_table& dst, insert_copy_preset t, api_error& ae) noexcept
+    {
+      switch (t) {
+      case insert_copy_preset::Deflate:
+        try {
+          insert_copy_table n_table(286);
+          inscopy_1951_fill(&n_table[0]);
+          dst = std::move(n_table);
+        } catch (std::bad_alloc const& ) {
+          ae = api_error::Memory; return;
+        }break;
+      case insert_copy_preset::Brotli:
+        try {
+          insert_copy_table n_table(704);
+          inscopy_7932_fill(&n_table[0]);
+          dst = std::move(n_table);
+        } catch (std::bad_alloc const& ) {
+          ae = api_error::Memory; return;
+        }break;
+      default:
+        ae = api_error::Param; return;
+      }
+      ae = api_error::Success;
+      return;
+    }
+    //END   insert copy table / namespace local
   };
 };
