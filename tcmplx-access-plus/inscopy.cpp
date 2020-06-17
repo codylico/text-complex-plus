@@ -27,12 +27,19 @@ namespace text_complex {
      */
     static
     void inscopy_7932_fill(insert_copy_row* r);
+    /**
+     * @brief Fill an insert-copy table with the Brotli block code alphabet.
+     * @param r array of 26 rows
+     */
+    static
+    void inscopy_7932B_fill(insert_copy_row* r);
 
     static
     struct { void (*f)(insert_copy_row*); size_t n; }
     const inscopy_ps[] = {
       { inscopy_1951_fill, 286u },
-      { inscopy_7932_fill, 704u }
+      { inscopy_7932_fill, 704u },
+      { inscopy_7932B_fill, 26u }
     };
 
     //BEGIN insert_copy_table / static
@@ -91,6 +98,25 @@ namespace text_complex {
         r[i].insert_first = first_insert;
         r[i].copy_first = 0;
         /* ++i; */
+      }
+      return;
+    }
+
+    void inscopy_7932B_fill(insert_copy_row* r) {
+      size_t i;
+      unsigned short first = 1u;
+      static constexpr unsigned char bits[26] = {
+          2,2,2,2, 3,3,3,3, 4,4,4,4, 5,5,5,5, 6,6, 7, 8, 9, 10, 11, 12, 13, 24
+        };
+      for (i = 0u; i < 26u; ++i) {
+        r[i].code = static_cast<unsigned short>(i);
+        r[i].type = insert_copy_type::BlockCount;
+        r[i].zero_distance_tf = 0;
+        r[i].insert_bits = bits[i];
+        r[i].copy_bits = 0;
+        r[i].insert_first = first;
+        r[i].copy_first = 0;
+        first = static_cast<unsigned short>(first + (1u << bits[i]));
       }
       return;
     }

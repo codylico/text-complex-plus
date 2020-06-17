@@ -23,7 +23,11 @@ namespace text_complex {
       /**
        * @brief Select the Brotli 704-code insert-and-copy-length alphabet.
        */
-      Brotli = 1
+      BrotliIC = 1,
+      /**
+       * @brief Select the Brotli 26-code block count alphabet.
+       */
+      BrotliBlock = 2
     };
 
     /**
@@ -45,7 +49,11 @@ namespace text_complex {
       /**
        * @brief Brotli insert-copy length code.
        */
-      InsertCopy = 3
+      InsertCopy = 3,
+      /**
+       * @brief Brotli block count code.
+       */
+      BlockCount = 4
     };
 
     /**

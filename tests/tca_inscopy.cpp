@@ -95,9 +95,9 @@ MunitPlusResult test_inscopy_cycle
 
 void* test_inscopy_setup(const MunitPlusParameter params[], void* user_data) {
   text_complex::access::insert_copy_preset const t =
-      munit_plus_rand_int_range(0,1)
-    ? text_complex::access::insert_copy_preset::Deflate
-    : text_complex::access::insert_copy_preset::Brotli;
+      static_cast<text_complex::access::insert_copy_preset>(
+          munit_plus_rand_int_range(0,2)
+        );
   std::unique_ptr<text_complex::access::insert_copy_table> p =
     text_complex::access::inscopy_unique();
   if (p) {
@@ -160,7 +160,7 @@ MunitPlusResult test_inscopy_item
           row.insert_bits, row.insert_first);
       }
     }break;
-  case 704: /* Brotli */
+  case 704: /* Brotli Insert-Copy */
     {
       size_t i = testfont_rand_size_range(0,703);
       struct text_complex::access::insert_copy_row& row = (*p)[i];
@@ -173,6 +173,18 @@ MunitPlusResult test_inscopy_item
         static_cast<unsigned int>(i),
         row.insert_bits, row.insert_first,
         row.copy_bits, row.copy_first);
+    }break;
+  case 26: /* Brotli Block Count */
+    {
+      std::size_t i = testfont_rand_size_range(0,25);
+      struct text_complex::access::insert_copy_row& row = (*p)[i];
+      munit_plus_assert_op
+        (row.type, ==, text_complex::access::insert_copy_type::BlockCount);
+      munit_plus_assert_size(row.code, ==, i);
+      munit_plus_assert_uint(row.insert_bits, <=, 24);
+      munit_plus_logf(MUNIT_PLUS_LOG_DEBUG, "[%u] = {bits: %u, first: %u}",
+        static_cast<unsigned int>(i),
+        row.insert_bits, row.insert_first);
     }break;
   default:
     munit_plus_errorf(
@@ -216,7 +228,7 @@ MunitPlusResult test_inscopy_item_c
           row.insert_bits, row.insert_first);
       }
     }break;
-  case 704: /* Brotli */
+  case 704: /* Brotli Insert-Copy */
     {
       size_t i = testfont_rand_size_range(0,703);
       struct text_complex::access::insert_copy_row const& row = (*p)[i];
@@ -228,6 +240,18 @@ MunitPlusResult test_inscopy_item_c
         static_cast<unsigned int>(i),
         row.insert_bits, row.insert_first,
         row.copy_bits, row.copy_first);
+    }break;
+  case 26: /* Brotli Block Count */
+    {
+      std::size_t i = testfont_rand_size_range(0,25);
+      struct text_complex::access::insert_copy_row const& row = (*p)[i];
+      munit_plus_assert_op
+        (row.type, ==, text_complex::access::insert_copy_type::BlockCount);
+      munit_plus_assert_size(row.code, ==, i);
+      munit_plus_assert_uint(row.insert_bits, <=, 24);
+      munit_plus_logf(MUNIT_PLUS_LOG_DEBUG, "[%u] = {bits: %u, first: %u}",
+        static_cast<unsigned int>(i),
+        row.insert_bits, row.insert_first);
     }break;
   default:
     munit_plus_errorf(
