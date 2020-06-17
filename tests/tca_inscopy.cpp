@@ -119,6 +119,10 @@ MunitPlusResult test_inscopy_item
   if (p == nullptr)
     return MUNIT_PLUS_SKIP;
   (void)params;
+  /* consistency check */{
+    std::size_t const i = testfont_rand_size_range(0,p->size());
+    munit_plus_assert_ptr_equal(&(*p)[i], &(*p_c)[i]);
+  }
   switch (p->size()) {
   case 286: /* Deflate */
     {
