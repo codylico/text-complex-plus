@@ -26,7 +26,14 @@ namespace text_complex {
      */
     static
     void inscopy_7932_fill(insert_copy_row* r);
-    
+
+    static
+    struct { void (*f)(insert_copy_row*); size_t n; }
+    const inscopy_ps[] = {
+      { inscopy_1951_fill, 286u },
+      { inscopy_7932_fill, 704u }
+    };
+
     //BEGIN insert_copy_table / static
     void inscopy_1951_fill(insert_copy_row* r) {
       size_t i;
@@ -329,25 +336,21 @@ namespace text_complex {
     void inscopy_preset
       (insert_copy_table& dst, insert_copy_preset t, api_error& ae) noexcept
     {
-      switch (t) {
-      case insert_copy_preset::Deflate:
-        try {
-          insert_copy_table n_table(286);
-          inscopy_1951_fill(&n_table[0]);
-          dst = std::move(n_table);
-        } catch (std::bad_alloc const& ) {
-          ae = api_error::Memory; return;
-        }break;
-      case insert_copy_preset::Brotli:
-        try {
-          insert_copy_table n_table(704);
-          inscopy_7932_fill(&n_table[0]);
-          dst = std::move(n_table);
-        } catch (std::bad_alloc const& ) {
-          ae = api_error::Memory; return;
-        }break;
-      default:
+      size_t const n = sizeof(inscopy_ps)/sizeof(inscopy_ps[0]);
+      int const i = static_cast<int>(t);
+      if (i < 0 || static_cast<size_t>(i) >= n) {
         ae = api_error::Param; return;
+      }
+      /* allocate */{
+        unsigned int const i_u = static_cast<unsigned int>(i);
+        size_t const sz = inscopy_ps[i_u].n;
+        try {
+          insert_copy_table n_table(sz);
+          (*inscopy_ps[i_u].f)(&n_table[0]);
+          dst = std::move(n_table);
+        } catch (std::bad_alloc const& ) {
+          ae = api_error::Memory; return;
+        }
       }
       ae = api_error::Success;
       return;
