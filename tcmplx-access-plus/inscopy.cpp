@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <limits>
+#include <utility>
 
 namespace text_complex {
   namespace access {
