@@ -37,8 +37,7 @@ namespace text_complex {
     //END   woff2 tools
 
     //BEGIN woff2
-    TCMPLX_AP_API
-    class woff2 final {
+    class TCMPLX_AP_API woff2 final {
     private:
       mmaptwo::mmaptwo_i* fh;
       offset_table* offsets;
