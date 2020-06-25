@@ -170,35 +170,12 @@ namespace text_complex {
           if (i == 0) {
             /* do nothing */
           } else if (i < 0) {
-            long int i_prime[2];
-            /* break apart any LONG_MIN values */{
-              constexpr long int branch =
-                (std::numeric_limits<long int>::min()/2);
-              if (i <= branch) {
-                i_prime[0] = i-branch;
-                i_prime[1] = branch;
-              } else {
-                i_prime[0] = 0;
-                i_prime[1] = i;
-              }
-            }
-            /* */{
-              int j;
-              for (j = 0; j < 2; ++j) {
-                if (((unsigned long int)-i_prime[j]) > nonzero) {
-                  /* negative overflow */
-                  break;
-                } else {
-                  size_t const n_prime = (size_t)-i_prime[j];
-                  if (here >= n_prime)
-                    here -= n_prime;
-                  else break;
-                }
-              }
-              if (j < 2) {
-                l_out = -2L;
-                break;
-              }
+            unsigned long int ui = -static_cast<unsigned long int>(i);
+            if (ui <= here) {
+              here -= ui;
+            } else {
+              l_out = -2L;
+              break;
             }
           } else if (((unsigned long int)i) > nonzero) {
             /* positive overflow */
