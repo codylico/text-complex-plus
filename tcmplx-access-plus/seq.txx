@@ -379,8 +379,8 @@ namespace text_complex {
         return seek_type(offset_type(-1));
       } else /* TODO see if can seek within eback()..egptr() */
       {
-        long int const lmax = static_cast<long int>(util_long_max());
-        long int const lmin = static_cast<long int>(util_long_min());
+        long int const lmax = util_long_max();
+        long int const lmin = util_long_min();
         std::streamsize const gdiff =
           (dir == std::ios_base::cur ? (sb_retellp-this->gptr()) : 0);
         std::streamsize const loss =
