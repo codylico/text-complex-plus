@@ -149,7 +149,7 @@ MunitPlusResult test_inscopy_item
         munit_plus_assert_ushort(row.code, ==, 256u);
       }
       /* test length */{
-        size_t i = testfont_rand_size_range(257,285);
+        std::size_t i = testfont_rand_size_range(257,285);
         struct text_complex::access::insert_copy_row& row = (*p)[i];
         munit_plus_assert_op
           (row.type, ==, text_complex::access::insert_copy_type::Insert);
@@ -162,7 +162,7 @@ MunitPlusResult test_inscopy_item
     }break;
   case 704: /* Brotli Insert-Copy */
     {
-      size_t i = testfont_rand_size_range(0,703);
+      std::size_t i = testfont_rand_size_range(0,703);
       struct text_complex::access::insert_copy_row& row = (*p)[i];
       munit_plus_assert_size(row.code, ==, i);
       munit_plus_assert_int(row.zero_distance_tf, ==, i<128);
@@ -218,7 +218,7 @@ MunitPlusResult test_inscopy_item_c
           (row.type, ==, text_complex::access::insert_copy_type::Stop);
       }
       /* test length */{
-        size_t i = testfont_rand_size_range(257,285);
+        std::size_t i = testfont_rand_size_range(257,285);
         struct text_complex::access::insert_copy_row const& row = (*p)[i];
         munit_plus_assert_op
           (row.type, ==, text_complex::access::insert_copy_type::Insert);
@@ -230,7 +230,7 @@ MunitPlusResult test_inscopy_item_c
     }break;
   case 704: /* Brotli Insert-Copy */
     {
-      size_t i = testfont_rand_size_range(0,703);
+      std::size_t i = testfont_rand_size_range(0,703);
       struct text_complex::access::insert_copy_row const& row = (*p)[i];
       munit_plus_assert_int(row.zero_distance_tf, ==, i<128);
       munit_plus_assert_op
