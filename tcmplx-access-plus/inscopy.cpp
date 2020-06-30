@@ -14,6 +14,9 @@
 
 namespace text_complex {
   namespace access {
+    static constexpr insert_copy_type inscopy_RowInsertAny =
+      static_cast<insert_copy_type>(255u);
+
     /**
      * @brief Fill an insert-copy table with the DEFLATE
      *   literal-length alphabet.
@@ -52,6 +55,16 @@ namespace text_complex {
     static
     bool inscopy_length_cmp
         (insert_copy_row const& a, insert_copy_row const& b);
+    /**
+     * @brief Compare the starting lengths of two table rows.
+     * @param icr table insert copy row
+     * @param k search key
+     * @return whether a's starting lengths are "less" than b's
+     *   starting lengths
+     */
+    static
+    bool inscopy_encode_cmp
+        (insert_copy_row const& icr, insert_copy_row const& k);
 
     static
     struct { void (*f)(insert_copy_row*); size_t n; }
@@ -215,6 +228,37 @@ namespace text_complex {
       else if (a.insert_first > b.insert_first)
         return false;
       else return a.copy_first < b.copy_first;
+    }
+
+    bool inscopy_encode_cmp
+        (insert_copy_row const& icr, insert_copy_row const& k)
+    {
+      /*
+       * NOTE The corresponding function in the C implementation
+       *   (`static tcmplxA_inscopy_encode_cmp`) has the key and table row
+       *   arguments reversed, and thus the comparison result is reversed.
+       */
+      if (k.zero_distance_tf < icr.zero_distance_tf)
+        return false;
+      else if (k.zero_distance_tf > icr.zero_distance_tf)
+        return true;
+      else if (k.insert_first < icr.insert_first)
+        return false;
+      else {
+        unsigned long int const insert_end =
+          icr.insert_first + (1UL<<icr.insert_bits);
+        if (k.insert_first >= insert_end)
+          return true;
+        else if (k.copy_first < icr.copy_first)
+          return false;
+        else {
+          unsigned long int const copy_end =
+            icr.copy_first + (1UL<<icr.copy_bits);
+          if (k.copy_first >= copy_end)
+            return true;
+          else return false;
+        }
+      }
     }
     //END   insert_copy_table / static
 
@@ -448,6 +492,35 @@ namespace text_complex {
       }
       ae = api_error::Success;
       return;
+    }
+
+    size_t inscopy_encode
+      ( insert_copy_table const& ict, unsigned long int i,
+        unsigned long int c, bool z_tf) noexcept
+    {
+      struct insert_copy_row const key = {
+          /*type=*/ inscopy_RowInsertAny,
+          /*zero_distance_tf=*/ z_tf,
+          /*insert_bits=*/ 0,
+          /*copy_bits=*/ 0,
+          /*insert_first=*/ i>std::numeric_limits<unsigned short int>::max()
+              ? std::numeric_limits<unsigned short int>::max()
+              : static_cast<unsigned short int>(i),
+          /*copy_first=*/ c>std::numeric_limits<unsigned short int>::max()
+              ? std::numeric_limits<unsigned short int>::max()
+              : static_cast<unsigned short int>(c),
+          /*code=*/ std::numeric_limits<unsigned short int>::max()
+        };
+      insert_copy_table::const_iterator const out =
+          std::lower_bound(ict.begin(), ict.end(), key, inscopy_encode_cmp);
+      /* range check */{
+        if (z_tf != out->zero_distance_tf
+        ||  i < out->insert_first
+        ||  i >= out->insert_first+(1UL<<out->insert_bits))
+          return std::numeric_limits<size_t>::max();
+      }
+      return (out!=ict.end()) ? static_cast<size_t>(out - ict.begin())
+        : std::numeric_limits<size_t>::max();
     }
     //END   insert copy table / namespace local
   };

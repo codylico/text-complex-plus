@@ -330,6 +330,23 @@ namespace text_complex {
     TCMPLX_AP_API
     void inscopy_lengthsort(insert_copy_table& ict);
 #endif //TextComplexAccessP_NO_EXCEPT
+
+    /**
+     * @brief Encode a pair of insert and copy lengths using a table.
+     * @param ict the table to read (sorted for length)
+     * @param i insert length
+     * @param c copy length, or zero if unused
+     * @param z_tf whether to select the zero distance variation
+     * @return an index of a matching table row if found, SIZE_MAX otherwise
+     * @note The zero distance variation is only available for a small
+     *   subset of preset insert-copy tables. If the zero distance variation
+     *   is unavailable, try again with the default (nonzero distance)
+     *   variation instead.
+     */
+    TCMPLX_AP_API
+    size_t inscopy_encode
+      ( insert_copy_table const& ict, unsigned long int i,
+        unsigned long int c, bool z_tf=false) noexcept;
     //END   insert copy table / namespace local
   };
 };
