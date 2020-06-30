@@ -202,7 +202,11 @@ namespace text_complex {
     bool inscopy_length_cmp
         (insert_copy_row const& a, insert_copy_row const& b)
     {
-      if (a.zero_distance_tf < b.zero_distance_tf)
+      if (a.type < b.type)
+        return true;
+      else if (a.type > b.type)
+        return false;
+      else if (a.zero_distance_tf < b.zero_distance_tf)
         return true;
       else if (a.zero_distance_tf > b.zero_distance_tf)
         return false;
