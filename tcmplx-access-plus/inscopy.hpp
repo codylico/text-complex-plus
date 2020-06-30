@@ -284,6 +284,52 @@ namespace text_complex {
     TCMPLX_AP_API
     void inscopy_preset(insert_copy_table& dst, insert_copy_preset i);
 #endif //TextComplexAccessP_NO_EXCEPT
+
+    /**
+     * @brief Sort an insert-copy table by alphabet code.
+     * @param ict list to sort
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
+     * @note Useful for decoding from a compressed stream.
+     */
+    TCMPLX_AP_API
+    void inscopy_codesort
+      (insert_copy_table& ict, api_error& ae) noexcept;
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Assign an insert-copy table with a preset code-value list.
+     * @param ict list to sort
+     * @param i preset identifier
+     * @throw api_exception on allocation problem
+     * @note Useful for decoding from a compressed stream.
+     */
+    TCMPLX_AP_API
+    void inscopy_codesort(insert_copy_table& ict);
+#endif //TextComplexAccessP_NO_EXCEPT
+
+    /**
+     * @brief Sort an insert-copy table by insert length (primary)
+     *   and copy length (secondary).
+     * @param ict list to sort
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
+     * @note Useful for encoding to a compressed stream.
+     */
+    TCMPLX_AP_API
+    void inscopy_lengthsort
+      (insert_copy_table& ict, api_error& ae) noexcept;
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Sort an insert-copy table by insert length (primary)
+     *   and copy length (secondary).
+     * @param ict list to sort
+     * @throw api_exception on allocation problem
+     */
+    TCMPLX_AP_API
+    void inscopy_lengthsort(insert_copy_table& ict);
+#endif //TextComplexAccessP_NO_EXCEPT
     //END   insert copy table / namespace local
   };
 };

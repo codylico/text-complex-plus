@@ -20,6 +20,10 @@ static MunitPlusResult test_inscopy_item
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_inscopy_item_c
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_inscopy_lengthsort
+    (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_inscopy_codesort
+    (const MunitPlusParameter params[], void* data);
 static void* test_inscopy_setup
     (const MunitPlusParameter params[], void* user_data);
 static void test_inscopy_teardown(void* fixture);
@@ -33,6 +37,12 @@ static MunitPlusTest tests_inscopy[] = {
       test_inscopy_setup,test_inscopy_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"item_const", test_inscopy_item_c,
+      test_inscopy_setup,test_inscopy_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"lengthsort", test_inscopy_lengthsort,
+      test_inscopy_setup,test_inscopy_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"codesort", test_inscopy_codesort,
       test_inscopy_setup,test_inscopy_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
@@ -261,6 +271,67 @@ MunitPlusResult test_inscopy_item_c
   }
   return MUNIT_PLUS_OK;
 }
+
+MunitPlusResult test_inscopy_codesort
+    (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::insert_copy_table* const p =
+    static_cast<text_complex::access::insert_copy_table*>(data);
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* run code-sort */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    text_complex::access::inscopy_codesort(*p);
+#else
+    text_complex::access::api_error ae;
+    text_complex::access::inscopy_codesort(*p, ae);
+    munit_plus_assert_int(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+  }
+  /* inspect */if (p->size() >= 2) {
+    size_t i = testfont_rand_size_range(0,p->size()-2);
+    text_complex::access::insert_copy_row const& first = (*p)[i];
+    text_complex::access::insert_copy_row const& second = (*p)[i+1];
+    munit_plus_assert_uint(first.code, <, second.code);
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_inscopy_lengthsort
+    (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::insert_copy_table* const p =
+    static_cast<text_complex::access::insert_copy_table*>(data);
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* run length-sort */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    text_complex::access::inscopy_lengthsort(*p);
+#else
+    text_complex::access::api_error ae;
+    text_complex::access::inscopy_lengthsort(*p, ae);
+    munit_plus_assert_int(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+  }
+  /* inspect */if (p->size() >= 2) {
+    size_t i = testfont_rand_size_range(0,p->size()-2);
+    text_complex::access::insert_copy_row const& first = (*p)[i];
+    text_complex::access::insert_copy_row const& second = (*p)[i+1];
+    if (first.zero_distance_tf != second.zero_distance_tf) {
+      munit_plus_assert_false(first.zero_distance_tf);
+      munit_plus_assert_true(second.zero_distance_tf);
+    } else if (first.insert_first != second.insert_first) {
+      munit_plus_assert_uint(first.insert_first, <, second.insert_first);
+    } else {
+      munit_plus_assert_uint(first.copy_first, <=, second.copy_first);
+    }
+  }
+  return MUNIT_PLUS_OK;
+}
+
+
 
 
 int main(int argc, char **argv) {

@@ -10,6 +10,7 @@
 #include <cstring>
 #include <limits>
 #include <utility>
+#include <algorithm>
 
 namespace text_complex {
   namespace access {
@@ -33,6 +34,24 @@ namespace text_complex {
      */
     static
     void inscopy_7932B_fill(insert_copy_row* r);
+    /**
+     * @brief Compare the codes of two table rows.
+     * @param a left insert copy row
+     * @param b right insert copy row
+     * @return whether a's code is less than b's code
+     */
+    static
+    bool inscopy_code_cmp(insert_copy_row const& a, insert_copy_row const& b);
+    /**
+     * @brief Compare the starting lengths of two table rows.
+     * @param a left insert copy row
+     * @param b right insert copy row
+     * @return whether a's starting lengths are "less" than b's
+     *   starting lengths
+     */
+    static
+    bool inscopy_length_cmp
+        (insert_copy_row const& a, insert_copy_row const& b);
 
     static
     struct { void (*f)(insert_copy_row*); size_t n; }
@@ -174,6 +193,24 @@ namespace text_complex {
         r[i].code = static_cast<unsigned short>(i);
       }
       return;
+    }
+
+    bool inscopy_code_cmp(insert_copy_row const& a, insert_copy_row const& b) {
+      return a.code < b.code;
+    }
+
+    bool inscopy_length_cmp
+        (insert_copy_row const& a, insert_copy_row const& b)
+    {
+      if (a.zero_distance_tf < b.zero_distance_tf)
+        return true;
+      else if (a.zero_distance_tf > b.zero_distance_tf)
+        return false;
+      else if (a.insert_first < b.insert_first)
+        return true;
+      else if (a.insert_first > b.insert_first)
+        return false;
+      else return a.copy_first < b.copy_first;
     }
     //END   insert_copy_table / static
 
@@ -378,6 +415,32 @@ namespace text_complex {
         } catch (std::bad_alloc const& ) {
           ae = api_error::Memory; return;
         }
+      }
+      ae = api_error::Success;
+      return;
+    }
+
+    void inscopy_codesort
+      (insert_copy_table& ict, api_error& ae) noexcept
+    {
+      try {
+        std::stable_sort(ict.begin(), ict.end(), inscopy_code_cmp);
+      } catch (std::bad_alloc const& ) {
+        ae = api_error::Memory;
+        return;
+      }
+      ae = api_error::Success;
+      return;
+    }
+
+    void inscopy_lengthsort
+      (insert_copy_table& ict, api_error& ae) noexcept
+    {
+      try {
+        std::stable_sort(ict.begin(), ict.end(), inscopy_length_cmp);
+      } catch (std::bad_alloc const& ) {
+        ae = api_error::Memory;
+        return;
       }
       ae = api_error::Success;
       return;

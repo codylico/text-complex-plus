@@ -19,6 +19,24 @@ namespace text_complex {
         throw api_exception(ae);
       } else return;
     }
+
+    inline
+    void inscopy_codesort(insert_copy_table& ict) {
+      api_error ae;
+      inscopy_codesort(ict, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
+
+    inline
+    void inscopy_lengthsort(insert_copy_table& ict) {
+      api_error ae;
+      inscopy_lengthsort(ict, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT    
   };
 };
