@@ -79,6 +79,9 @@ std::ostream& operator<<
     case text_complex::access::insert_copy_type::InsertCopy:
       o << "InsertCopy";
       break;
+    case text_complex::access::insert_copy_type::BlockCount:
+      o << "BlockCount";
+      break;
     case text_complex::access::insert_copy_type::CopyMinus1:
       o << "CopyMinus1";
       break;
