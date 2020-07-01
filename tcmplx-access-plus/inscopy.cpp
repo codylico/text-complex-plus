@@ -244,7 +244,9 @@ namespace text_complex {
        *   (`static tcmplxA_inscopy_encode_cmp`) has the key and table row
        *   arguments reversed, and thus the comparison result is reversed.
        */
-      if (k.zero_distance_tf < icr.zero_distance_tf)
+      if (insert_copy_type::Copy > icr.type)
+        return true;
+      else if (k.zero_distance_tf < icr.zero_distance_tf)
         return false;
       else if (k.zero_distance_tf > icr.zero_distance_tf)
         return true;
@@ -523,7 +525,9 @@ namespace text_complex {
       /* range check */{
         if (z_tf != out->zero_distance_tf
         ||  i < out->insert_first
-        ||  i >= out->insert_first+(1UL<<out->insert_bits))
+        ||  i >= out->insert_first+(1UL<<out->insert_bits)
+        ||  c < out->copy_first
+        ||  c >= out->copy_first+(1UL<<out->copy_bits))
           return std::numeric_limits<size_t>::max();
       }
       return (out!=ict.end()) ? static_cast<size_t>(out - ict.begin())
