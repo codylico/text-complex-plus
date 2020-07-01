@@ -17,7 +17,7 @@ namespace text_complex {
      */
     enum struct insert_copy_preset : int {
       /**
-       * @brief Select the DEFLATE 285-code literal-length alphabet.
+       * @brief Select the DEFLATE 286-code literal-length alphabet.
        */
       Deflate = 0,
       /**
