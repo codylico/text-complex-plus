@@ -77,58 +77,62 @@ namespace text_complex {
     //BEGIN insert_copy_table / static
     void inscopy_1951_fill(insert_copy_row* r) {
       size_t i;
-      unsigned short first_insert = 3u;
+      unsigned short first_copy = 3u;
       unsigned short bits = 0u;
       /* put literals */for (i = 0u; i < 256u; ++i) {
         r[i].code = static_cast<unsigned short>(i);
         r[i].type = insert_copy_type::Literal;
         r[i].zero_distance_tf = 0;
-        r[i].insert_bits = 0;
         r[i].copy_bits = 0;
-        r[i].insert_first = 0;
+        r[i].insert_bits = 0;
         r[i].copy_first = 0;
+        r[i].insert_first = 0;
       }
       /* put stop code */{ /* i=256; */
         r[i].code = static_cast<unsigned short>(i);
         r[i].type = insert_copy_type::Stop;
         r[i].zero_distance_tf = 0;
-        r[i].insert_bits = 0;
         r[i].copy_bits = 0;
-        r[i].insert_first = 0;
+        r[i].insert_bits = 0;
         r[i].copy_first = 0;
+        r[i].insert_first = 0;
         ++i;
       }
       /* put some zero-bit insert codes */for (; i < 261u; ++i) {
         r[i].code = static_cast<unsigned short>(i);
-        r[i].type = insert_copy_type::Insert;
+        r[i].type = insert_copy_type::Copy;
         r[i].zero_distance_tf = 0;
-        r[i].insert_bits = 0;
         r[i].copy_bits = 0;
-        r[i].insert_first = first_insert;
-        r[i].copy_first = 0;
-        first_insert += 1u;
+        r[i].insert_bits = 0;
+        r[i].copy_first = first_copy;
+        r[i].insert_first = 0;
+        first_copy += 1u;
       }
       /* put most of the other insert codes */for (; i < 285u; ++i) {
         r[i].code = static_cast<unsigned short>(i);
-        r[i].type = insert_copy_type::Insert;
+        r[i].type = insert_copy_type::Copy;
         r[i].zero_distance_tf = 0;
-        r[i].insert_bits = bits;
-        r[i].copy_bits = 0;
-        r[i].insert_first = first_insert;
-        r[i].copy_first = 0;
-        first_insert += (1u<<bits);
+        r[i].copy_bits = bits;
+        r[i].insert_bits = 0;
+        r[i].copy_first = first_copy;
+        r[i].insert_first = 0;
+        first_copy += (1u<<bits);
         if ((i%4) == 0) {
           bits += 1u;
         }
       }
+      /* adjust 284 */{
+        r[284].type = insert_copy_type::CopyMinus1;
+        first_copy -= 1u;
+      }
       /* put code 285 */{ /* i=285; */
         r[i].code = static_cast<unsigned short>(i);
-        r[i].type = insert_copy_type::Insert;
+        r[i].type = insert_copy_type::Copy;
         r[i].zero_distance_tf = 0;
-        r[i].insert_bits = 0;
         r[i].copy_bits = 0;
-        r[i].insert_first = first_insert;
-        r[i].copy_first = 0;
+        r[i].insert_bits = 0;
+        r[i].copy_first = first_copy;
+        r[i].insert_first = 0;
         /* ++i; */
       }
       return;
@@ -215,9 +219,11 @@ namespace text_complex {
     bool inscopy_length_cmp
         (insert_copy_row const& a, insert_copy_row const& b)
     {
-      if (a.type < b.type)
+      unsigned char const a_type = static_cast<unsigned char>(a.type)&127u;
+      unsigned char const b_type = static_cast<unsigned char>(b.type)&127u;
+      if (a_type < b_type)
         return true;
-      else if (a.type > b.type)
+      else if (a_type > b_type)
         return false;
       else if (a.zero_distance_tf < b.zero_distance_tf)
         return true;
@@ -253,7 +259,8 @@ namespace text_complex {
           return false;
         else {
           unsigned long int const copy_end =
-            icr.copy_first + (1UL<<icr.copy_bits);
+              icr.copy_first + (1UL<<icr.copy_bits)
+            - ((static_cast<unsigned char>(icr.type)&128u) ? 1u : 0u);
           if (k.copy_first >= copy_end)
             return true;
           else return false;

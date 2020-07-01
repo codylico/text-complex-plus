@@ -43,9 +43,9 @@ namespace text_complex {
        */
       Stop = 1,
       /**
-       * @brief DEFLATE insert length.
+       * @brief DEFLATE copy length.
        */
-      Insert = 2,
+      Copy = 2,
       /**
        * @brief Brotli insert-copy length code.
        */
@@ -53,7 +53,15 @@ namespace text_complex {
       /**
        * @brief Brotli block count code.
        */
-      BlockCount = 4
+      BlockCount = 4,
+      /**
+       * @brief DEFLATE copy length, minus one valid value in the extra bits.
+       * @note DEFLATE code 284 is in this category, accepting one less than
+       *   the proper five-bit extra range (i.e. 227-258) according to RFC1951.
+       * @note This type compares as equal to
+       *   @link insert_copy_type::Copy @endlink for length-based sorting.
+       */
+      CopyMinus1 = 130
     };
 
     /**

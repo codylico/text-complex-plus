@@ -73,11 +73,14 @@ std::ostream& operator<<
     case text_complex::access::insert_copy_type::Stop:
       o << "Stop";
       break;
-    case text_complex::access::insert_copy_type::Insert:
-      o << "Insert";
+    case text_complex::access::insert_copy_type::Copy:
+      o << "Copy";
       break;
     case text_complex::access::insert_copy_type::InsertCopy:
       o << "InsertCopy";
+      break;
+    case text_complex::access::insert_copy_type::CopyMinus1:
+      o << "CopyMinus1";
       break;
     default:
       o << static_cast<unsigned int>(static_cast<unsigned char>(t));
@@ -178,8 +181,11 @@ MunitPlusResult test_inscopy_item
       /* test length */{
         std::size_t i = testfont_rand_size_range(257,285);
         struct text_complex::access::insert_copy_row& row = (*p)[i];
-        munit_plus_assert_op
-          (row.type, ==, text_complex::access::insert_copy_type::Insert);
+        munit_plus_assert_uchar
+          ( static_cast<unsigned char>(row.type)&127u, ==,
+            static_cast<unsigned char>(
+              text_complex::access::insert_copy_type::Copy
+            ));
         munit_plus_assert_size(row.code, ==, i);
         munit_plus_assert_uint(row.insert_bits, <=, 5);
         munit_plus_logf(MUNIT_PLUS_LOG_DEBUG, "[%u] = {bits: %u, first: %u}",
@@ -248,7 +254,10 @@ MunitPlusResult test_inscopy_item_c
         std::size_t i = testfont_rand_size_range(257,285);
         struct text_complex::access::insert_copy_row const& row = (*p)[i];
         munit_plus_assert_op
-          (row.type, ==, text_complex::access::insert_copy_type::Insert);
+          ( static_cast<unsigned char>(row.type)&127, ==,
+            static_cast<unsigned char>(
+                text_complex::access::insert_copy_type::Copy
+            ));
         munit_plus_assert_uint(row.insert_bits, <=, 5);
         munit_plus_logf(MUNIT_PLUS_LOG_DEBUG, "[%u] = {bits: %u, first: %u}",
           static_cast<unsigned int>(i),
@@ -411,22 +420,17 @@ MunitPlusResult test_inscopy_encode
     }break;
   case 286: /* DEFLATE */{
       unsigned long int const cpy_len = testfont_rand_uint_range(0u,260u);
-      if (cpy_len >= 259) {
-        munit_plus_log(MUNIT_PLUS_LOG_DEBUG, "259 activated!");
-      }
       bool const expect_success = (cpy_len >= 3 && cpy_len <= 258);
-      std::size_t const encode_index = /* FIXME cpy_len should be second parameter */
-        text_complex::access::inscopy_encode(*p, cpy_len, 0u);
+      std::size_t const encode_index =
+        text_complex::access::inscopy_encode(*p, 0u, cpy_len);
       if ((encode_index != not_found) == expect_success) {
         if (expect_success) {
           text_complex::access::insert_copy_row const& row =
             (*p)[encode_index];
-          unsigned long int const cpy_extra = /* FIXME should use copy_first */
-            cpy_len - row.insert_first;
+          unsigned long int const cpy_extra = cpy_len - row.copy_first;
           munit_plus_logf(MUNIT_PLUS_LOG_DEBUG,
             "Encode (copy: %lu) as <%u, %lu:%u>",
-            cpy_len, row.code, cpy_extra,
-            row.insert_bits /* FIXME should use copy_bits */);
+            cpy_len, row.code, cpy_extra, row.copy_bits);
         } else {
           munit_plus_logf(MUNIT_PLUS_LOG_DEBUG,
             "Encode (copy: %lu) properly rejected.", cpy_len);
