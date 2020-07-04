@@ -14,6 +14,10 @@ static MunitPlusResult test_ctxtmap_cycle
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_ctxtmap_item
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ctxtmap_distcontext
+    (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ctxtmap_litcontext
+    (const MunitPlusParameter params[], void* data);
 static void* test_ctxtmap_setup
     (const MunitPlusParameter params[], void* user_data);
 static void test_ctxtmap_teardown(void* fixture);
@@ -25,6 +29,12 @@ static MunitPlusTest tests_ctxtmap[] = {
       nullptr},
   {(char*)"item", test_ctxtmap_item,
       test_ctxtmap_setup,test_ctxtmap_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"distance_context", test_ctxtmap_distcontext,
+      nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"literal_context", test_ctxtmap_litcontext,
+      nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
@@ -96,6 +106,89 @@ MunitPlusResult test_ctxtmap_item
         munit_plus_assert_ptr_equal(data_ptr, &p->at(j,i));
         munit_plus_assert_uchar(x, ==, p_c->at(j,i));
       }
+    }
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_ctxtmap_distcontext
+  (const MunitPlusParameter params[], void* data)
+{
+  unsigned long int len = munit_plus_rand_int_range(0,10);
+  size_t ctxt;
+  /* query the context */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    bool err_caught = false;
+    try {
+      ctxt = text_complex::access::ctxtmap_distance_context(len);
+    } catch (text_complex::access::api_exception const& ae) {
+      err_caught = true;
+    }
+    if (len < 2) {
+      munit_plus_assert_true(err_caught);
+    }
+#else
+    text_complex::access::api_error ae;
+    ctxt = text_complex::access::ctxtmap_distance_context(len, ae);
+    if (len < 2) {
+      munit_plus_assert_int(ae,!=,text_complex::access::api_error::Success);
+    }
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+  }
+  /* inspect the result */if (len >= 2) {
+    switch (len) {
+    case 2: munit_plus_assert_size(ctxt,==,0); break;
+    case 3: munit_plus_assert_size(ctxt,==,1); break;
+    case 4: munit_plus_assert_size(ctxt,==,2); break;
+    default: munit_plus_assert_size(ctxt,==,3); break;
+    }
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_ctxtmap_litcontext
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::context_map_mode const m =
+     static_cast<text_complex::access::context_map_mode>(
+        munit_plus_rand_int_range(0,4)
+      );
+  munit_plus_uint8_t hist[2];
+  size_t ctxt;
+  munit_plus_rand_memory(sizeof(hist), hist);
+  /* query the context */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    bool err_caught = false;
+    try {
+      ctxt = text_complex::access::ctxtmap_literal_context
+          (m, hist[0], hist[1]);
+    } catch (text_complex::access::api_exception const& ae) {
+      err_caught = true;
+    }
+    if (static_cast<int>(m) >= 4) {
+      munit_plus_assert_true(err_caught);
+    }
+#else
+    text_complex::access::api_error ae;
+    ctxt = text_complex::access::ctxtmap_literal_context
+        (m, hist[0], hist[1], ae);
+    if (static_cast<int>(m) >= 4) {
+      munit_plus_assert_int(ae,!=,text_complex::access::api_error::Success);
+    }
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+  }
+  /* inspect the result */if (static_cast<int>(m) < 4) {
+    switch (m) {
+    case text_complex::access::context_map_mode::LSB6:
+      munit_plus_assert_size(ctxt,==,hist[0]&0x3f);
+      break;
+    case text_complex::access::context_map_mode::MSB6:
+      munit_plus_assert_size(ctxt,==,(hist[0]>>2));
+      break;
+    case text_complex::access::context_map_mode::UTF8:
+    case text_complex::access::context_map_mode::Signed:
+      /* ? */
+      break;
     }
   }
   return MUNIT_PLUS_OK;

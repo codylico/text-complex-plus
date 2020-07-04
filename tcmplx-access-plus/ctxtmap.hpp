@@ -13,6 +13,16 @@ namespace text_complex {
   namespace access {
     //BEGIN context map
     /**
+     * @brief Literal context modes.
+     */
+    enum struct context_map_mode : int {
+      LSB6 = 0,
+      MSB6 = 1,
+      UTF8 = 2,
+      Signed = 3
+    };
+
+    /**
      * @brief Context map for compressed streams.
      * @note The layout for a context map is block-type major.
      */
@@ -173,6 +183,57 @@ namespace text_complex {
     TCMPLX_AP_API
     void ctxtmap_destroy(context_map* x) noexcept;
     //END   context map / allocation (namespace local)
+
+    //BEGIN context map / namespace local
+    /**
+     * @brief Calculate a distance context from a copy length.
+     * @param copylen a copy length
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
+     * @return a distance context on success, SIZE_MAX otherwise
+     */
+    TCMPLX_AP_API
+    size_t ctxtmap_distance_context
+        (unsigned long int copylen, api_error& ae) noexcept;
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Calculate a distance context from a copy length.
+     * @param copylen a copy length
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
+     * @return a distance context on success
+     * @throw api_exception on copy length parameter error
+     */
+    TCMPLX_AP_API
+    size_t ctxtmap_distance_context(unsigned long int copylen);
+#endif //TextComplexAccessP_NO_EXCEPT
+
+    /**
+     * @brief Calculate a literal context from recent history.
+     * @param mode a context map mode
+     * @param p1 most recent byte
+     * @param p2 the byte before the most recent
+     * @return a literal context on success, negative otherwise
+     */
+    TCMPLX_AP_API
+    size_t ctxtmap_literal_context
+      ( context_map_mode mode, unsigned char p1, unsigned char p2,
+        api_error& ae) noexcept;
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Calculate a literal context from recent history.
+     * @param mode a context map mode
+     * @param p1 most recent byte
+     * @param p2 the byte before the most recent
+     * @return a literal context on success, negative otherwise
+     */
+    TCMPLX_AP_API
+    size_t ctxtmap_literal_context
+      (context_map_mode mode, unsigned char p1, unsigned char p2);
+#endif //TextComplexAccessP_NO_EXCEPT
+    //END   context map / namespace local
   };
 };
 
