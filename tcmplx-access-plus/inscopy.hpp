@@ -350,6 +350,10 @@ namespace text_complex {
      *   subset of preset insert-copy tables. If the zero distance variation
      *   is unavailable, try again with the default (nonzero distance)
      *   variation instead.
+     * @note Failure of this function does not necessarily constitute an
+     *   error, since selection of a zero distance variation may result
+     *   in a compatible code not being found. Therefore, this interface
+     *   has no error code output/exception thrown.
      */
     TCMPLX_AP_API
     size_t inscopy_encode
