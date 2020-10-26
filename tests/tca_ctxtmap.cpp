@@ -7,6 +7,7 @@
 #include <cstring>
 #include "munit-plus/munit.hpp"
 #include <memory>
+#include <vector>
 #include "testfont.hpp"
 
 
@@ -18,9 +19,17 @@ static MunitPlusResult test_ctxtmap_distcontext
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_ctxtmap_litcontext
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ctxtmap_imtf
+    (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ctxtmap_mtf
+    (const MunitPlusParameter params[], void* data);
 static void* test_ctxtmap_setup
     (const MunitPlusParameter params[], void* user_data);
 static void test_ctxtmap_teardown(void* fixture);
+
+/* NOTE from RFC7932 */
+static void InverseMoveToFrontTransform
+  (munit_plus_uint8_t* v, int v_len);
 
 
 static MunitPlusTest tests_ctxtmap[] = {
@@ -36,6 +45,12 @@ static MunitPlusTest tests_ctxtmap[] = {
   {(char*)"literal_context", test_ctxtmap_litcontext,
       nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
+  {(char*)"imtf", test_ctxtmap_imtf,
+      test_ctxtmap_setup,test_ctxtmap_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"mtf", test_ctxtmap_mtf,
+      test_ctxtmap_setup,test_ctxtmap_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
 
@@ -45,6 +60,23 @@ static MunitPlusSuite const suite_ctxtmap = {
 };
 
 
+/* NOTE adapted from RFC7932 */
+void InverseMoveToFrontTransform(munit_plus_uint8_t* v, int v_len) {
+  munit_plus_uint8_t mtf[256];
+  int i;
+  for (i = 0; i < 256; ++i) {
+     mtf[i] = static_cast<munit_plus_uint8_t>(i);
+  }
+  for (i = 0; i < v_len; ++i) {
+     munit_plus_uint8_t index = v[i];
+     munit_plus_uint8_t value = mtf[index];
+     v[i] = value;
+     for (; index; --index) {
+        mtf[index] = mtf[index - 1];
+     }
+     mtf[0] = value;
+  }
+}
 
 
 MunitPlusResult test_ctxtmap_cycle
@@ -190,6 +222,51 @@ MunitPlusResult test_ctxtmap_litcontext
       /* ? */
       break;
     }
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_ctxtmap_imtf
+    (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::context_map* const p =
+    static_cast<text_complex::access::context_map*>(data);
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* */{
+    std::size_t const isize = p->contexts() * p->block_types();
+    unsigned char* const data = p->data();
+    std::vector<munit_plus_uint8_t> mem(isize*sizeof(unsigned char));
+    munit_plus_rand_memory(isize, data);
+    std::memcpy(&mem[0], data, isize*sizeof(unsigned char));
+    /* apply the inverse transform */{
+      text_complex::access::ctxtmap_revert_movetofront(*p);
+      InverseMoveToFrontTransform(&mem[0], isize);
+    }
+    munit_plus_assert_memory_equal(isize, data, &mem[0]);
+  }
+  return MUNIT_PLUS_OK;
+}
+MunitPlusResult test_ctxtmap_mtf
+    (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::context_map* const p =
+    static_cast<text_complex::access::context_map*>(data);
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* */{
+    std::size_t const isize = p->contexts() * p->block_types();
+    unsigned char* const data = p->data();
+    std::vector<munit_plus_uint8_t> mem(isize*sizeof(unsigned char));
+    munit_plus_rand_memory(isize, data);
+    std::memcpy(&mem[0], data, isize*sizeof(unsigned char));
+    /* apply the inverse transform */{
+      text_complex::access::ctxtmap_apply_movetofront(*p);
+      InverseMoveToFrontTransform(data, isize);
+    }
+    munit_plus_assert_memory_equal(isize, data, &mem[0]);
   }
   return MUNIT_PLUS_OK;
 }

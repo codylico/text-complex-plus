@@ -233,6 +233,22 @@ namespace text_complex {
     size_t ctxtmap_literal_context
       (context_map_mode mode, unsigned char p1, unsigned char p2);
 #endif //TextComplexAccessP_NO_EXCEPT
+
+    /**
+     * @brief Apply a move-to-front transform to the map.
+     * @param x the map to modify
+     * @note This function intends to reverse the inverse
+     *   move-to-front transform described in RFC 7932 section 7.3.
+     */
+    TCMPLX_AP_API
+    void ctxtmap_apply_movetofront(context_map& x) noexcept;
+    /**
+     * @brief Apply the Brotli inverse move-to-front transform to the map.
+     * @param x the map to modify
+     * @see RFC 7932 section 7.3.
+     */
+    TCMPLX_AP_API
+    void ctxtmap_revert_movetofront(context_map& x) noexcept;
     //END   context map / namespace local
   };
 };
