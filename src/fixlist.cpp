@@ -4,12 +4,12 @@
  * @author Cody Licorish (svgmovement@gmail.com)
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
-#include "fixlist.hpp"
+#include "text-complex-plus/access/fixlist.hpp"
 #include <new>
 #include <stdexcept>
 #include <limits>
-#include <cstring>
 #include <utility>
+#include <cstring>
 
 namespace text_complex {
   namespace access {

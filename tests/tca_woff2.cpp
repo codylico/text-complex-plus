@@ -1,15 +1,15 @@
 /**
  * @brief Test program for woff2
  */
-#include "../tcmplx-access-plus/woff2.hpp"
+#include "testfont.hpp"
+#include "text-complex-plus/access/woff2.hpp"
+#include "text-complex-plus/access/offtable.hpp"
 #include "mmaptwo-plus/mmaptwo.hpp"
+#include "munit-plus/munit.hpp"
+#include <memory>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include "munit-plus/munit.hpp"
-#include <memory>
-#include "testfont.hpp"
-#include "../tcmplx-access-plus/offtable.hpp"
 
 static MunitPlusResult test_woff2_cycle
     (const MunitPlusParameter params[], void* data);

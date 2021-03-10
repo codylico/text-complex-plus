@@ -4,7 +4,7 @@
  * @author Cody Licorish (svgmovement@gmail.com)
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
-#include "seq.hpp"
+#include "text-complex-plus/access/seq.hpp"
 #include "mmaptwo-plus/mmaptwo.hpp"
 #include <new>
 #include <stdexcept>

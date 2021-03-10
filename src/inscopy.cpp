@@ -4,13 +4,13 @@
  * @author Cody Licorish (svgmovement@gmail.com)
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
-#include "inscopy.hpp"
+#include "text-complex-plus/access/inscopy.hpp"
 #include <new>
 #include <stdexcept>
-#include <cstring>
 #include <limits>
 #include <utility>
 #include <algorithm>
+#include <cstring>
 
 namespace text_complex {
   namespace access {

@@ -1,13 +1,13 @@
 /**
  * @brief Test program for insert copy table
  */
-#include "../tcmplx-access-plus/inscopy.hpp"
+#include "testfont.hpp"
+#include "text-complex-plus/access/inscopy.hpp"
+#include "munit-plus/munit.hpp"
+#include <memory>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include "munit-plus/munit.hpp"
-#include <memory>
-#include "testfont.hpp"
 
 
 

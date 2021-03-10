@@ -4,11 +4,11 @@
  * @author Cody Licorish (svgmovement@gmail.com)
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
-#include "ctxtmap.hpp"
+#include "text-complex-plus/access/ctxtmap.hpp"
 #include <new>
 #include <limits>
-#include <cstring>
 #include <stdexcept>
+#include <cstring>
 
 namespace text_complex {
   namespace access {

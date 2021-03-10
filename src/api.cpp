@@ -7,13 +7,13 @@
 #if (defined TextComplexAccessP_NO_EXCEPT)
 #  undef TextComplexAccessP_NO_EXCEPT
 #endif //TextComplexAccessP_NO_EXCEPT
-#include "api.hpp"
+#include "text-complex-plus/access/api.hpp"
 
 namespace text_complex {
   namespace access {
     //BEGIN configurations
     char const* api_version(void) noexcept {
-      return "0.3.3-alpha";
+      return "0.3.4-alpha";
     }
     //END   configurations
 

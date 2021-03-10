@@ -7,7 +7,7 @@
 #if (defined TextComplexAccessP_NO_EXCEPT)
 #  undef TextComplexAccessP_NO_EXCEPT
 #endif //TextComplexAccessP_NO_EXCEPT
-#include "ringdist.hpp"
+#include "text-complex-plus/access/ringdist.hpp"
 #include <new>
 #include <cstring>
 

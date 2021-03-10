@@ -1,14 +1,14 @@
 /**
  * @brief Test program for context map
  */
-#include "../tcmplx-access-plus/ctxtmap.hpp"
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include "testfont.hpp"
+#include "text-complex-plus/access/ctxtmap.hpp"
 #include "munit-plus/munit.hpp"
 #include <memory>
 #include <vector>
-#include "testfont.hpp"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 
 static MunitPlusResult test_ctxtmap_cycle

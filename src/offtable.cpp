@@ -4,7 +4,7 @@
  * \author Cody Licorish (svgmovement@gmail.com)
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
-#include "offtable.hpp"
+#include "text-complex-plus/access/offtable.hpp"
 #include <new>
 #include <limits>
 #include <stdexcept>

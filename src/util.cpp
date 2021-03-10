@@ -4,7 +4,7 @@
  * \author Cody Licorish (svgmovement@gmail.com)
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
-#include "util.hpp"
+#include "text-complex-plus/access/util.hpp"
 #include <new>
 #include <limits>
 #include <cstring>

@@ -4,16 +4,16 @@
  * @author Cody Licorish (svgmovement@gmail.com)
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
-#include "woff2.hpp"
+#include "text-complex-plus/access/woff2.hpp"
+#include "text-complex-plus/access/seq.hpp"
+#include "text-complex-plus/access/offtable.hpp"
 #include "mmaptwo-plus/mmaptwo.hpp"
 #include <new>
 #include <stdexcept>
-#include <cstring>
-#include "seq.hpp"
 #include <memory>
-#include "offtable.hpp"
 #include <limits>
 #include <algorithm>
+#include <cstring>
 
 namespace text_complex {
   namespace access {

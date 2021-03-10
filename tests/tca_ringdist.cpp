@@ -1,15 +1,15 @@
 /**
  * @brief Test program for distance ring
  */
-#include "../tcmplx-access-plus/ringdist.hpp"
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include "testfont.hpp"
+#include "text-complex-plus/access/ringdist.hpp"
 #include "munit-plus/munit.hpp"
 #include <memory>
 #include <new>
-#include "testfont.hpp"
 #include <limits>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 
 struct test_ringdist_params {
