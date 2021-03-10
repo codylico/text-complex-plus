@@ -21,6 +21,9 @@ target_compile_features(tcmplx_access_plus
       cxx_defaulted_functions cxx_constexpr cxx_rvalue_references
     PRIVATE cxx_nullptr
   )
+target_include_directories(tcmplx_access_plus
+    PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../deps>")
+
 if (WIN32 AND BUILD_SHARED_LIBS)
   target_compile_definitions(tcmplx_access_plus
     PUBLIC "TCMPLX_AP_WIN32_DLL")

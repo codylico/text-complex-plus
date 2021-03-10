@@ -5,10 +5,10 @@
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
 #include "woff2.hpp"
+#include "mmaptwo-plus/mmaptwo.hpp"
 #include <new>
 #include <stdexcept>
 #include <cstring>
-#include "../mmaptwo-plus/mmaptwo.hpp"
 #include "seq.hpp"
 #include <memory>
 #include "offtable.hpp"

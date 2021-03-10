@@ -5,9 +5,9 @@
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
 #include "seq.hpp"
+#include "mmaptwo-plus/mmaptwo.hpp"
 #include <new>
 #include <stdexcept>
-#include "../mmaptwo-plus/mmaptwo.hpp"
 #include <limits>
 
 namespace text_complex {

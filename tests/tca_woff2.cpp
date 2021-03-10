@@ -2,12 +2,12 @@
  * @brief Test program for woff2
  */
 #include "../tcmplx-access-plus/woff2.hpp"
+#include "mmaptwo-plus/mmaptwo.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include "munit-plus/munit.hpp"
 #include <memory>
-#include "../mmaptwo-plus/mmaptwo.hpp"
 #include "testfont.hpp"
 #include "../tcmplx-access-plus/offtable.hpp"
 

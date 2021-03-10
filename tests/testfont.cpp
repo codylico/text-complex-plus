@@ -3,8 +3,8 @@
  * @brief Test fonts.
  */
 #include "testfont.hpp"
+#include "mmaptwo-plus/mmaptwo.hpp"
 #include <climits>
-#include "../mmaptwo-plus/mmaptwo.hpp"
 #include <stdexcept>
 #include <new>
 #include "munit-plus/munit.hpp"

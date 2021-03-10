@@ -7,6 +7,8 @@ add_library(munit_plus STATIC
 add_library(tcmplx_accessP_testfont STATIC
   testfont.cpp testfont.hpp)
 target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus munit_plus)
+target_include_directories(tcmplx_accessP_testfont
+    PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../deps>")
 
 #BEGIN API test
   add_executable(tcmplx_accessP_test_api tca_api.cpp)
@@ -29,12 +31,16 @@ target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus munit_plus)
   add_executable(tcmplx_accessP_test_woff2 tca_woff2.cpp)
   target_link_libraries(tcmplx_accessP_test_woff2
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
+  target_include_directories(tcmplx_accessP_test_woff2
+    PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../deps>")
 #END   Woff2 test
 
 #BEGIN Seq test
   add_executable(tcmplx_accessP_test_seq tca_seq.cpp)
   target_link_libraries(tcmplx_accessP_test_seq
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus mmaptwo_plus)
+  target_include_directories(tcmplx_accessP_test_seq
+    PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../deps>")
 #END   Seq test
 
 #BEGIN FixList test
