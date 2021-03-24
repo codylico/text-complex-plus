@@ -894,7 +894,7 @@ namespace text_complex {
     //END   built-in dictionary / data[6]
 
     //BEGIN built-in dictionary / access
-    unsigned char const* tcmplxA_bdict_access06(unsigned int i) noexcept {
+    unsigned char const* bdict_access06(unsigned int i) noexcept {
 #ifndef NDEBUG
       if (i >= sizeof(bdict_slice06)/6u)
         return nullptr;
