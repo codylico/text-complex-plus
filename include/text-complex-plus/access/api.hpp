@@ -39,6 +39,8 @@ namespace text_complex {
      * @brief Library error codes.
      */
     enum struct api_error : int {
+      /** Array index out of range */
+      OutOfRange = -10,
       /** Numeric overflow produced by a distance code conversion */
       RingDistOverflow = -9,
       /** Negative or zero distance produced by a distance code conversion */

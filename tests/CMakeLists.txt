@@ -66,4 +66,10 @@ target_include_directories(tcmplx_accessP_testfont
   target_link_libraries(tcmplx_accessP_test_ctxtmap
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
 #END   CtxtMap test
+
+#BEGIN BDict test
+  add_executable(tcmplx_accessP_test_bdict tca_bdict.cpp)
+  target_link_libraries(tcmplx_accessP_test_bdict
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
+#END   BDict test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)

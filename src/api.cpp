@@ -20,6 +20,8 @@ namespace text_complex {
     //BEGIN error codes
     char const* api_error_toa(api_error v) noexcept {
       switch (v) {
+      case api_error::OutOfRange:
+        return "Array index out of range";
       case api_error::RingDistOverflow:
         return "Numeric overflow produced by a distance code conversion";
       case api_error::RingDistUnderflow:

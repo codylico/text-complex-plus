@@ -13,7 +13,7 @@ set(text_complex_access_plus_FILES
   inscopy.cpp
   ctxtmap.cpp
 
-  bdict_p.hpp
+  bdict.cpp    bdict_p.hpp
   bdict04.cpp  bdict05.cpp  bdict06.cpp  bdict07.cpp  bdict08.cpp
   bdict09.cpp  bdict10.cpp  bdict11.cpp  bdict12.cpp  bdict13.cpp
   bdict14.cpp  bdict15.cpp  bdict16.cpp  bdict17.cpp  bdict18.cpp
@@ -36,6 +36,8 @@ set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/inscopy.txx
   ../include/text-complex-plus/access/ctxtmap.hpp
   ../include/text-complex-plus/access/ctxtmap.txx
+  ../include/text-complex-plus/access/bdict.hpp
+  ../include/text-complex-plus/access/bdict.txx
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES}
