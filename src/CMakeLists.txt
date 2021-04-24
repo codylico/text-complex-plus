@@ -46,6 +46,7 @@ target_link_libraries(tcmplx_access_plus mmaptwo_plus)
 target_compile_features(tcmplx_access_plus
     PUBLIC cxx_noexcept cxx_deleted_functions cxx_final
       cxx_defaulted_functions cxx_constexpr cxx_rvalue_references
+      cxx_strong_enums
     PRIVATE cxx_nullptr
   )
 target_include_directories(tcmplx_access_plus
