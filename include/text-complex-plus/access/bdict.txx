@@ -34,6 +34,15 @@ namespace text_complex {
         throw api_exception(ae);
       } else return;
     }
+
+    inline
+    void bdict_transform(struct bdict_word& buf, unsigned int k) {
+      api_error ae;
+      bdict_transform(buf, k, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT
   };
 };

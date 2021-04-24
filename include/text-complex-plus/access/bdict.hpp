@@ -170,6 +170,26 @@ namespace text_complex {
      */
     TCMPLX_AP_API
     struct bdict_word bdict_get_word(unsigned int j, unsigned int i) noexcept;
+
+    /**
+     * @brief Transform a word.
+     * @param[in,out] buf a buffer holding the word
+     * @param k transform selector (in range `[0,121)`)
+     * @param[out] ae error reception variable
+     */
+    TCMPLX_AP_API
+    void bdict_transform
+      (struct bdict_word& buf, unsigned int k, api_error& ae) noexcept;
+
+    /**
+     * @brief Transform a word.
+     * @param[in,out] buf a buffer holding the word
+     * @param k transform selector (in range `[0,121)`)
+     * @throw @link api_exception @endlink on bad transform selector
+     *   or overlong word
+     */
+    TCMPLX_AP_API
+    void bdict_transform(struct bdict_word& buf, unsigned int k);
     //END   built-in dictionary / namespace local
   };
 };

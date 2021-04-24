@@ -8,6 +8,45 @@
 
 namespace text_complex {
   namespace access {
+    //BEGIN built-in dictionary / transform
+    /** @internal @brief Callback types. */
+    enum struct bdict_cb : unsigned short {
+      Identity = 0u,
+      FermentFirst = 1u,
+      FermentAll = 2u,
+      OmitFirst1 = 3u,
+      OmitFirst2 = 4u,
+      OmitFirst3 = 5u,
+      OmitFirst4 = 6u,
+      OmitFirst5 = 7u,
+      OmitFirst6 = 8u,
+      OmitFirst7 = 9u,
+      OmitFirst8 = 10u,
+      OmitFirst9 = 11u,
+      OmitLast1 = 12u,
+      OmitLast2 = 13u,
+      OmitLast3 = 14u,
+      OmitLast4 = 15u,
+      OmitLast5 = 16u,
+      OmitLast6 = 17u,
+      OmitLast7 = 18u,
+      OmitLast8 = 19u,
+      OmitLast9 = 20u
+    };
+
+    /**
+     * @internal
+     * @brief Perform a word transform and add to an output buffer.
+     * @param[out] dst output buffer
+     * @param[in,out] dstlen write position
+     * @param src source word
+     * @param srclen length of source word
+     */
+    void bdict_cb_do
+      ( unsigned char* dst, unsigned int& dstlen,
+        unsigned char const* src, unsigned int srclen, bdict_cb k) noexcept;
+    //END   built-in dictionary / transform
+
     //BEGIN built-in dictionary / access
     /**
      * @brief Access the 4-length section of the dictionary.
