@@ -148,6 +148,14 @@ namespace text_complex {
     unsigned char const& bdict_word::operator[](size_t i) const noexcept {
       return this->p[i];
     }
+
+    size_t bdict_word::max_size(void) const noexcept {
+      return 37u;
+    };
+
+    bool bdict_word::operator==(bdict_word const& other) const noexcept {
+      return len==other.len && (std::memcmp(p,other.p,len)==0);
+    };
     //END   bdict_word / public
 
     //BEGIN bdict / namespace local

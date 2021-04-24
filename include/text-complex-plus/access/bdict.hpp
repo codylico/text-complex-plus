@@ -137,6 +137,19 @@ namespace text_complex {
        * @throw `api_exception` if the size is too big (i.e. `> 37`).
        */
       void resize(size_t sz);
+
+      /**
+       * @brief Determine maximum size for a byte container.
+       * @return 37.
+       */
+      size_t max_size(void) const noexcept;
+
+      /**
+       * @brief Compare two words.
+       * @param other the other word
+       * @return true if the words are same, false otherwise
+       */
+      bool operator==(bdict_word const& other) const noexcept;
     };
     //END   built-in dictionary word
 
