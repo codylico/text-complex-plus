@@ -3,6 +3,7 @@
  * @brief Test fonts.
  */
 #include "testfont.hpp"
+#include "text-complex-plus/access/api.hpp"
 #include "mmaptwo-plus/mmaptwo.hpp"
 #include <climits>
 #include <stdexcept>
@@ -26,6 +27,15 @@ MunitPlusArgument const tcmplxAtest_arglist[] = {
   { (char*)"font-path", tcmplxAtest_arg_fp_parse, tcmplxAtest_arg_fp_help },
   { NULL, NULL, NULL }
 };
+
+
+std::string munit_plus_formatter<
+    text_complex::access::api_error
+  >::format(text_complex::access::api_error const& ae)
+{
+  char const* s = api_error_toa(ae);
+  return s ? s : "Unknown";
+}
 
 
 

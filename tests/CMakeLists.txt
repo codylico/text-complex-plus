@@ -6,9 +6,12 @@ add_library(munit_plus STATIC
   munit-plus/munit.cpp munit-plus/munit.hpp)
 add_library(tcmplx_accessP_testfont STATIC
   testfont.cpp testfont.hpp)
-target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus munit_plus)
+target_link_libraries(tcmplx_accessP_testfont
+  tcmplx_access_plus mmaptwo_plus munit_plus)
 target_include_directories(tcmplx_accessP_testfont
     PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../deps>")
+target_compile_features(tcmplx_accessP_testfont
+  PUBLIC cxx_strong_enums)
 
 #BEGIN API test
   add_executable(tcmplx_accessP_test_api tca_api.cpp)

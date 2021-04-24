@@ -12,7 +12,20 @@ struct MunitPlusArgument_;
 namespace mmaptwo {
   class mmaptwo_i;
 };
+namespace text_complex {
+  namespace access {
+    enum struct api_error : int;
+  };
+};
 
+template <typename A>
+struct munit_plus_formatter;
+
+
+template <>
+struct munit_plus_formatter<text_complex::access::api_error> {
+  static std::string format(text_complex::access::api_error const& ae);
+};
 
 enum tcmplxAtest_testfont {
   /**
