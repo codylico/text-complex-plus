@@ -19,6 +19,8 @@ set(text_complex_access_plus_FILES
   bdict14.cpp  bdict15.cpp  bdict16.cpp  bdict17.cpp  bdict18.cpp
   bdict19.cpp  bdict20.cpp  bdict21.cpp  bdict22.cpp  bdict23.cpp
   bdict24.cpp
+
+  zutil.cpp
   )
 set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/api.hpp

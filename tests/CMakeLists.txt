@@ -75,4 +75,10 @@ target_compile_features(tcmplx_accessP_testfont
   target_link_libraries(tcmplx_accessP_test_bdict
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
 #END   BDict test
+
+#BEGIN ZUtil test
+  add_executable(tcmplx_accessP_test_zutil tca_zutil.cpp)
+  target_link_libraries(tcmplx_accessP_test_zutil
+    munit_plus tcmplx_access_plus)
+#END   ZUtil test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)
