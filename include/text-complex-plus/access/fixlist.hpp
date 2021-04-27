@@ -60,8 +60,11 @@ namespace text_complex {
      * @brief A single line from a prefix code list.
      */
     struct prefix_line {
+      /** @brief Alphabet code for a prefix. */
       unsigned short int code;
+      /** @brief Length of prefix in bits. */
       unsigned short int len;
+      /** @brief Prefix bits. */
       unsigned long int value;
     };
     //END   prefix code line
@@ -75,13 +78,18 @@ namespace text_complex {
       struct prefix_line* p;
       size_t n;
 
-    public /* container-compat */:
+    public: /** @name container-compat *//** @{ */
+      /** @brief Data type used for array sizes. */
       typedef size_t size_type;
+      /** @brief Data type stored in the list. */
       typedef struct prefix_line value_type;
+      /** @brief Data type used for mutable iteration. */
       typedef struct prefix_line* iterator;
+      /** @brief Data type used for const iteration. */
       typedef struct prefix_line const* const_iterator;
+      /** @} */
 
-    public /*rule-of-six*/:
+    public: /** @name rule-of-six *//** @{ */
       /**
        * @brief Constructor.
        * @param n number of prefix code lines
@@ -110,8 +118,9 @@ namespace text_complex {
        * @return this prefix list
        */
       prefix_list& operator=(prefix_list&& ) noexcept;
+      /** @} */
 
-    public /* allocation */:
+    public: /** allocation *//** @{ */
       /**
        * @brief Scalar memory allocator.
        * @param sz size in `char`s of `prefix_list` to allocate
@@ -138,8 +147,9 @@ namespace text_complex {
        * @param sz size in `char`s of `prefix_list[]` to free
        */
       static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
 
-    public /* range-based */:
+    public: /** @name range-based *//** @{ */
       /**
        * @brief `begin` method for range-based `for`.
        * @return a pointer to the first line, or `nullptr` for empty tables
@@ -162,8 +172,9 @@ namespace text_complex {
        *   or `nullptr` for empty tables
        */
       prefix_line const* end(void) const noexcept;
+      /** @} */
 
-    public /* array-compat */:
+    public: /** @name array-compat *//** @{ */
       /**
        * @brief Query the size of the list.
        * @return the number of lines in this list
@@ -183,7 +194,6 @@ namespace text_complex {
       prefix_line const& operator[](size_t i) const noexcept;
       /**
        * @brief Write to a prefix list.
-       * @param x the list to write
        * @param i an array index
        * @return a reference to an offset line
        * @throw std::out_of_range on bad index
@@ -191,18 +201,19 @@ namespace text_complex {
       prefix_line& at(size_t i);
       /**
        * @brief Read from a prefix list.
-       * @param x the list to read
        * @param i an array index
        * @return a pointer to a prefix line on success, NULL otherwise
        * @throw std::out_of_range on bad index
        */
       prefix_line const& at(size_t i) const;
+      /** @} */
 
-    private /* rule-of-six */:
+    private: /** @name rule-of-six *//** @{ */
       void duplicate(prefix_list const& );
       void transfer(prefix_list&& ) noexcept;
       void transfer(prefix_list const& ) = delete;
       void resize(size_t n);
+      /** @} */
     };
     //END   prefix list
 
