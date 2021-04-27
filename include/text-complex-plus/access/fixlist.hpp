@@ -217,6 +217,156 @@ namespace text_complex {
     };
     //END   prefix list
 
+    //BEGIN prefix histogram
+    /**
+     * @brief Prefix code histogram.
+     */
+    class TCMPLX_AP_API prefix_histogram final {
+    private:
+      uint32* p;
+      size_t n;
+
+    public: /** @name container-compat *//** @{ */
+      /** @brief Data type used for array sizes. */
+      typedef size_t size_type;
+      /** @brief Data type stored in the histogram. */
+      typedef uint32 value_type;
+      /** @brief Data type used for mutable iteration. */
+      typedef uint32* iterator;
+      /** @brief Data type used for const iteration. */
+      typedef uint32 const* const_iterator;
+      /** @} */
+
+    public: /** @name rule-of-six *//** @{ */
+      /**
+       * @brief Constructor.
+       * @param n number of prefix code frequencies
+       * @throw `std::bad_alloc` if something breaks
+       */
+      prefix_histogram(size_t n = 0u);
+      /**
+       * @brief Destructor.
+       */
+      ~prefix_histogram(void);
+      /**
+       * @brief Copy constructor.
+       */
+      prefix_histogram(prefix_histogram const& );
+      /**
+       * @brief Copy assignment operator.
+       * @return this prefix histogram
+       */
+      prefix_histogram& operator=(prefix_histogram const& );
+      /**
+       * @brief Move constructor.
+       */
+      prefix_histogram(prefix_histogram&& ) noexcept;
+      /**
+       * @brief Move assignment operator.
+       * @return this prefix histogram
+       */
+      prefix_histogram& operator=(prefix_histogram&& ) noexcept;
+      /** @} */
+
+    public: /** allocation *//** @{ */
+      /**
+       * @brief Scalar memory allocator.
+       * @param sz size in `char`s of `prefix_histogram` to allocate
+       * @return a pointer to memory on success
+       * @throw `std::bad_alloc` on allocation error
+       */
+      static void* operator new(std::size_t sz);
+      /**
+       * @brief Array memory allocator.
+       * @param sz size in `char`s of `prefix_histogram[]` to allocate
+       * @return a pointer to memory on success
+       * @throw std::bad_alloc on allocation error
+       */
+      static void* operator new[](std::size_t sz);
+      /**
+       * @brief Scalar memory free callback.
+       * @param p pointer to memory to free
+       * @param sz size in `char`s of `prefix_histogram` to free
+       */
+      static void operator delete(void* p, std::size_t sz) noexcept;
+      /**
+       * @brief Array memory free callback.
+       * @param p pointer to memory to free
+       * @param sz size in `char`s of `prefix_histogram[]` to free
+       */
+      static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
+
+    public: /** @name range-based *//** @{ */
+      /**
+       * @brief `begin` method for range-based `for`.
+       * @return a pointer to the first frequency,
+       *   or `nullptr` for empty histograms
+       */
+      uint32* begin(void) noexcept;
+      /**
+       * @brief `begin` method for range-based `for`.
+       * @return a pointer to the first frequency,
+       *   or `nullptr` for empty histograms
+       */
+      uint32 const* begin(void) const noexcept;
+      /**
+       * @brief `end` method for range-based `for`.
+       * @return a pointer to one-past the last frequency,
+       *   or `nullptr` for empty histograms
+       */
+      uint32* end(void) noexcept;
+      /**
+       * @brief `end` method for range-based `for`.
+       * @return a pointer to one-past the last frequency,
+       *   or `nullptr` for empty histograms
+       */
+      uint32 const* end(void) const noexcept;
+      /** @} */
+
+    public: /** @name array-compat *//** @{ */
+      /**
+       * @brief Query the size of the histogram.
+       * @return the number of frequencies in this histogram
+       */
+      size_t size(void) const noexcept;
+      /**
+       * @brief Array index operator.
+       * @param i array index
+       * @return a reference to the frequency at the given index
+       */
+      uint32& operator[](size_t i) noexcept;
+      /**
+       * @brief Array index operator.
+       * @param i array index
+       * @return a reference to the frequency at the given index
+       */
+      uint32 const& operator[](size_t i) const noexcept;
+      /**
+       * @brief Write to a prefix histogram.
+       * @param i an array index
+       * @return a reference to an offset frequency
+       * @throw std::out_of_range on bad index
+       */
+      uint32& at(size_t i);
+      /**
+       * @brief Read from a prefix histogram.
+       * @param i an array index
+       * @return a pointer to a prefix frequency on success, NULL otherwise
+       * @throw std::out_of_range on bad index
+       */
+      uint32 const& at(size_t i) const;
+      /** @} */
+
+    private: /** @name rule-of-six *//** @{ */
+      void duplicate(prefix_histogram const& );
+      void transfer(prefix_histogram&& ) noexcept;
+      void transfer(prefix_histogram const& ) = delete;
+      void resize(size_t n);
+      /** @} */
+    };
+    //END   prefix histogram
+
     //BEGIN prefix list / exports
     template
     class TCMPLX_AP_API util_unique_ptr<prefix_list>;
@@ -246,6 +396,37 @@ namespace text_complex {
     TCMPLX_AP_API
     void fixlist_destroy(prefix_list* x) noexcept;
     //END   prefix list / allocation (namespace local)
+
+    //BEGIN prefix histogram / exports
+    template
+    class TCMPLX_AP_API util_unique_ptr<prefix_histogram>;
+    //END   prefix histogram / exports
+
+    //BEGIN prefix histogram / allocation (namespace local)
+    /**
+     * @brief Non-throwing prefix histogram allocator.
+     * @param n number of prefix code lines
+     * @return a prefix histogram on success, `nullptr` otherwise
+     */
+    TCMPLX_AP_API
+    prefix_histogram* fixlist_histogram_new(size_t n = 0u) noexcept;
+
+    /**
+     * @brief Non-throwing prefix histogram allocator.
+     * @param n number of prefix code lines
+     * @return a prefix histogram on success, `nullptr` otherwise
+     */
+    TCMPLX_AP_API
+    util_unique_ptr<prefix_histogram> fixlist_histogram_unique
+        (size_t n = 0u) noexcept;
+
+    /**
+     * @brief Destroy a prefix histogram.
+     * @param x (nullable) the prefix histogram to destroy
+     */
+    TCMPLX_AP_API
+    void fixlist_histogram_destroy(prefix_histogram* x) noexcept;
+    //END   prefix histogram / allocation (namespace local)
 
     //BEGIN prefix list / namespace local
     /**

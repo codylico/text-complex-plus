@@ -243,6 +243,189 @@ namespace text_complex {
     }
     //END   prefix_list / array-compat
 
+    //BEGIN prefix_histogram / rule-of-six
+    prefix_histogram::prefix_histogram(size_t n)
+      : p(nullptr), n(0u)
+    {
+      resize(n);
+      return;
+    }
+
+    prefix_histogram::~prefix_histogram(void) {
+      if (this->p) {
+        delete[] this->p;
+      }
+      this->p = nullptr;
+      this->n = 0u;
+      return;
+    }
+
+    prefix_histogram::prefix_histogram(prefix_histogram const& other)
+      : p(nullptr), n(0u)
+    {
+      duplicate(other);
+      return;
+    }
+
+    prefix_histogram& prefix_histogram::operator=
+        (prefix_histogram const& other)
+    {
+      duplicate(other);
+      return *this;
+    }
+
+    prefix_histogram::prefix_histogram(prefix_histogram&& other) noexcept
+      : p(nullptr), n(0u)
+    {
+      transfer(static_cast<prefix_histogram&&>(other));
+      return;
+    }
+
+    prefix_histogram& prefix_histogram::operator=
+        (prefix_histogram&& other) noexcept
+    {
+      transfer(static_cast<prefix_histogram&&>(other));
+      return *this;
+    }
+
+    void prefix_histogram::duplicate(prefix_histogram const& other) {
+      if (this == &other)
+        return;
+      resize(other.n);
+      size_t i;
+      for (i = 0; i < n; ++i) {
+        p[i] = other.p[i];
+      }
+      return;
+    }
+
+    void prefix_histogram::transfer(prefix_histogram&& other) noexcept {
+      uint32* new_p;
+      size_t new_n;
+      /* release */{
+        new_p = other.p;
+        other.p = nullptr;
+        new_n = other.n;
+        other.n = 0u;
+      }
+      /* reset */{
+        if (this->p) {
+          delete[] this->p;
+        }
+        this->p = new_p;
+        this->n = new_n;
+      }
+      return;
+    }
+
+    void prefix_histogram::resize(size_t n) {
+      uint32 *ptr;
+      if (n == 0u) {
+        if (this->p) {
+          delete[] this->p;
+        }
+        this->p = nullptr;
+        this->n = 0u;
+        return;
+      }
+      if (n >= std::numeric_limits<size_t>::max()/sizeof(uint32))
+      {
+        throw std::bad_alloc();
+      }
+      ptr = new uint32[n];
+      if (this->p) {
+        delete[] this->p;
+      }
+      this->p = ptr;
+      this->n = n;
+      return;
+    }
+    //END   prefix_histogram / rule-of-six
+
+    //BEGIN prefix_histogram / allocation
+    void* prefix_histogram::operator new(std::size_t sz) {
+      return ::operator new(sz);
+    }
+
+    void* prefix_histogram::operator new[](std::size_t sz) {
+      return ::operator new(sz);
+    }
+
+    void prefix_histogram::operator delete(void* p, std::size_t sz) noexcept {
+      return ::operator delete(p);
+    }
+
+    void prefix_histogram::operator delete[](void* p, std::size_t sz) noexcept {
+      return ::operator delete(p);
+    }
+
+    prefix_histogram* fixlist_histogram_new(size_t n) noexcept {
+      try {
+        return new prefix_histogram(n);
+      } catch (api_exception const& ) {
+        return nullptr;
+      } catch (std::bad_alloc const& ) {
+        return nullptr;
+      }
+    }
+
+    util_unique_ptr<prefix_histogram> fixlist_histogram_unique
+        (size_t n) noexcept
+    {
+      return util_unique_ptr<prefix_histogram>(fixlist_histogram_new(n));
+    }
+
+    void fixlist_histogram_destroy(prefix_histogram* x) noexcept {
+      if (x) {
+        delete x;
+      }
+    }
+    //END   prefix_histogram / allocation
+
+    //BEGIN prefix_histogram / range-based
+    uint32* prefix_histogram::begin(void) noexcept {
+      return this->p;
+    }
+
+    uint32 const* prefix_histogram::begin(void) const noexcept {
+      return this->p;
+    }
+
+    uint32* prefix_histogram::end(void) noexcept {
+      return this->p+this->n;
+    }
+
+    uint32 const* prefix_histogram::end(void) const noexcept {
+      return this->p+this->n;
+    }
+    //END   prefix_histogram / range-based
+
+    //BEGIN prefix_histogram / array-compat
+    size_t prefix_histogram::size(void) const noexcept {
+      return this->n;
+    }
+
+    uint32& prefix_histogram::operator[](size_t i) noexcept {
+      return this->p[i];
+    }
+
+    uint32 const& prefix_histogram::operator[](size_t i) const noexcept {
+      return this->p[i];
+    }
+
+    uint32& prefix_histogram::at(size_t i) {
+      if (i >= this->n)
+        throw std::out_of_range("text_complex::access::prefix_histogram::at");
+      return this->p[i];
+    }
+
+    uint32 const& prefix_histogram::at(size_t i) const {
+      if (i >= this->n)
+        throw std::out_of_range("text_complex::access::prefix_histogram::at");
+      return this->p[i];
+    }
+    //END   prefix_histogram / array-compat
+
     //BEGIN prefix_list / namespace local
     void fixlist_gen_codes(prefix_list& dst, api_error& ae) noexcept {
       size_t counts[16] = {0u};
