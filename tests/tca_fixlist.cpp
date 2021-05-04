@@ -16,6 +16,8 @@ static MunitPlusResult test_fixlist_item
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_fixlist_gen_codes
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_fixlist_gen_lengths
+    (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_fixlist_preset
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_fixlist_hist_cycle
@@ -26,6 +28,8 @@ static void* test_fixlist_setup
     (const MunitPlusParameter params[], void* user_data);
 static void* test_fixlist_gen_setup
     (const MunitPlusParameter params[], void* user_data);
+static void* test_fixlist_len_setup
+    (const MunitPlusParameter params[], void* user_data);
 static void test_fixlist_teardown(void* fixture);
 static void* test_fixlist_hist_setup
     (const MunitPlusParameter params[], void* user_data);
@@ -34,6 +38,11 @@ static void test_fixlist_hist_teardown(void* fixture);
 
 static MunitPlusParameterEnum test_fixlist_gen_params[] = {
   { (char*)"prefixes", nullptr },
+  { nullptr, nullptr },
+};
+
+static MunitPlusParameterEnum test_fixlist_len_params[] = {
+  { (char*)"frequencies", nullptr },
   { nullptr, nullptr },
 };
 
@@ -49,6 +58,9 @@ static MunitPlusTest tests_fixlist[] = {
   {(char*)"gen_codes", test_fixlist_gen_codes,
       test_fixlist_gen_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       test_fixlist_gen_params},
+  {(char*)"gen_lengths", test_fixlist_gen_lengths,
+      test_fixlist_len_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      test_fixlist_len_params},
   {(char*)"preset", test_fixlist_preset,
       test_fixlist_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
@@ -107,6 +119,35 @@ void* test_fixlist_gen_setup
   }
   out = text_complex::access::fixlist_new(lex.size());
   if (out) {
+    size_t i;
+    for (i = 0; i < lex.size(); ++i) {
+      (*out)[i].len = lex.next();
+      (*out)[i].value = i;
+    }
+  }
+  return out;
+}
+
+void* test_fixlist_len_setup
+    (const MunitPlusParameter params[], void* user_data)
+{
+  tcmplxAtest_fixlist_lex lex;
+  text_complex::access::prefix_list* out;
+  int const start_res =
+    lex.start(munit_plus_parameters_get(params, "frequencies"));
+  out = text_complex::access::fixlist_new
+    (start_res ==0? lex.size() : munit_plus_rand_int_range(2,384));
+  if (!out) {
+    return nullptr;
+  } else if (start_res != 0) {
+    size_t const len = out->size();
+    size_t i;
+    /* generate random */
+    for (i = 0; i < len; ++i) {
+      (*out)[i].len = munit_plus_rand_int_range(0,32);
+      (*out)[i].value = i;
+    }
+  } else {
     size_t i;
     for (i = 0; i < lex.size(); ++i) {
       (*out)[i].len = lex.next();
@@ -224,6 +265,54 @@ MunitPlusResult test_fixlist_preset
   return MUNIT_PLUS_OK;
 }
 
+
+MunitPlusResult test_fixlist_gen_lengths
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::prefix_list* const p =
+    static_cast<text_complex::access::prefix_list*>(data);
+  text_complex::access::prefix_list const* const p_c = p;
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  text_complex::access::prefix_histogram ph(p_c->size());
+  (void)params;
+  /* extract the histogram */{
+    std::size_t i;
+    std::size_t sz = p_c->size();
+    for (i = 0; i < sz; ++i) {
+      ph[i] = (*p_c)[i].len;
+    }
+  }
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+  text_complex::access::fixlist_gen_lengths(*p, ph, 15);
+#else
+  text_complex::access::api_error ae;
+  text_complex::access::fixlist_gen_lengths(*p, ph, 15, ae);
+  munit_plus_assert_op(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+  /* inspect the new code lengths */{
+    size_t i;
+    size_t const len = p->size();
+    unsigned long int sum = 0u;
+    munit_plus_logf(MUNIT_PLUS_LOG_DEBUG,
+      "total %" MUNIT_PLUS_SIZE_MODIFIER "u", len);
+    for (i = 0; i < len; ++i) {
+      struct text_complex::access::prefix_line const& line = (*p)[i];
+      munit_plus_logf(MUNIT_PLUS_LOG_DEBUG,
+        "  [%" MUNIT_PLUS_SIZE_MODIFIER "u] = {-, l %u, v %lu}",
+        i, line.len, line.value);
+      if (ph[i] > 0) {
+        munit_plus_assert_uint(line.len, >, 0u);
+        munit_plus_assert_uint(line.len, <=, 15u);
+        sum += (32768u>>line.len);
+      } else {
+        munit_plus_assert_uint(line.len, ==, 0u);
+      }
+    }
+    munit_plus_assert_ulong(sum, ==, 32768u);
+  }
+  return MUNIT_PLUS_OK;
+}
 
 
 

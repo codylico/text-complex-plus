@@ -10,6 +10,8 @@
 #include <limits>
 #include <utility>
 #include <cstring>
+#include <algorithm>
+#include <vector>
 
 namespace text_complex {
   namespace access {
@@ -64,6 +66,245 @@ namespace text_complex {
       { 4u, fixlist_ps_BrotliS4A },
       { 4u, fixlist_ps_BrotliS4B }
     };
+
+
+    /**
+     * @internal
+     * @brief Back reference to prefix list.
+     */
+    struct prefix_ref {
+      /** @internal @brief Left child. */
+      unsigned int index;
+      /** @internal @brief Right child. */
+      uint32 freq;
+    };
+    /**
+     * @internal
+     * @brief Min-heap item for code tree building.
+     * @todo use std::push_heap and std::pop_heap
+     */
+    struct prefix_heapitem {
+      /** @internal @brief histogram value. */
+      uint32 freq;
+      /** @internal @brief block width. */
+      uint32 total_frac;
+      /** @internal @brief block width below midline. */
+      uint32 small_frac;
+      /** @internal @brief number of cells on the midline. */
+      uint32 midline;
+    };
+    /**
+     * @internal
+     * @brief Arguments for length generator recursive call.
+     */
+    struct prefix_arg {
+      /** @internal Reference index, first reference. */
+      unsigned int begin;
+      /** @internal Reference index, one-past-last reference. */
+      unsigned int end;
+      /** @internal block fraction upper bound. */
+      int upper_bound;
+      /** @internal block fraction lower bound. */
+      int lower_bound;
+      /** @internal @brief goal block width. */
+      uint32 total_frac;
+    };
+    /**
+     * @internal
+     * @brief Data for length generator recursive call.
+     */
+    struct prefix_state {
+      struct prefix_arg args;
+      struct prefix_heapitem item;
+    };
+
+    /**
+     * @internal
+     * @brief Queue of length generator recursive calls.
+     */
+    template <size_t n>
+    class prefix_statequeue {
+    private:
+      struct prefix_state p[n];
+      size_t current;
+      size_t total;
+
+    public:
+      /** @internal @brief Constructor. */
+      prefix_statequeue(void) noexcept;
+      /** @internal @return whether the queue is empty */
+      bool empty(void) const noexcept;
+      /**
+       * @internal @brief Push a state onto the queue.
+       * @param st state to push
+       */
+      void push(prefix_state st) noexcept;
+      /** @internal @brief Remove the next element from the queue. */
+      void pop(void) noexcept;
+      /** @internal @return the next item in the queue */
+      prefix_state& front(void) noexcept;
+      /**
+       * @internal @brief Array index.
+       * @param i index
+       * @return the item at `[i]`
+       */
+      prefix_state& operator[](size_t i) noexcept;
+      size_t capacity(void) const noexcept;
+    };
+
+    /**
+     * @brief Add two numbers, clamping the result.
+     * @param a addend
+     * @param b addend
+     * @return a clamped sum
+     */
+    static
+    uint32 fixlist_addclamp(uint32 a, uint32 b);
+    /**
+     * @brief Sum two heap items together.
+     * @param a one addend
+     * @param b another addend
+     * @return sum heap item
+     */
+    static
+    prefix_heapitem operator+(prefix_heapitem a, prefix_heapitem b);
+    /**
+     * @brief Compare two heap items.
+     * @param a one item
+     * @param b another item
+     * @return whether `a` is "less than" `b`
+     */
+    static
+    bool prefix_heap_cmp(prefix_heapitem const& a, prefix_heapitem const& b);
+    /**
+     * @internal
+     * @brief Compare two prefix list references.
+     * @param a one reference
+     * @param b another reference
+     * @return true if `a`'s frequency is greater than `b`'s,
+     *   zero otherwise
+     */
+    static
+    bool prefix_ref_cmp(prefix_ref const& a, prefix_ref const& b);
+    /**
+     * @internal
+     * @brief Find the least significant set bit.
+     * @param x input
+     * @return a number with only that set bit
+     */
+    static
+    uint32 fixlist_min_frac(uint32 x) noexcept;
+    /**
+     * @brief Check if the heap can provide packable items.
+     * @param h heap represented by an array
+     * @param n size of heap
+     * @param frac fraction to meet
+     * @return nonzero if two items can fit in such
+     */
+    static
+    bool fixlist_heap_packable
+      ( std::vector<prefix_heapitem>::iterator begin,
+        std::vector<prefix_heapitem>::iterator end, uint32 frac);
+
+    //BEGIN prefix-list / static
+    prefix_heapitem operator+(prefix_heapitem a, prefix_heapitem b) {
+      struct prefix_heapitem const out = {
+        fixlist_addclamp(a.freq,b.freq),
+        fixlist_addclamp(a.total_frac, b.total_frac),
+        fixlist_addclamp(a.small_frac, b.small_frac),
+        fixlist_addclamp(a.midline, b.midline)
+      };
+      return out;
+    }
+
+    uint32 fixlist_addclamp(uint32 a, uint32 b) {
+      return a > 0xFFffFFff-b ? 0xFFffFFff : a+b;
+    }
+
+    bool prefix_ref_cmp(prefix_ref const& a, prefix_ref const& b) {
+      return a.freq > b.freq;
+    }
+
+    bool prefix_heap_cmp(prefix_heapitem const& a, prefix_heapitem const& b) {
+      if (a.total_frac < b.total_frac)
+        return false;
+      else if (a.total_frac > b.total_frac)
+        return true;
+      else return a.freq > b.freq;
+    }
+
+    uint32 fixlist_min_frac(uint32 x) noexcept {
+      unsigned int n;
+      if (x == 0u)
+        return 0u;
+      else for (n = 0u; (x & 1u) == 0u; x >>= 1, ++n) {
+        continue;
+      }
+      return static_cast<uint32>(1u)<<n;
+    }
+
+    bool fixlist_heap_packable
+      ( std::vector<prefix_heapitem>::iterator begin,
+        std::vector<prefix_heapitem>::iterator end, uint32 frac)
+    {
+      if (end-begin < 2)
+        return false;
+      else if (begin->total_frac > frac)
+        return false;
+      else {
+        std::vector<prefix_heapitem>::iterator it = begin;
+        ++it;
+        if (it->total_frac <= frac)
+          return true;
+        ++it;
+        if (it == end)
+          return false;
+        else return (it->total_frac <= frac);
+      }
+    }
+    //END   prefix-list / static
+
+    //BEGIN prefix-state-queue / public internal
+    template <size_t n>
+    prefix_statequeue<n>::prefix_statequeue(void) noexcept
+      : current(0u), total(0u)
+    {
+#ifndef NDEBUG
+      std::memset(p, 0, sizeof(p));
+#endif /*NDEBUG*/
+    }
+
+    template <size_t n>
+    bool prefix_statequeue<n>::empty(void) const noexcept {
+      return current >= total;
+    }
+
+    template <size_t n>
+    void prefix_statequeue<n>::push(prefix_state st) noexcept {
+      p[total] = st;
+      total += 1u;
+    }
+
+    template <size_t n>
+    void prefix_statequeue<n>::pop(void) noexcept {
+      current += 1u;
+    }
+
+    template <size_t n>
+    prefix_state& prefix_statequeue<n>::front(void) noexcept {
+      return p[current];
+    }
+
+    template <size_t n>
+    prefix_state& prefix_statequeue<n>::operator[](size_t i) noexcept {
+      return p[i];
+    }
+
+    template <size_t n>
+    size_t prefix_statequeue<n>::capacity(void) const noexcept {
+      return total;
+    }
+    //END   prefix-state-queue / public internal
 
     //BEGIN prefix_list / rule-of-six
     prefix_list::prefix_list(size_t n)
@@ -491,6 +732,186 @@ namespace text_complex {
       }
       ae = api_error::Success;
       return;
+    }
+
+    void fixlist_gen_lengths
+      ( prefix_list& dst, prefix_histogram const& table,
+        unsigned int max_bits, api_error& ae) noexcept
+    {
+      if (dst.size() > 32768u || max_bits > 15u) {
+        ae = api_error::FixLenRange;
+        return;
+      } else {
+        std::vector<prefix_ref> nodes;
+        std::vector<prefix_heapitem> heap;
+        try {
+          nodes.reserve(dst.size());
+          heap.reserve(dst.size()*2u);
+        } catch (std::bad_alloc const& ) {
+          ae = api_error::Memory;
+          return;
+        }
+        /* */{
+          size_t i;
+          for (i = 0u; i < table.size(); ++i) {
+            if (table[i] > 0u) {
+              struct prefix_ref const ref =
+                { static_cast<unsigned int>(i), table[i] };
+              nodes.push_back(ref);
+            } else {
+              dst[i].len = 0u;
+            }
+          }
+          std::sort(nodes.begin(), nodes.end(), prefix_ref_cmp);
+        }
+        /* do the algorithm */{
+          prefix_statequeue<16> states;
+          /* initialize */{
+            uint32 const n = static_cast<uint32>(nodes.size());
+            struct prefix_state const st = {
+                { /* begin */0u,
+                  /* end */static_cast<unsigned int>(n),
+                  /* upper_bound */-1,
+                  /* lower_bound */-static_cast<int>(max_bits),
+                  /* total_frac */(n-1u)<<max_bits }
+              };
+            states.push(st);
+          }
+          /* run */while (!states.empty()) {
+            struct prefix_state& st = states.front();
+            int l;
+            unsigned long int rem_frac = st.args.total_frac;
+            int const midline = st.args.upper_bound +
+              (st.args.lower_bound-st.args.upper_bound-1)/2;
+            /* */{
+              std::memset(&st.item, 0, sizeof(struct prefix_heapitem));
+            }
+            for (l = st.args.lower_bound; rem_frac > 0u; ++l) {
+              uint32 const frac = 1u<<(static_cast<int>(max_bits)+l);
+              uint32 const min_frac = fixlist_min_frac(rem_frac);
+              /* add some items */if (l <= st.args.upper_bound) {
+                size_t i;
+                for (i = st.args.begin; i < st.args.end; ++i) {
+                  struct prefix_heapitem const it =
+                    { /* freq */nodes[i].freq, /*total_frac */frac,
+                      /* small_frac */(l < midline ? frac : 0u),
+                      /* midline */(l == midline ? 1u : 0u)};
+                  heap.push_back(it);
+                }
+                std::make_heap(heap.begin(), heap.end(), prefix_heap_cmp);
+              }
+              /* inspect */
+              if (heap.empty() || frac > min_frac) {
+                ae = api_error::FixLenRange;
+                return;
+              } else if (frac == min_frac) {
+                if (heap.front().total_frac != min_frac) {
+                  ae = api_error::FixLenRange;
+                  return;
+                } else {
+                  rem_frac -= min_frac;
+                  st.item = st.item + heap.front();
+                  std::pop_heap(heap.begin(), heap.end(), prefix_heap_cmp);
+                  heap.pop_back();
+                }
+              }
+              /* pack the rest */{
+                std::vector<prefix_heapitem>::iterator it = heap.end();
+                while (fixlist_heap_packable(heap.begin(), it, frac)) {
+                  struct prefix_heapitem item1 = heap.front();
+                  std::pop_heap(heap.begin(), it, prefix_heap_cmp);
+                  --it;
+                  struct prefix_heapitem item2 = heap.front();
+                  std::pop_heap(heap.begin(), it, prefix_heap_cmp);
+                  --it;
+                  *it = item1 + item2;
+                  ++it;
+                  std::push_heap(heap.begin(), it, prefix_heap_cmp);
+                }
+                if ((!heap.empty()) && heap.front().total_frac <= frac) {
+                  /* discard */
+                  std::pop_heap(heap.begin(), it, prefix_heap_cmp);
+                  --it;
+                }
+                heap.resize(it-heap.begin());
+              }
+            }
+            /* add new states */{
+              int const bound_span =
+                (st.args.upper_bound-st.args.lower_bound);
+              if (bound_span >= 3) {
+                /* construct "D" span */{
+                  struct prefix_state const d_state = {
+                      { /* begin */ st.args.end-st.item.midline,
+                        /* end */ st.args.end,
+                        /* upper_bound */midline-1,
+                        /* lower_bound */st.args.lower_bound,
+                        /* total_frac */st.item.small_frac }
+                    };
+                  states.push(d_state);
+                }
+                /* construct "A" span */{
+                  int const imax_bits = static_cast<int>(max_bits);
+                  struct prefix_state const a_state = {
+                      { /* begin */ st.args.begin,
+                        /* end */ st.args.end-st.item.midline,
+                        /* upper_bound */st.args.upper_bound,
+                        /* lower_bound */midline+1,
+                        /* total_frac */st.item.total_frac
+                            - st.item.small_frac
+                            -   ( (1u<<(imax_bits+st.args.upper_bound+1))
+                                - (1u<<(imax_bits+midline)))
+                              * st.item.midline }
+                    };
+                  states.push(a_state);
+                }
+              }
+            }
+            states.pop();
+            heap.clear();
+          }
+          /* parse out the lengths */{
+            size_t i;
+            uint32 lengths[16] = {0u};
+            int const imax_bits = max_bits;
+            for (i = 0u; i < states.capacity(); ++i) {
+              struct prefix_state const& st = states[i];
+              uint32 const offset =
+                static_cast<uint32>(nodes.size())-st.args.end;
+              int const bound_span = st.args.upper_bound-st.args.lower_bound;
+              int const midline = st.args.lower_bound+(bound_span/2);
+              lengths[-midline] = offset+st.item.midline;
+              if (bound_span <= 2) {
+                if (st.args.upper_bound > midline) {
+                  uint32 const x =
+                      st.item.total_frac
+                    - (st.item.midline<<(imax_bits+midline))
+                    - st.item.small_frac;
+                  lengths[-st.args.upper_bound] =
+                    (x>>(imax_bits+st.args.upper_bound)) + offset;
+                }
+                if (st.args.lower_bound < midline) {
+                  uint32 const x = st.item.small_frac;
+                  lengths[-st.args.lower_bound] =
+                    (x>>(imax_bits+st.args.lower_bound)) + offset;
+                }
+              }
+            }
+            /* post to the prefix list */{
+              size_t i = nodes.size();
+              size_t j;
+              for (j = 15u; j > 0u; --j) {
+                size_t const front = nodes.size()-lengths[j];
+                for (; i > front; --i) {
+                  dst[nodes[i-1u].index].len = j;
+                }
+              }
+            }
+          }
+        }
+        ae = api_error::Success;
+        return;
+      }
     }
     //END   prefix_list / namespace local
   };

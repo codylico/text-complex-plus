@@ -469,6 +469,40 @@ namespace text_complex {
     TCMPLX_AP_API
     void fixlist_preset(prefix_list& dst, prefix_preset i);
 #endif //TextComplexAccessP_NO_EXCEPT
+
+    /**
+     * @brief Generate prefix code lengths given a prefix list and
+     *   histogram of code frequencies.
+     * @param dst list to populate with lengths
+     * @param table frequency histogram, flat array as long as number
+     *   of prefixes in the list
+     * @param max_bits maximum output length
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
+     */
+    TCMPLX_AP_API
+    void fixlist_gen_lengths
+      ( prefix_list& dst, prefix_histogram const& table,
+        unsigned int max_bits, api_error& ae) noexcept;
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Generate prefix code lengths given a prefix list and
+     *   histogram of code frequencies.
+     * @param dst list to populate with lengths
+     * @param table frequency histogram, flat array as long as number
+     *   of prefixes in the list
+     * @param max_bits maximum output length
+     * @throw api_exception on storage or code length error
+     */
+    TCMPLX_AP_API
+    void fixlist_gen_lengths
+      ( prefix_list& dst, prefix_histogram const& table,
+        unsigned int max_bits);
+#endif //TextComplexAccessP_NO_EXCEPT
+
+
+
     //END   prefix list / namespace local
   };
 };

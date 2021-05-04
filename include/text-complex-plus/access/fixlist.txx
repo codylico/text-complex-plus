@@ -29,6 +29,17 @@ namespace text_complex {
         throw api_exception(ae);
       } else return;
     }
+
+    inline
+    void fixlist_gen_lengths
+      (prefix_list& dst, prefix_histogram const& table, unsigned int max_bits)
+    {
+      api_error ae;
+      fixlist_gen_lengths(dst, table, max_bits, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT    
   };
 };
