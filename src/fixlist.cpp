@@ -762,6 +762,17 @@ namespace text_complex {
               dst[i].len = 0u;
             }
           }
+          if (nodes.size() <= 2u) {
+            if (max_bits > 0u) {
+              for (i = 0u; i < nodes.size(); ++i)
+                dst[nodes[i].index].len = 1u;
+              ae = api_error::Success;
+              return;
+            } else {
+              ae = api_error::FixLenRange;
+              return;
+            }
+          }
           std::sort(nodes.begin(), nodes.end(), prefix_ref_cmp);
         }
         /* do the algorithm */{
