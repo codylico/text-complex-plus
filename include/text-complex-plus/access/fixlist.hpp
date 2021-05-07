@@ -1,5 +1,5 @@
 /**
- * @file tcmplx-access-plus/fixlist.hpp
+ * @file text-complex-plus/access/fixlist.hpp
  * @brief Prefix code list
  * @author Cody Licorish (svgmovement@gmail.com)
  */
@@ -11,6 +11,10 @@
 
 namespace text_complex {
   namespace access {
+    /**
+     * @defgroup fixlist Prefix code list (access/fixlist.hpp)
+     * @{
+     */
     //BEGIN prefix preset identifiers
     /**
      * @brief Identifiers for prefix code list presets.
@@ -431,6 +435,9 @@ namespace text_complex {
     //BEGIN prefix list / namespace local
     /**
      * @brief Generate prefix codes given a prefix list.
+     *
+     * This function fills in the bit strings of each prefix code,
+     *   using the corresponding @link prefix_line#len @endlink values.
      * @param dst list to populate with codes
      * @param[out] ae @em error-code api_error::Success on success,
      *   nonzero otherwise
@@ -441,6 +448,9 @@ namespace text_complex {
 #if  (!(defined TextComplexAccessP_NO_EXCEPT))
     /**
      * @brief Generate prefix codes given a prefix list.
+     *
+     * This function fills in the bit strings of each prefix code,
+     *   using the corresponding @link prefix_line#len @endlink values.
      * @param dst list to populate with codes
      * @throw api_exception on code length error
      */
@@ -504,6 +514,7 @@ namespace text_complex {
 
 
     //END   prefix list / namespace local
+    /** @} */
   };
 };
 
