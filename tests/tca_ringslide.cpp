@@ -16,6 +16,12 @@ static MunitPlusResult test_ringslide_item
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_ringslide_maxsize
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ringslide_add
+    (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ringslide_addring
+    (const MunitPlusParameter params[], void* data);
+static void* test_ringslide_setupsmall
+    (const MunitPlusParameter params[], void* user_data);
 static void* test_ringslide_setup
     (const MunitPlusParameter params[], void* user_data);
 static void test_ringslide_teardown(void* fixture);
@@ -31,6 +37,14 @@ static MunitPlusTest tests_ringslide[] = {
   {(char*)"maxsize", test_ringslide_maxsize,
       test_ringslide_setup,test_ringslide_teardown,
       MUNIT_PLUS_TEST_OPTION_SINGLE_ITERATION,
+      nullptr},
+  {(char*)"add", test_ringslide_add,
+      test_ringslide_setup,test_ringslide_teardown,
+      MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"add/ring", test_ringslide_addring,
+      test_ringslide_setupsmall,test_ringslide_teardown,
+      MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
@@ -75,6 +89,14 @@ void* test_ringslide_setup(const MunitPlusParameter params[], void* user_data) {
   return text_complex::access::ringslide_new(num);
 }
 
+void* test_ringslide_setupsmall
+    (const MunitPlusParameter params[], void* user_data)
+{
+  uint32_t const num =
+    static_cast<uint32_t>(munit_plus_rand_int_range(128,512));
+  return text_complex::access::ringslide_new(num);
+}
+
 void test_ringslide_teardown(void* fixture) {
   text_complex::access::ringslide_destroy(
       static_cast<struct text_complex::access::slide_ring*>(fixture)
@@ -103,6 +125,102 @@ MunitPlusResult test_ringslide_maxsize
     return MUNIT_PLUS_SKIP;
   (void)params;
   munit_plus_assert_uint32(p->max_size(), >=, 16777200);
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_ringslide_add
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::slide_ring* const p =
+    static_cast<text_complex::access::slide_ring*>(data);
+  int const add_count = munit_plus_rand_int_range(1,64);
+  unsigned char buf[64];
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* fill the buffer */{
+    munit_plus_rand_memory(add_count, static_cast<munit_plus_uint8_t*>(buf));
+  }
+  /* add the items */{
+    int i;
+    for (i = 0; i < add_count; ++i) {
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+      p->push_front(buf[i]);
+#else
+      text_complex::access::api_error ae;
+      p->push_front(buf[i], ae);
+      munit_plus_assert_op(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    }
+  }
+  /* check the size */{
+    munit_plus_assert_uint32(p->size(), ==, add_count);
+  }
+  /* check the stored bytes */{
+    int j;
+    for (j = 0; j < add_count; ++j) {
+      int const i = add_count-j-1;
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+      munit_plus_assert_uchar(p->at(i),==,buf[j]);
+#else
+      munit_plus_assert_uchar((*p)[i],==,buf[j]);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    }
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_ringslide_addring
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::slide_ring* const p =
+    static_cast<text_complex::access::slide_ring*>(data);
+  int const add_count = munit_plus_rand_int_range(1,64);
+  uint32_t const extent = p->extent();
+  uint32_t const skip_count = extent - munit_plus_rand_int_range(1,64);
+  unsigned char buf[64];
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* fill the buffer */{
+    munit_plus_rand_memory(add_count, static_cast<munit_plus_uint8_t*>(buf));
+  }
+  /* skip some items */{
+    uint32_t i;
+    for (i = 0; i < skip_count; ++i) {
+      text_complex::access::api_error ae;
+      p->push_front(static_cast<unsigned int>(i)&255u, ae);
+    }
+  }
+  /* add the items */{
+    int i;
+    for (i = 0; i < add_count; ++i) {
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+      p->push_front(buf[i]);
+#else
+      text_complex::access::api_error ae;
+      p->push_front(buf[i], ae);
+      munit_plus_assert_op(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    }
+  }
+  /* check the size */{
+    uint32_t const expect_size =
+        (static_cast<unsigned int>(add_count+skip_count) > extent)
+      ? extent : add_count+skip_count;
+    munit_plus_assert_uint32(p->size(), ==, expect_size);
+  }
+  /* check the stored bytes */{
+    int j;
+    for (j = 0; j < add_count; ++j) {
+      int const i = add_count-j-1;
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+      munit_plus_assert_uchar(p->at(i),==,buf[j]);
+#else
+      munit_plus_assert_uchar((*p)[i],==,buf[j]);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    }
+  }
   return MUNIT_PLUS_OK;
 }
 

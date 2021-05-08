@@ -23,7 +23,8 @@ namespace text_complex {
     private:
       uint32 n;
       uint32 pos;
-      size_t cap;
+      uint32 cap;
+      uint32 sz;
       unsigned char* p;
 
     public: /** @name container-compat *//** @{ */
@@ -93,14 +94,51 @@ namespace text_complex {
       static void operator delete[](void* p, std::size_t sz) noexcept;
       /** @} */
 
-    public: /** @name vector-compat *//** @{ */
+    public: /** @name container-compat *//** @{ */
       /**
        * @brief Query the size of the sliding window.
        */
       uint32 max_size(void) const noexcept;
+      /**
+       * @brief Add the most recent byte.
+       * @param v the byte to add
+       * @throw api_exception on allocation failure
+       */
+      void push_front(unsigned char v);
+      /**
+       * @brief Add the most recent byte.
+       * @param v the byte to add
+       * @param[out] ae @em error-code api_error::Success on success
+       *   api_error::Memory otherwise
+       */
+      void push_front(unsigned char v, api_error& ae) noexcept;
+
+      /**
+       * @brief Query the number of bytes held by the sliding window.
+       * @return the count of past bytes in the window
+       */
+      uint32 size(void) const noexcept;
+      /**
+       * @brief Query a past byte.
+       * @param i number of bytes to go back; zero is most recent
+       * @return a reference to the byte at the given index
+       */
+      unsigned char const& operator[](uint32 i) const noexcept;
+      /**
+       * @brief Read from a sliding window.
+       * @param i number of bytes to go back; zero is most recent
+       * @return a reference to the byte at the given index
+       * @throw api_exception on bad index
+       */
+      unsigned char const& at(uint32 i) const;
       /** @} */
 
     public: /** @name methods *//** @{ */
+      /**
+       * @brief Query the window size of the slide ring.
+       * @param x the slide ring to inspect
+       * @return a sliding window size
+       */
       uint32 extent(void) const noexcept;
       /** @} */
 
@@ -144,5 +182,7 @@ namespace text_complex {
     /** @} */
   };
 };
+
+#include "ringslide.txx"
 
 #endif //hg_TextComplexAccessP_RingSlide_H_
