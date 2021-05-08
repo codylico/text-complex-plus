@@ -81,4 +81,10 @@ target_compile_features(tcmplx_accessP_testfont
   target_link_libraries(tcmplx_accessP_test_zutil
     munit_plus tcmplx_access_plus)
 #END   ZUtil test
+
+#BEGIN RingSlide test
+  add_executable(tcmplx_accessP_test_ringslide tca_ringslide.cpp)
+  target_link_libraries(tcmplx_accessP_test_ringslide
+    munit_plus tcmplx_access_plus)
+#END   RingSlide test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)

@@ -21,6 +21,7 @@ set(text_complex_access_plus_FILES
   bdict24.cpp
 
   zutil.cpp
+  ringslide.cpp
   )
 set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/api.hpp
@@ -40,6 +41,7 @@ set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/ctxtmap.txx
   ../include/text-complex-plus/access/bdict.hpp
   ../include/text-complex-plus/access/bdict.txx
+  ../include/text-complex-plus/access/ringslide.hpp
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES}
