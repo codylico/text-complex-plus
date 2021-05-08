@@ -1,5 +1,5 @@
 /**
- * @file tcmplx-access-plus/ringdist.hpp
+ * @file text-complex-plus/access/ringdist.hpp
  * @brief Distance ring buffer
  * @author Cody Licorish (svgmovement@gmail.com)
  */
@@ -11,6 +11,11 @@
 
 namespace text_complex {
   namespace access {
+    /**
+     * @defgroup ringdist Distance ring buffer
+     *   (access/ringdist.hpp)
+     * @{
+     */
     //BEGIN distance ring
     /**
      * @brief Distance ring buffer.
@@ -26,13 +31,13 @@ namespace text_complex {
       unsigned short int bit_adjust : 4;
       unsigned short int postmask : 8;
 
-    public /*rule-of-six*/:
+    public: /** @name rule-of-six*//** @{ */
       /**
        * @brief Constructor.
        * @param special whether to support Brotli distance codes
        * @param direct number of direct codes supported (0..120)
        * @param postfix postfix bit count (0..3)
-       * @throw `std::bad_alloc` if something breaks
+       * @throw std::bad_alloc if something breaks
        * @note For RFC 1951 semantics, use `special_tf=0`,
        *   `direct=4`, `postfix=0`.
        */
@@ -60,13 +65,14 @@ namespace text_complex {
        * @return this distance ring
        */
       distance_ring& operator=(distance_ring&& ) noexcept;
+      /** @} */
 
-    public /* allocation */:
+    public: /** @name allocation *//** @{ */
       /**
        * @brief Scalar memory allocator.
        * @param sz size in `char`s of `distance_ring` to allocate
        * @return a pointer to memory on success
-       * @throw `std::bad_alloc` on allocation error
+       * @throw std::bad_alloc on allocation error
        */
       static void* operator new(std::size_t sz);
       /**
@@ -88,8 +94,9 @@ namespace text_complex {
        * @param sz size in `char`s of `distance_ring[]` to free
        */
       static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
 
-    public /* methods */:
+    public: /** @name methods *//** @{ */
       /**
        * @brief Compute the number of extra bits for a distance code.
        * @param dcode distance code to check
@@ -130,7 +137,7 @@ namespace text_complex {
        * @param[out] ae @em error-code api_error::Success on success,
        *   nonzero otherwise
        * @return a distance code, or
-       *   `std::numeric_limits<unsigned int>::max()` on error
+       *   `std::numeric_limits<unsigned int>::%max()` on error
        * @note On successful conversion, the distance ring buffer is advanced
        *   as necessary.
        */
@@ -147,11 +154,13 @@ namespace text_complex {
        *   as necessary.
        */
       unsigned int encode(uint32 back_dist, uint32& extra);
+      /** @} */
 
-    private /* rule-of-six */:
+    private: /** @name rule-of-six *//** @{ */
       void duplicate(distance_ring const& ) noexcept;
       void transfer(distance_ring&& ) noexcept;
       void transfer(distance_ring const& ) = delete;
+      /** @} */
     };
     //END   distance ring
 
@@ -163,6 +172,9 @@ namespace text_complex {
     //BEGIN distance ring / allocation (namespace local)
     /**
      * @brief Non-throwing distance ring allocator.
+     * @param special whether to support Brotli distance codes
+     * @param direct number of direct codes supported (0..120)
+     * @param postfix postfix bit count (0..3)
      * @return a distance ring on success, `nullptr` otherwise
      */
     TCMPLX_AP_API
@@ -171,6 +183,9 @@ namespace text_complex {
 
     /**
      * @brief Non-throwing distance ring allocator.
+     * @param special whether to support Brotli distance codes
+     * @param direct number of direct codes supported (0..120)
+     * @param postfix postfix bit count (0..3)
      * @return a distance ring on success, `nullptr` otherwise
      */
     TCMPLX_AP_API
@@ -184,6 +199,7 @@ namespace text_complex {
     TCMPLX_AP_API
     void ringdist_destroy(distance_ring* x) noexcept;
     //END   distance ring / allocation (namespace local)
+    /** @} */
   };
 };
 

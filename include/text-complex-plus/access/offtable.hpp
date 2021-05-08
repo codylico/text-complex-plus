@@ -1,7 +1,7 @@
-/*
- * \file tcmplx-access-plus/offtable.hpp
- * \brief Access point for TrueType files
- * \author Cody Licorish (svgmovement@gmail.com)
+/**
+ * @file text-complex-plus/access/offtable.hpp
+ * @brief Access point for TrueType files
+ * @author Cody Licorish (svgmovement@gmail.com)
  */
 #ifndef hg_TextComplexAccessP_OffTable_H_
 #define hg_TextComplexAccessP_OffTable_H_
@@ -11,6 +11,11 @@
 
 namespace text_complex {
   namespace access {
+    /**
+     * @defgroup offtable Access point for TrueType files
+     *   (access/offtable.hpp)
+     * @{
+     */
     //BEGIN offset line
     /**
      * \brief Single row of the offset table.
@@ -38,22 +43,26 @@ namespace text_complex {
     //END   offset line
 
     //BEGIN offset table
+    /**
+     * @brief Offset table.
+     */
     class TCMPLX_AP_API offset_table final {
     private:
       struct offset_line* p;
       size_t n;
 
-    public /* container-compat */:
+    public: /** @name container-compat *//** @{ */
       typedef size_t size_type;
       typedef struct offset_line value_type;
       typedef struct offset_line* iterator;
       typedef struct offset_line const* const_iterator;
+      /** @} */
 
-    public /*rule-of-six*/:
+    public: /** @name rule-of-six*//** @{ */
       /**
        * \brief Constructor.
        * \param n desired number of lines in the table
-       * \throw `std::bad_alloc` if `n` is too big
+       * \throw std::bad_alloc if `n` is too big
        */
       offset_table(size_t n = 0u);
       /**
@@ -79,7 +88,7 @@ namespace text_complex {
        */
       offset_table& operator=(offset_table&& ) noexcept;
 
-    public /* allocation */:
+    public: /** @name allocation *//** @{ */
       /**
        * \brief Scalar memory allocator.
        * \param sz size in `char`s of `offset_table` to allocate
@@ -106,8 +115,9 @@ namespace text_complex {
        * \param sz size in `char`s of `offset_table[]` to free
        */
       static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
 
-    public /* range-based */:
+    public: /** @name range-based *//** @{ */
       /**
        * \brief `begin` method for range-based `for`.
        * \return a pointer to the first line, or `nullptr` for empty tables
@@ -130,6 +140,7 @@ namespace text_complex {
        *   or `nullptr` for empty tables
        */
       offset_line const* end(void) const noexcept;
+      /** @} */
 
     public:
       /**
@@ -151,7 +162,6 @@ namespace text_complex {
       offset_line const& operator[](size_t i) const noexcept;
       /**
        * \brief Write to an offset table.
-       * \param x the table to write
        * \param i an array index
        * \return a reference to an offset line
        * \throw std::out_of_range on bad index
@@ -159,18 +169,19 @@ namespace text_complex {
       offset_line& at(size_t i);
       /**
        * \brief Read from an offset table.
-       * \param x the table to read
        * \param i an array index
        * \return a pointer to an offset line on success, NULL otherwise
        * \throw std::out_of_range on bad index
        */
       offset_line const& at(size_t i) const;
+      /** @} */
 
-    private /* rule-of-six */:
+    private: /** @name rule-of-six *//** @{ */
       void duplicate(offset_table const& );
       void transfer(offset_table&& ) noexcept;
       void transfer(offset_table const& ) = delete;
       void resize(size_t n);
+      /** @} */
     };
     //END   offset table
 
@@ -203,6 +214,7 @@ namespace text_complex {
     TCMPLX_AP_API
     void offtable_destroy(offset_table* x) noexcept;
     //END   offset table / namespace local
+    /** @} */
   };
 };
 

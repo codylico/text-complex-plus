@@ -1,5 +1,5 @@
 /**
- * @file tcmplx-access-plus/ctxtmap.hpp
+ * @file text-complex-plus/access/ctxtmap.hpp
  * @brief Context map for compressed streams
  * @author Cody Licorish (svgmovement@gmail.com)
  */
@@ -11,6 +11,11 @@
 
 namespace text_complex {
   namespace access {
+    /**
+     * @defgroup ctxtmap Context map for compressed streams
+     *   (access/ctxtmap.hpp)
+     * @{
+     */
     //BEGIN context map
     /**
      * @brief Literal context modes.
@@ -32,12 +37,12 @@ namespace text_complex {
       size_t btypes;
       size_t ctxts;
 
-    public /*rule-of-six*/:
+    public: /** @name rule-of-six*//** @{ */
       /**
        * @brief Constructor.
        * @param btypes number of block types
        * @param ctxts number of contexts
-       * @throw `std::bad_alloc` if something breaks
+       * @throw std::bad_alloc if something breaks
        */
       context_map(size_t btypes = 0u, size_t ctxts = 0u);
       /**
@@ -62,13 +67,14 @@ namespace text_complex {
        * @return this context map
        */
       context_map& operator=(context_map&& ) noexcept;
+      /** @} */
 
-    public /* allocation */:
+    public: /** @name allocation *//** @{ */
       /**
        * @brief Scalar memory allocator.
        * @param sz size in `char`s of `context_map` to allocate
        * @return a pointer to memory on success
-       * @throw `std::bad_alloc` on allocation error
+       * @throw std::bad_alloc on allocation error
        */
       static void* operator new(std::size_t sz);
       /**
@@ -90,8 +96,9 @@ namespace text_complex {
        * @param sz size in `char`s of `context_map[]` to free
        */
       static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
 
-    public /* methods */:
+    public: /** @name methods *//** @{ */
       /**
        * @brief Check the number of contexts in this map.
        * @return a context count
@@ -112,8 +119,9 @@ namespace text_complex {
        * @return a pointer to entry zero-zero in the map
        */
       unsigned char const* data(void) const noexcept;
+      /** @} */
 
-    public /* matrix-compat */:
+    public: /** @name matrix-compat *//** @{ */
       /**
        * @brief Array index operator.
        * @param i a block type index
@@ -130,7 +138,6 @@ namespace text_complex {
       unsigned char const& operator()(size_t i, size_t j) const noexcept;
       /**
        * @brief Write to a context map.
-       * @param x the list to write
        * @param i a block type index
        * @param j a context index
        * @return a reference to a prefix code identifier on success
@@ -139,19 +146,20 @@ namespace text_complex {
       unsigned char& at(size_t i, size_t j);
       /**
        * @brief Read from a context map.
-       * @param x the list to read
        * @param i a block type index
        * @param j a context index
        * @return a reference to a prefix code identifier on success
        * @throw std::out_of_range on bad index
        */
       unsigned char const& at(size_t i, size_t j) const;
+      /** @} */
 
-    private /* rule-of-six */:
+    private: /** @name rule-of-six *//** @{ */
       void duplicate(context_map const& );
       void transfer(context_map&& ) noexcept;
       void transfer(context_map const& ) = delete;
       void resize(size_t b, size_t c);
+      /** @} */
     };
     //END   context map
 
@@ -200,8 +208,6 @@ namespace text_complex {
     /**
      * @brief Calculate a distance context from a copy length.
      * @param copylen a copy length
-     * @param[out] ae @em error-code api_error::Success on success,
-     *   nonzero otherwise
      * @return a distance context on success
      * @throw api_exception on copy length parameter error
      */
@@ -214,6 +220,8 @@ namespace text_complex {
      * @param mode a context map mode
      * @param p1 most recent byte
      * @param p2 the byte before the most recent
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
      * @return a literal context on success, negative otherwise
      */
     TCMPLX_AP_API
@@ -250,6 +258,7 @@ namespace text_complex {
     TCMPLX_AP_API
     void ctxtmap_revert_movetofront(context_map& x) noexcept;
     //END   context map / namespace local
+    /** @} */
   };
 };
 

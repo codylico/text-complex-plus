@@ -1,4 +1,4 @@
-/*
+/**
  * \file text-complex-plus/access/bdict.hpp
  * \brief Built-in dictionary
  * \author Cody Licorish (svgmovement@gmail.com)
@@ -10,7 +10,15 @@
 
 namespace text_complex {
   namespace access {
+    /**
+     * @defgroup bdict Built-in dictionary
+     *   (access/bdict.hpp)
+     * @{
+     */
     //BEGIN built-in dictionary word
+    /**
+     * @brief Word from the dictionary.
+     */
     struct TCMPLX_AP_API bdict_word final {
     private:
       unsigned char p[38];
@@ -33,7 +41,7 @@ namespace text_complex {
        * @brief Initialize with a word.
        * @param s bytes to copy
        * @param len length of bytes to copy; should not exceed 37.
-       * @throw `api_exception` if len is too long
+       * @throw api_exception if len is too long
        */
       bdict_word(unsigned char const* s, size_t len);
       /** @} */
@@ -43,14 +51,14 @@ namespace text_complex {
        * @brief Scalar memory allocator.
        * @param sz size in `char`s of `bdict_word` to allocate
        * @return a pointer to memory on success
-       * @throw `std::bad_alloc` on allocation error
+       * @throw std::bad_alloc on allocation error
        */
       static void* operator new(std::size_t sz);
       /**
        * @brief Array memory allocator.
        * @param sz size in `char`s of `bdict_word[]` to allocate
        * @return a pointer to memory on success
-       * @throw `std::bad_alloc` on allocation error
+       * @throw std::bad_alloc on allocation error
        */
       static void* operator new[](std::size_t sz);
       /**
@@ -110,18 +118,16 @@ namespace text_complex {
       unsigned char const& operator[](size_t i) const noexcept;
       /**
        * @brief Write to a word.
-       * @param x the table to write
        * @param i an array index
        * @return a reference to a byte
-       * @throw @link api_exception @endlink on bad index
+       * @throw api_exception on bad index
        */
       unsigned char& at(size_t i);
       /**
        * @brief Read from a word.
-       * @param x the word to read
        * @param i an array index
        * @return a pointer to a word on success, NULL otherwise
-       * @throw @link api_exception @endlink on bad index
+       * @throw api_exception on bad index
        */
       unsigned char const& at(size_t i) const;
 
@@ -134,7 +140,7 @@ namespace text_complex {
       /**
        * @brief Resize the byte container.
        * @param sz desired size
-       * @throw `api_exception` if the size is too big (i.e. `> 37`).
+       * @throw api_exception if the size is too big (i.e. `> 37`).
        */
       void resize(size_t sz);
 
@@ -185,12 +191,13 @@ namespace text_complex {
      * @brief Transform a word.
      * @param[in,out] buf a buffer holding the word
      * @param k transform selector (in range `[0,121)`)
-     * @throw @link api_exception @endlink on bad transform selector
+     * @throw api_exception on bad transform selector
      *   or overlong word
      */
     TCMPLX_AP_API
     void bdict_transform(struct bdict_word& buf, unsigned int k);
     //END   built-in dictionary / namespace local
+    /** @} */
   };
 };
 

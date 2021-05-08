@@ -1,5 +1,5 @@
-/*
- * \file tcmplx-access-plus/api.hpp
+/**
+ * \file text-complex-plus/access/api.hpp
  * \brief API-wide declarations for text-complex-plus
  * \author Cody Licorish (svgmovement@gmail.com)
  */
@@ -27,9 +27,16 @@ namespace text_complex {
    * \brief Data access
    */
   namespace access {
+    /**
+     * @defgroup api API-wide declarations for text-complex-plus
+     *   (access/api.hpp)
+     * @{
+     */
 #if UINT_MAX >= 0xFFffFFff
+    /** @brief Unsigned integer at least 32 bits. */
     typedef unsigned int uint32;
 #else
+    /** @brief Unsigned integer at least 32 bits. */
     typedef unsigned long int uint32;
 #endif /*UINT_MAX*/
     using std::size_t;
@@ -79,6 +86,7 @@ namespace text_complex {
     TCMPLX_AP_API
     char const* api_version(void) noexcept;
     //END   configurations
+    /** @} */
   };
 };
 
@@ -87,6 +95,10 @@ namespace text_complex {
 
 namespace text_complex {
   namespace access {
+    /**
+     * @addtogroup api
+     * @{
+     */
     //BEGIN api exception
     /**
      * @brief Exception thrown by text-complex API functions.
@@ -105,6 +117,7 @@ namespace text_complex {
       char const* what(void) const noexcept override;
     };
     //END   api exception
+    /** @} */
   };
 };
 #endif //TextComplexAccessP_NO_EXCEPT

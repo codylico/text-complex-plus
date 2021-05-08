@@ -1,5 +1,5 @@
-/*
- * \file tcmplx-access-plus/zutil.hpp
+/**
+ * \file text-complex-plus/access/zutil.hpp
  * \brief Tools for DEFLATE
  * \author Cody Licorish (svgmovement@gmail.com)
  */
@@ -10,6 +10,11 @@
 
 namespace text_complex {
   namespace access {
+    /**
+     * @defgroup zutil Tools for DEFLATE
+     *   (access/zutil.hpp)
+     * @{
+     */
     //BEGIN zutil / namespace local
     /**
      * @brief Compute a checksum.
@@ -22,6 +27,7 @@ namespace text_complex {
     uint32 zutil_adler32
       (size_t len, unsigned char const* buf, uint32 chk = 1u) noexcept;
     //END   zutil / namespace local
+    /** @} */
   };
 };
 

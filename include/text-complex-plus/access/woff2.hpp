@@ -1,5 +1,5 @@
 /**
- * @file tcmplx-access-plus/woff2.hpp
+ * @file text-complex-plus/access/woff2.hpp
  * @brief WOFF2 file utility API
  * @author Cody Licorish (svgmovement@gmail.com)
  */
@@ -17,6 +17,11 @@ namespace text_complex {
   namespace access {
     class offset_table;
 
+    /**
+     * @defgroup woff2 WOFF2 file utility API
+     *   (access/woff2.hpp)
+     * @{
+     */
     //BEGIN woff2 tools
     /**
      * @brief Convert a tag to a WOFF2 table type.
@@ -28,7 +33,7 @@ namespace text_complex {
 
     /**
      * @brief Convert a WOFF2 table type to a tag.
-     * @param s the tag to convert
+     * @param x the tag to convert
      * @return a tag name, or NULL if no tag name matches the given value
      * @note Only checks the 6 least significant bits.
      */
@@ -37,18 +42,21 @@ namespace text_complex {
     //END   woff2 tools
 
     //BEGIN woff2
+    /**
+     * @brief WOFF2 access
+     */
     TCMPLX_AP_API
     class woff2 final {
     private:
       mmaptwo::mmaptwo_i* fh;
       offset_table* offsets;
 
-    public /*rule-of-six*/:
+    public: /** @name rule-of-six*//** @{ */
       /**
        * @brief Constructor.
        * @param xfh File access instance to use for the Woff2.
        * @param sane_tf Sanitize the file before processing. (Default to true)
-       * @throw `std::bad_alloc` if something breaks
+       * @throw std::bad_alloc if something breaks
        */
       woff2(mmaptwo::mmaptwo_i* xfh, bool sane_tf = true);
       /**
@@ -73,13 +81,14 @@ namespace text_complex {
        * @return this woff2
        */
       woff2& operator=(woff2&& ) noexcept;
+      /** @} */
 
-    public /* allocation */:
+    public: /** @name allocation *//** @{ */
       /**
        * @brief Scalar memory allocator.
        * @param sz size in `char`s of `woff2` to allocate
        * @return a pointer to memory on success
-       * @throw `std::bad_alloc` on allocation error
+       * @throw std::bad_alloc on allocation error
        */
       static void* operator new(std::size_t sz);
       /**
@@ -101,19 +110,22 @@ namespace text_complex {
        * @param sz size in `char`s of `woff2[]` to free
        */
       static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
 
-    public /* methods */:
+    public: /** @name methods *//** @{ */
       /**
        * @brief Acquire the list of transformed offsets.
        * @return an offset table
        */
       offset_table const& get_offsets(void) const noexcept;
+      /** @} */
 
-    private /* rule-of-six */:
+    private: /** @name rule-of-six *//** @{ */
       //void duplicate(woff2 const& ) = delete;
       void transfer(woff2&& ) noexcept;
       void transfer(woff2 const& ) = delete;
       void initparse(bool);
+      /** @} */
     };
     //END   woff2
 
@@ -151,6 +163,7 @@ namespace text_complex {
     TCMPLX_AP_API
     void woff2_destroy(woff2* x) noexcept;
     //END   woff2 / namespace local
+    /** @} */
   };
 };
 

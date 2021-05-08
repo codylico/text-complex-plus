@@ -1,5 +1,5 @@
 /**
- * @file tcmplx-access-plus/seq.hpp
+ * @file text-complex-plus/access/seq.hpp
  * @brief Adapter providing sequential access to bytes from a mmaptwo
  * @author Cody Licorish (svgmovement@gmail.com)
  */
@@ -16,6 +16,11 @@ namespace mmaptwo {
 
 namespace text_complex {
   namespace access {
+    /**
+     * @defgroup seq Adapter providing sequential access to bytes
+     *   (access/seq.hpp)
+     * @{
+     */
     //BEGIN sequential whence
     /**
      * @brief Sequential seek starting position.
@@ -49,11 +54,11 @@ namespace text_complex {
       size_t off;
       size_t last;
 
-    public /*rule-of-six*/:
+    public: /** @name rule-of-six*//** @{ */
       /**
        * @brief Constructor.
        * @param xfh mmaptwo instance
-       * @throw `std::bad_alloc` if something breaks
+       * @throw std::bad_alloc if something breaks
        * @note Does not take control of the mmaptwo instance's lifetime.
        */
       sequential(mmaptwo::mmaptwo_i* xfh);
@@ -80,12 +85,12 @@ namespace text_complex {
        */
       sequential& operator=(sequential&& ) noexcept;
 
-    public /* allocation */:
+    public: /** @name allocation *//** @{ */
       /**
        * @brief Scalar memory allocator.
        * @param sz size in `char`s of `sequential` to allocate
        * @return a pointer to memory on success
-       * @throw `std::bad_alloc` on allocation error
+       * @throw std::bad_alloc on allocation error
        */
       static void* operator new(std::size_t sz);
       /**
@@ -107,8 +112,9 @@ namespace text_complex {
        * @param sz size in `char`s of `sequential[]` to free
        */
       static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
 
-    public /* methods */:
+    public: /** @name methods *//** @{ */
       /**
        * @brief Query the current read position.
        * @return a read position
@@ -133,11 +139,13 @@ namespace text_complex {
        * @return the byte on success, -1 at end of stream, -2 otherwise
        */
       int get_byte(void) noexcept;
+      /** @} */
 
-    private /* rule-of-six */:
+    private: /** @name rule-of-six *//** @{ */
       void duplicate(sequential const& );
       void transfer(sequential&& ) noexcept;
       void transfer(sequential const& ) = delete;
+      /** @} */
 
     private:
       bool reset_sync(size_t);
@@ -175,6 +183,7 @@ namespace text_complex {
     TCMPLX_AP_API
     void seq_destroy(sequential* x) noexcept;
     //END   sequential / namespace local
+    /** @} */
   };
 };
 
@@ -186,11 +195,15 @@ namespace text_complex {
 
 namespace text_complex {
   namespace access {
+    /**
+     * @addtogroup seq
+     * @{
+     */
     //BEGIN sequential streambuf
     /**
      * @brief Standard stream buffer backed by a sequential.
-     * @param ch character type
-     * @param tr character traits type
+     * @tparam ch character type
+     * @tparam tr character traits type
      */
     template <class ch, class tr = std::char_traits<ch> >
     class basic_sequentialbuf final : public std::basic_streambuf<ch,tr> {
@@ -208,10 +221,9 @@ namespace text_complex {
       std::size_t seq_startpos;
       ch* sb_retellp;
 
-    public /* rule-of-six */:
+    public: /** @name rule-of-six *//** @{ */
       /**
        * @brief Construct a stream buffer.
-       * @param seq the sequential to use
        */
       basic_sequentialbuf(void) noexcept;
       /**
@@ -231,17 +243,18 @@ namespace text_complex {
 
       basic_sequentialbuf(basic_sequentialbuf<ch,tr> const& ) = delete;
       basic_sequentialbuf<ch,tr>& operator=(basic_sequentialbuf<ch,tr> const& ) =delete;
+      /** @} */
 
-    public /* allocation */:
+    public: /** @name allocation *//** @{ */
       /**
        * @brief Scalar memory allocator.
-       * @param sz size in `char`s of `sequential` to allocate
+       * @param sz size in `char`s of `basic_sequentialbuf` to allocate
        * @return a pointer to memory on success, `nullptr` otherwise
        */
       static void* operator new(std::size_t sz) noexcept;
       /**
        * @brief Array memory allocator.
-       * @param sz size in `char`s of `sequential[]` to allocate
+       * @param sz size in `char`s of `basic_sequentialbuf[]` to allocate
        * @return a pointer to memory on success, `nullptr` otherwise
        */
       static void* operator new[](std::size_t sz) noexcept;
@@ -257,15 +270,17 @@ namespace text_complex {
        * @param sz size in `char`s of `basic_sequentialbuf[]` to free
        */
       static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
 
-    public /*streambuf-compat*/:
+    public: /** @name streambuf-compat*//** @{ */
       /**
        * @brief Swap two sequential buffers.
        * @param other the other buffer with which to swap
        */
       void swap(basic_sequentialbuf<ch,tr>& other);
+      /** @} */
 
-    public /*methods*/:
+    public: /** @name methods*//** @{ */
       /**
        * @brief Set the file access instance to use.
        * @param fh new instance
@@ -283,18 +298,62 @@ namespace text_complex {
        * @note Does not destroy any associated file access instance.
        */
       void unmap(void);
+      /** @} */
 
-    protected /*streambuf-override*/:
+    protected: /** @name streambuf-override*//** @{ */
+      /**
+       * @brief `imbue` implementation for `std::streambuf` interface.
+       * @param loc locale to use
+       * @see `std::streambuf::imbue`
+       */
       void imbue(std::locale const& loc) override;
+      /**
+       * @brief `sync` implementation for `std::streambuf` interface.
+       * @return zero on success, nonzero otherwise
+       * @see `std::streambuf::sync`
+       */
       int sync(void) override;
+      /**
+       * @brief `pbackfail` implementation for `std::streambuf` interface.
+       * @param c the value to put back into the stream
+       * @return `eof`; `basic_sequentialbuf` does not support
+       *   value put back
+       * @see `std::streambuf::pbackfail`
+       */
       typename tr::int_type pbackfail(typename tr::int_type c) override;
+      /**
+       * @brief `seekpos` implementation for `std::streambuf` interface.
+       * @param sp absolute seek position
+       * @return the input seek position on success, -1 otherwise
+       * @see `std::streambuf::seekpos`
+       */
       typename tr::pos_type seekpos
           (typename tr::pos_type sp, std::ios_base::openmode) override;
+      /**
+       * @brief `seekoff` implementation for `std::streambuf` interface.
+       * @param off relative seek position
+       * @param dir seek direction
+       * @return the result absolute seek position on success, -1 otherwise
+       * @see `std::streambuf::seekoff`
+       */
       typename tr::pos_type seekoff
           ( typename tr::off_type off, std::ios_base::seekdir dir,
             std::ios_base::openmode) override;
+      /**
+       * @brief `underflow` implementation for `std::streambuf` interface.
+       * @return the next value from the stream on success, `eof` otherwise
+       * @see `std::streambuf::underflow`
+       */
       typename tr::int_type underflow(void) override;
+      /**
+       * @brief `setbuf` implementation for `std::streambuf` interface.
+       * @param s buffer to use, or `nullptr` for unbuffered
+       * @param n size of buffer in `ch` units
+       * @return `this`
+       * @see `std::streambuf::setbuf`
+       */
       std::basic_streambuf<ch,tr>* setbuf(ch* s, std::streamsize n) override;
+      /** @} */
 
     private:
       void transfer(basic_sequentialbuf<ch,tr> const& ) = delete;
@@ -307,6 +366,14 @@ namespace text_complex {
     //END   sequential streambuf
 
     //BEGIN sequential streambuf / namespace local
+    /**
+     * @brief Specialization for use with `std::swap`.
+     * @tparam ch character type
+     * @tparam tr character traits type
+     * @param lhs one object to swap
+     * @param rhs other object to swap
+     * @see `std::swap`
+     */
     template <typename ch, typename tr>
     void swap
       (basic_sequentialbuf<ch,tr>& lhs, basic_sequentialbuf<ch,tr>& rhs);
@@ -314,17 +381,28 @@ namespace text_complex {
 
     //BEGIN sequential streambuf / type aliases
     /* TCMPLX_AP_API omitted here (see https://stackoverflow.com/a/1440948). */
+    /**
+     * @brief `basic_sequentialbuf` specialization for `char`
+     */
     using sequentialbuf = basic_sequentialbuf<char>;
+    /**
+     * @brief `basic_sequentialbuf` specialization for `wchar_t`
+     */
     using wsequentialbuf = basic_sequentialbuf<wchar_t>;
     //END   sequential streambuf / type aliases
 
     //BEGIN sequential istream
+    /**
+     * @brief Standard input stream backed by a sequential.
+     * @tparam ch character type
+     * @tparam tr character traits type
+     */
     template <class ch, class tr = std::char_traits<ch> >
     class basic_isequentialstream final : public std::basic_istream<ch,tr> {
     private:
       util_unique_ptr<basic_sequentialbuf<ch,tr> > seq_rdbuf;
 
-    public /*rule-of-six*/:
+    public: /** @name rule-of-six*//** @{ */
       /**
        * @brief Default constructor.
        */
@@ -346,16 +424,18 @@ namespace text_complex {
       basic_isequentialstream(basic_isequentialstream<ch,tr> const& ) = delete;
       basic_isequentialstream<ch,tr>& operator=
         (basic_isequentialstream<ch,tr> const& ) = delete;
+      /** @} */
 
-    public /*ifstream-compat*/:
+    public: /** @name ifstream-compat*//** @{ */
       /**
        * @brief Open constructor.
        * @param fh the file access instance to use
        * @note Clears the `istream` state on success, else sets the failbit.
        */
       explicit basic_isequentialstream(mmaptwo::mmaptwo_i* fh);
+      /** @} */
 
-    public /*istream-compat*/:
+    public: /** @name istream-compat*//** @{ */
       /**
        * @brief Get a pointer to the stream buffer.
        * @return a pointer to the stream buffer
@@ -366,8 +446,9 @@ namespace text_complex {
        * @param other another `isequentialstream`
        */
       void swap(basic_isequentialstream<ch,tr>& other);
+      /** @} */
 
-    public /*methods*/:
+    public: /** @name methods*//** @{ */
       /**
        * @brief Check if this stream buffer has an active file access.
        * @return whether a file access has been set
@@ -385,32 +466,34 @@ namespace text_complex {
        * @note Does not destroy any associated file access instance.
        */
       void unmap(void);
+      /** @} */
 
-    public /* allocation */:
+    public: /** @name allocation *//** @{ */
       /**
        * @brief Scalar memory allocator.
-       * @param sz size in `char`s of `sequential` to allocate
+       * @param sz size in `char`s of `basic_isequentialstream` to allocate
        * @return a pointer to memory on success, `nullptr` otherwise
        */
       static void* operator new(std::size_t sz) noexcept;
       /**
        * @brief Array memory allocator.
-       * @param sz size in `char`s of `sequential[]` to allocate
+       * @param sz size in `char`s of `basic_isequentialstream[]` to allocate
        * @return a pointer to memory on success, `nullptr` otherwise
        */
       static void* operator new[](std::size_t sz) noexcept;
       /**
        * @brief Scalar memory free callback.
        * @param p pointer to memory to free
-       * @param sz size in `char`s of `basic_sequentialbuf` to free
+       * @param sz size in `char`s of `basic_isequentialstream` to free
        */
       static void operator delete(void* p, std::size_t sz) noexcept;
       /**
        * @brief Array memory free callback.
        * @param p pointer to memory to free
-       * @param sz size in `char`s of `basic_sequentialbuf[]` to free
+       * @param sz size in `char`s of `basic_isequentialstream[]` to free
        */
       static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
 
     private:
       void transfer(basic_isequentialstream<ch,tr> const& ) = delete;
@@ -419,6 +502,14 @@ namespace text_complex {
     //END   sequential istream
 
     //BEGIN sequential istream / namespace local
+    /**
+     * @brief Specialization for use with `std::swap`.
+     * @tparam ch character type
+     * @tparam tr character traits type
+     * @param lhs one object to swap
+     * @param rhs other object to swap
+     * @see `std::swap`
+     */
     template <typename ch, typename tr>
     void swap
       ( basic_isequentialstream<ch,tr>& lhs,
@@ -427,9 +518,16 @@ namespace text_complex {
 
     //BEGIN sequential istream / type aliases
     /* TCMPLX_AP_API omitted here (see https://stackoverflow.com/a/1440948). */
+    /**
+     * @brief `basic_isequentialstream` specialization for `char`
+     */
     using isequentialstream = basic_isequentialstream<char>;
+    /**
+     * @brief `basic_isequentialstream` specialization for `wchar_t`
+     */
     using wisequentialstream = basic_isequentialstream<wchar_t>;
     //END   sequential istream / type aliases
+    /** @} */
   };
 };
 #endif //TextComplexAccessP_NO_IOSTREAM && TextComplexAccessP_NO_LOCALE

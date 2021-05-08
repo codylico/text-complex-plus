@@ -12,7 +12,8 @@
 namespace text_complex {
   namespace access {
     /**
-     * @defgroup fixlist Prefix code list (access/fixlist.hpp)
+     * @defgroup fixlist Prefix code list
+     *   (access/fixlist.hpp)
      * @{
      */
     //BEGIN prefix preset identifiers

@@ -1,5 +1,5 @@
 /**
- * @file tcmplx-access-plus/inscopy.hpp
+ * @file text-complex-plus/access/inscopy.hpp
  * @brief table for insert and copy lengths
  * @author Cody Licorish (svgmovement@gmail.com)
  */
@@ -11,6 +11,11 @@
 
 namespace text_complex {
   namespace access {
+    /**
+     * @defgroup inscopy table for insert and copy lengths
+     *   (access/inscopy.hpp)
+     * @{
+     */
     //BEGIN insert copy table
     /**
      * @brief Type of insert copy table to generate.
@@ -108,18 +113,18 @@ namespace text_complex {
       struct insert_copy_row* p;
       size_t n;
 
-    public /* container-compat */:
+    public: /** @name container-compat *//** @{ */
       typedef size_t size_type;
       typedef struct insert_copy_row value_type;
       typedef struct insert_copy_row* iterator;
       typedef struct insert_copy_row const* const_iterator;
+      /** @} */
 
-    public /*rule-of-six*/:
+    public: /** @name rule-of-six*//** @{ */
       /**
        * @brief Constructor.
        * @param n row count
-       * @throw `std::bad_alloc` if something breaks, or
-       *   @link api_exception @endlink for an invalid table type
+       * @throw std::bad_alloc if something breaks
        */
       insert_copy_table(size_t n = 0u);
       /**
@@ -144,13 +149,14 @@ namespace text_complex {
        * @return this insert copy table
        */
       insert_copy_table& operator=(insert_copy_table&& ) noexcept;
+      /** @} */
 
-    public /* allocation */:
+    public: /** @name allocation *//** @{ */
       /**
        * @brief Scalar memory allocator.
        * @param sz size in `char`s of `insert_copy_table` to allocate
        * @return a pointer to memory on success
-       * @throw `std::bad_alloc` on allocation error
+       * @throw std::bad_alloc on allocation error
        */
       static void* operator new(std::size_t sz);
       /**
@@ -172,8 +178,9 @@ namespace text_complex {
        * @param sz size in `char`s of `insert_copy_table[]` to free
        */
       static void operator delete[](void* p, std::size_t sz) noexcept;
+      /** @} */
 
-    public /* range-based */:
+    public: /** @name range-based *//** @{ */
       /**
        * @brief `begin` method for range-based `for`.
        * @return a pointer to the first row, or `nullptr` for empty tables
@@ -196,8 +203,9 @@ namespace text_complex {
        *   or `nullptr` for empty tables
        */
       insert_copy_row* end(void) noexcept;
+      /** @} */
 
-    public /* array-compat */:
+    public: /** @name array-compat *//** @{ */
       /**
        * @brief Query the length of the table.
        * @return the number of rows in this table
@@ -211,7 +219,6 @@ namespace text_complex {
       insert_copy_row const& operator[](size_t i) const noexcept;
       /**
        * @brief Read from a insert copy table.
-       * @param x the list to read
        * @param i an array index
        * @return a pointer to an insert copy row on success, NULL otherwise
        * @throw std::out_of_range on bad index
@@ -225,18 +232,19 @@ namespace text_complex {
       insert_copy_row& operator[](size_t i) noexcept;
       /**
        * @brief Read from a insert copy table.
-       * @param x the list to read
        * @param i an array index
        * @return a pointer to an insert copy row on success, NULL otherwise
        * @throw std::out_of_range on bad index
        */
       insert_copy_row& at(size_t i);
+      /** @} */
 
-    private /* rule-of-six */:
+    private: /** @name rule-of-six *//** @{ */
       void duplicate(insert_copy_table const& );
       void transfer(insert_copy_table&& ) noexcept;
       void transfer(insert_copy_table const& ) = delete;
       void resize(size_t n);
+      /** @} */
     };
     //END   insert copy table
 
@@ -248,7 +256,7 @@ namespace text_complex {
     //BEGIN insert copy table / allocation (namespace local)
     /**
      * @brief Non-throwing insert copy table allocator.
-     * @param t table preset type
+     * @param n row count
      * @return a insert copy table on success, `nullptr` otherwise
      */
     TCMPLX_AP_API
@@ -256,7 +264,7 @@ namespace text_complex {
 
     /**
      * @brief Non-throwing insert copy table allocator.
-     * @param t table preset type
+     * @param n row count
      * @return a insert copy table on success, `nullptr` otherwise
      */
     TCMPLX_AP_API
@@ -308,7 +316,6 @@ namespace text_complex {
     /**
      * @brief Assign an insert-copy table with a preset code-value list.
      * @param ict list to sort
-     * @param i preset identifier
      * @throw api_exception on allocation problem
      * @note Useful for decoding from a compressed stream.
      */
@@ -360,6 +367,7 @@ namespace text_complex {
       ( insert_copy_table const& ict, unsigned long int i,
         unsigned long int c, bool z_tf=false) noexcept;
     //END   insert copy table / namespace local
+    /** @} */
   };
 };
 
