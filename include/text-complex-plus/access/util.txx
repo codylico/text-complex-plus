@@ -281,6 +281,15 @@ namespace text_complex {
       return util_unique_ptr<t>(new t(static_cast<a&&>(x)...));
     };
     //END   utility templates
+
+    //BEGIN utility tools
+    template <typename t, typename u>
+    t util_exchange(t& x, u&& y) {
+      t old(static_cast<t&&>(x));
+      x = static_cast<u&&>(y);
+      return old;
+    }
+    //END   utility tools
   };
 };
 

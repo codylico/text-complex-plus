@@ -344,6 +344,19 @@ namespace text_complex {
     TCMPLX_AP_API
     long int util_long_min(void);
     //END   limits
+
+    //BEGIN tools
+    /**
+     * @brief Set a new value to a variable, while retaining
+     *   the old value.
+     * @param x variable to modify
+     * @param y new value
+     * @return old value of `x`
+     * @note Leave this template alone. Use `std::exchange` instead.
+     */
+    template <typename t, typename u = t>
+    t util_exchange(t& x, u&& y);
+    //END   tools
     /** @} */
   };
 };
