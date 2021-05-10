@@ -18,6 +18,8 @@ static MunitPlusResult test_hashchain_add
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_hashchain_addring
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_hashchain_find
+    (const MunitPlusParameter params[], void* data);
 static void* test_hashchain_setupsmall
     (const MunitPlusParameter params[], void* user_data);
 static void* test_hashchain_setup
@@ -37,6 +39,10 @@ static MunitPlusTest tests_hashchain[] = {
       MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"add/ring", test_hashchain_addring,
+      test_hashchain_setupsmall,test_hashchain_teardown,
+      MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"find", test_hashchain_find,
       test_hashchain_setupsmall,test_hashchain_teardown,
       MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
@@ -207,6 +213,57 @@ MunitPlusResult test_hashchain_addring
 #else
       munit_plus_assert_uchar((*p)[i],==,buf[j]);
 #endif /*TextComplexAccessP_NO_EXCEPT*/
+    }
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_hashchain_find
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::hash_chain* const p =
+    static_cast<text_complex::access::hash_chain*>(data);
+  int const add_count = munit_plus_rand_int_range(3,64);
+  unsigned int seed = munit_plus_rand_int_range(1,255);
+  std::uint32_t const extent = p->extent();
+  std::uint32_t const skip_count = extent - munit_plus_rand_int_range(1,64);
+  unsigned char buf[64];
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* fill the buffer */{
+    int i;
+    for (i = 0; i < add_count; ++i) {
+      buf[i] = static_cast<unsigned char>(seed++);
+    }
+  }
+  /* skip some items */{
+    std::uint32_t i;
+    for (i = 0; i < skip_count; ++i) {
+      text_complex::access::api_error ae;
+      p->push_front(0u, ae);
+    }
+  }
+  /* add the items */{
+    int i;
+    for (i = 0; i < add_count; ++i) {
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+      p->push_front(buf[i]);
+#else
+      text_complex::access::api_error ae;
+      p->push_front(buf[i], ae);
+      munit_plus_assert_op(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    }
+  }
+  /* search for the stored bytes */{
+    int j;
+    for (j = 0; j < add_count-2; ++j) {
+      std::uint32_t const i = add_count-j-1;
+      std::uint32_t const k = p->find(buf+j);
+      if (k == static_cast<std::uint32_t>(-1) && j < add_count-3)
+        continue;
+      munit_plus_assert_uint32(k, ==, i);
     }
   }
   return MUNIT_PLUS_OK;

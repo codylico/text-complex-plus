@@ -30,6 +30,14 @@ namespace text_complex {
       size_t* positions;
       size_t chain_length;
 
+    public: /** @name string-compat *//** @{ */
+      /**
+       * @brief Find failure value.
+       * @see @link #find @endlink
+       */
+      static uint32 const npos;
+      /** @} */
+
     public: /** @name rule-of-six*//** @{ */
       /**
        * @brief Constructor.
@@ -132,6 +140,14 @@ namespace text_complex {
        * @return a sliding window size
        */
       uint32 extent(void) const noexcept;
+      /**
+       * @brief Search for a byte sequence.
+       * @param b three byte sequence for which to look
+       * @param i number of bytes to go back; zero is most recent
+       * @return a backward distance where to find the three-byte
+       *   sequence, or #npos if not found
+       */
+      uint32 find(unsigned char const* b, uint32 pos = 0u) const noexcept;
       /** @} */
 
     private: /** @name rule-of-six *//** @{ */
