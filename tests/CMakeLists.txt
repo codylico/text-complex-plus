@@ -87,4 +87,10 @@ target_compile_features(tcmplx_accessP_testfont
   target_link_libraries(tcmplx_accessP_test_ringslide
     munit_plus tcmplx_access_plus)
 #END   RingSlide test
+
+#BEGIN HashChain test
+  add_executable(tcmplx_accessP_test_hashchain tca_hashchain.cpp)
+  target_link_libraries(tcmplx_accessP_test_hashchain
+    munit_plus tcmplx_access_plus)
+  #END   HashChain test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)
