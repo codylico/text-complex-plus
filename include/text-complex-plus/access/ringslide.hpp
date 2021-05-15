@@ -136,7 +136,6 @@ namespace text_complex {
     public: /** @name methods *//** @{ */
       /**
        * @brief Query the window size of the slide ring.
-       * @param x the slide ring to inspect
        * @return a sliding window size
        */
       uint32 extent(void) const noexcept;
