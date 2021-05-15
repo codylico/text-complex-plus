@@ -114,9 +114,13 @@ namespace text_complex {
       size_t n;
 
     public: /** @name container-compat *//** @{ */
+      /** @brief Type used for the number of rows in the table. */
       typedef size_t size_type;
+      /** @brief Type returned from an array access. */
       typedef struct insert_copy_row value_type;
+      /** @brief Type used to step through a table. */
       typedef struct insert_copy_row* iterator;
+      /** @brief Type used to step through a constant table. */
       typedef struct insert_copy_row const* const_iterator;
       /** @} */
 

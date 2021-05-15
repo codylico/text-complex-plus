@@ -92,5 +92,5 @@ target_compile_features(tcmplx_accessP_testfont
   add_executable(tcmplx_accessP_test_hashchain tca_hashchain.cpp)
   target_link_libraries(tcmplx_accessP_test_hashchain
     munit_plus tcmplx_access_plus)
-  #END   HashChain test
+#END   HashChain test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)

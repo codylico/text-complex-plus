@@ -25,9 +25,13 @@ namespace text_complex {
       unsigned short len;
 
     public: /** @name container-compat *//** @{ */
+      /** @brief Data type used for word sizes. */
       typedef size_t size_type;
+      /** @brief "Character" type used by the word holder. */
       typedef unsigned char value_type;
+      /** @brief Type used for stepping through a word. */
       typedef unsigned char* iterator;
+      /** @brief Type used for stepping through a constant word. */
       typedef unsigned char const* const_iterator;
       /** @} */
 

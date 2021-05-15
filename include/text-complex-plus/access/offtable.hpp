@@ -52,9 +52,13 @@ namespace text_complex {
       size_t n;
 
     public: /** @name container-compat *//** @{ */
+      /** @brief Type holds the size of an offset table. */
       typedef size_t size_type;
+      /** @brief Type returned by array access. */
       typedef struct offset_line value_type;
+      /** @brief Type used to step through an offset table. */
       typedef struct offset_line* iterator;
+      /** @brief Type used to step through a constant offset table. */
       typedef struct offset_line const* const_iterator;
       /** @} */
 

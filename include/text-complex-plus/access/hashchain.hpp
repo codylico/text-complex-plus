@@ -143,7 +143,7 @@ namespace text_complex {
       /**
        * @brief Search for a byte sequence.
        * @param b three byte sequence for which to look
-       * @param i number of bytes to go back; zero is most recent
+       * @param pos number of bytes to go back; zero is most recent
        * @return a backward distance where to find the three-byte
        *   sequence, or #npos if not found
        */
