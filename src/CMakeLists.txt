@@ -43,6 +43,9 @@ set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/bdict.hpp
   ../include/text-complex-plus/access/bdict.txx
   ../include/text-complex-plus/access/ringslide.hpp
+  ../include/text-complex-plus/access/ringslide.txx
+  ../include/text-complex-plus/access/hashchain.hpp
+  ../include/text-complex-plus/access/hashchain.txx
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES}
