@@ -18,6 +18,9 @@ namespace text_complex {
      * @{
      */
     //BEGIN block string
+    /**
+     * @brief Byte storage used by the block buffer.
+     */
     class TCMPLX_AP_API block_string final {
     private:
       unsigned char* p;
@@ -25,7 +28,9 @@ namespace text_complex {
       uint32 cap;
 
     public: /** @name string-compat *//** @{ */
+      /** @brief Bytes stored in the block string. */
       typedef unsigned char value_type;
+      /** @brief Numeric type represents capacity and size of the string. */
       typedef uint32 size_type;
       /** @} */
 
@@ -285,9 +290,9 @@ namespace text_complex {
       block_buffer& flush(api_error& ae) noexcept;
       /**
        * @brief Add some input bytes.
-       * @param buf data to add to the input
-       * @param sz size of the added input
-       * @return `*this
+       * @param s data to add to the input
+       * @param count size of the added input
+       * @return `*this`
        * @throw api_exception on failure
        * @note Either the full block is added, or none at all.
        */
@@ -295,8 +300,8 @@ namespace text_complex {
         (unsigned char const* s, size_t count);
       /**
        * @brief Add some input bytes.
-       * @param buf data to add to the input
-       * @param sz size of the added input
+       * @param s data to add to the input
+       * @param count size of the added input
        * @param[out] ae @em error-code api_error::Success on success,
        *   other value on failure
        * @return `*this`
