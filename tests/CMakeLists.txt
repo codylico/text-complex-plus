@@ -93,4 +93,10 @@ target_compile_features(tcmplx_accessP_testfont
   target_link_libraries(tcmplx_accessP_test_hashchain
     munit_plus tcmplx_access_plus)
 #END   HashChain test
+
+#BEGIN BlockBuf test
+  add_executable(tcmplx_accessP_test_blockbuf tca_blockbuf.cpp)
+  target_link_libraries(tcmplx_accessP_test_blockbuf
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
+#END   BlockBuf test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)

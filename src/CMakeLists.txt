@@ -23,6 +23,7 @@ set(text_complex_access_plus_FILES
   zutil.cpp
   ringslide.cpp
   hashchain.cpp
+  blockbuf.cpp
   )
 set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/api.hpp
@@ -46,6 +47,8 @@ set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/ringslide.txx
   ../include/text-complex-plus/access/hashchain.hpp
   ../include/text-complex-plus/access/hashchain.txx
+  ../include/text-complex-plus/access/blockbuf.hpp
+  ../include/text-complex-plus/access/blockbuf.txx
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES}
