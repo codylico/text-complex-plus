@@ -75,7 +75,7 @@ namespace text_complex {
     hash_chain::hash_chain(hash_chain&& other) noexcept
       : sr(std::move(other.sr)), last_count(0u),
         counter(0u), chains(nullptr),
-        positions(nullptr), chain_length(chain_length)
+        positions(nullptr), chain_length(0u)
     {
       transfer(static_cast<hash_chain&&>(other));
       return;
