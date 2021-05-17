@@ -46,6 +46,8 @@ namespace text_complex {
      * @brief Library error codes.
      */
     enum struct api_error : int {
+      /** Block buffer may overflow */
+      BlockOverflow = -11,
       /** Array index out of range */
       OutOfRange = -10,
       /** Numeric overflow produced by a distance code conversion */
