@@ -55,6 +55,15 @@ namespace text_complex {
         throw api_exception(ae);
       } else return *this;
     }
+
+    inline
+    size_t block_buffer::bypass(unsigned char const* s, size_t count) {
+      api_error ae;
+      size_t const out = bypass(s, count, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return out;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT
   };
 };

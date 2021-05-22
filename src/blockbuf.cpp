@@ -560,11 +560,31 @@ namespace text_complex {
     block_string const& block_buffer::str(void) const noexcept {
       return output;
     }
+    //END   block_buffer / ostringstream-compat
 
+    //BEGIN block_buffer / methods
     void block_buffer::clear_output(void) noexcept {
       output.clear();
       return;
     }
-    //END   block_buffer / ostringstream-compat
+    //END   block_buffer / methods
+
+    //BEGIN block_buffer / slide_ring access
+    size_t block_buffer::bypass
+        (unsigned char const* s, size_t count, api_error& ae) noexcept
+    {
+      if (chain) {
+        api_error chain_ae = api_error::Success;
+        size_t i;
+        for (i = 0u; i < count && chain_ae == api_error::Success; ++i) {
+          chain->push_front(s[i], chain_ae);
+        }
+        return i;
+      } else {
+        ae = api_error::Init;
+        return 0u;
+      }
+    }
+    //BEGIN block_buffer / slide_ring access
   };
 };

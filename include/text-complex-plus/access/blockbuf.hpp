@@ -346,23 +346,49 @@ namespace text_complex {
         The 30-bit distance can be extracted from a four-byte sequence:
           [R][S1][S2][S3]
         as ((R&63)<<24) + ((S1&255)<<16) + ((S2&255)<<8) + (S3&255) + 16384.
+        Note that both the 14-bit and 30-bit distances start with
+        zero (0) representing the most recent previous byte. Both Brotli
+        and DEFLATE instead use one (1) to represent the most recent
+        previous byte.
        @endverbatim
        *
        * @note Examples (values in hexadecimal): @verbatim
        (03)(41)(62)(63)         -> "Abc"
        (83)(80)(01)             -> copy 3 bytes, distance 1
-       (01)(54)(83)(80)(01)     -> "TTTT"
+       (01)(54)(83)(80)(00)     -> "TTTT"
+       (01)(54)(51)(83)(80)(01) -> "TQTTT"
        (C0)(05)(90)(02)         -> copy 69 bytes, distance 4098
        (C0)(06)(C0)(00)(00)(03) -> copy 70 bytes, distance 16387
        (84)(05)(00)(02)         -> "life the " (bdict length 4 filter 5 word 2)
        @endverbatim
        */
       block_string const& str(void) const noexcept;
-
+      /** @} */
+    public: /** @name methods *//** @{ */
       /**
        * @brief Clear the output buffer.
        */
       void clear_output(void) noexcept;
+      /**
+       * @brief Add some bytes to the slide ring,
+       *   bypassing the input buffer.
+       * @param s data to add to the slide ring
+       * @param count size of the added data
+       * @return the number of bytes successfully added
+       * @throw api_exception on failure
+       */
+      size_t bypass(unsigned char const* s, size_t count);
+      /**
+       * @brief Add some bytes to the slide ring,
+       *   bypassing the input buffer.
+       * @param s data to add to the slide ring
+       * @param count size of the added data
+       * @param[out] ae @em error-code api_error::Success on success,
+       *   other value on failure
+       * @return the number of bytes successfully added
+       */
+      size_t bypass
+        (unsigned char const* s, size_t count, api_error& ae) noexcept;
       /** @} */
 
     private: /** @name rule-of-six *//** @{ */

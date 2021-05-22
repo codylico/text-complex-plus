@@ -17,6 +17,8 @@ static MunitPlusResult test_blockbuf_item
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_blockbuf_gen
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_blockbuf_bypass
+    (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_blockbuf_str_cycle
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_blockbuf_str_item
@@ -34,6 +36,9 @@ static MunitPlusTest tests_blockbuf[] = {
       test_blockbuf_setup,test_blockbuf_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"gen", test_blockbuf_gen,
+      test_blockbuf_setup,test_blockbuf_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"bypass", test_blockbuf_bypass,
       test_blockbuf_setup,test_blockbuf_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"string/cycle", test_blockbuf_str_cycle,
@@ -122,6 +127,65 @@ MunitPlusResult test_blockbuf_item
     munit_plus_assert_op(ae, ==, text_complex::access::api_error::Success);
 #endif /*TextComplexAccessP_NO_EXCEPT*/
     munit_plus_assert_uint32(p->input_size(), ==, count);
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_blockbuf_bypass
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::block_buffer* const p =
+    static_cast<text_complex::access::block_buffer*>(data);
+  std::size_t const count = p->capacity();
+  unsigned char buf[3];
+  if (p == nullptr || count < 3)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* build the text */{
+    std::size_t i;
+    munit_plus_rand_memory(3, static_cast<munit_plus_uint8_t*>(buf));
+    for (i = 0; i < 3; ++i) {
+      buf[i] = (buf[i]&3u)|80u;
+    }
+  }
+  /* add to slide ring */{
+    size_t bypass_count;
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    bypass_count = p->bypass(buf, 3);
+#else
+    text_complex::access::api_error ae;
+    bypass_count = p->bypass(buf, 3, ae);
+    munit_plus_assert_op(ae, ==, text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    munit_plus_assert_uint32(p->input_size(), ==, 0);
+    munit_plus_assert_size(bypass_count, ==, 3);
+  }
+  /* add to input */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    p->write(buf, 3);
+#else
+    text_complex::access::api_error ae;
+    p->write(buf, 3, ae);
+    munit_plus_assert_op(ae, ==, text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    munit_plus_assert_uint32(p->input_size(), ==, 3);
+  }
+  /* */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    p->flush();
+#else
+    text_complex::access::api_error ae;
+    p->flush(ae);
+    munit_plus_assert_op(ae, ==, text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    munit_plus_assert_uint32(p->input_size(), ==, 0);
+  }
+  /* inspect */{
+    unsigned char const copy_cmd[] = {131u, 128u, 2u};
+    text_complex::access::block_string const& output = p->str();
+    munit_plus_assert_uint32(output.size(), ==, 3);
+    munit_plus_assert_ptr_not_null(output.data());
+    munit_plus_assert_memory_equal(3, output.data(), copy_cmd);
   }
   return MUNIT_PLUS_OK;
 }
