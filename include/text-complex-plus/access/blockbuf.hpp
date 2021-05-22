@@ -389,6 +389,22 @@ namespace text_complex {
        */
       size_t bypass
         (unsigned char const* s, size_t count, api_error& ae) noexcept;
+
+      /**
+       * @brief Query a past byte.
+       * @param i number of bytes to go back; zero is most recent
+       * @param[out] ae @em error-code api_error::Success on success,
+       *   other value on bad index
+       * @return the byte at the given index
+       */
+      unsigned char peek(uint32 i, api_error& ae) const noexcept;
+      /**
+       * @brief Read from a sliding window.
+       * @param i number of bytes to go back; zero is most recent
+       * @return the byte at the given index
+       * @throw api_exception on bad index
+       */
+      unsigned char peek(uint32 i) const;
       /** @} */
 
     private: /** @name rule-of-six *//** @{ */

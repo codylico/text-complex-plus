@@ -64,6 +64,15 @@ namespace text_complex {
         throw api_exception(ae);
       } else return out;
     }
+
+    inline
+    unsigned char block_buffer::peek(uint32 i) const {
+      api_error ae;
+      unsigned char const out = peek(i, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return out;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT
   };
 };

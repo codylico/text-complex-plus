@@ -585,6 +585,23 @@ namespace text_complex {
         return 0u;
       }
     }
+
+    unsigned char block_buffer::peek
+        (uint32 i, api_error& ae) const noexcept
+    {
+      if (chain) {
+        if (i >= chain->size()) {
+          ae = api_error::OutOfRange;
+          return 0u;
+        } else {
+          ae = api_error::Success;
+          return (*chain)[i];
+        }
+      } else {
+        ae = api_error::OutOfRange;
+        return 0u;
+      }
+    }
     //BEGIN block_buffer / slide_ring access
   };
 };

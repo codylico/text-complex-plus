@@ -19,6 +19,8 @@ static MunitPlusResult test_blockbuf_gen
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_blockbuf_bypass
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_blockbuf_add
+    (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_blockbuf_str_cycle
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_blockbuf_str_item
@@ -39,6 +41,9 @@ static MunitPlusTest tests_blockbuf[] = {
       test_blockbuf_setup,test_blockbuf_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"bypass", test_blockbuf_bypass,
+      test_blockbuf_setup,test_blockbuf_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"add", test_blockbuf_add,
       test_blockbuf_setup,test_blockbuf_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"string/cycle", test_blockbuf_str_cycle,
@@ -277,6 +282,50 @@ MunitPlusResult test_blockbuf_gen
   }
   return MUNIT_PLUS_OK;
 }
+
+MunitPlusResult test_blockbuf_add
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::block_buffer* const p =
+    static_cast<text_complex::access::block_buffer*>(data);
+  int const add_count = munit_plus_rand_int_range(1,64);
+  unsigned char buf[64];
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* fill the buffer */{
+    munit_plus_rand_memory(add_count, static_cast<munit_plus_uint8_t*>(buf));
+  }
+  /* add to slide ring */{
+    size_t bypass_count;
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    bypass_count = p->bypass(buf, add_count);
+#else
+    text_complex::access::api_error ae;
+    bypass_count = p->bypass(buf, add_count, ae);
+    munit_plus_assert_op(ae, ==, text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    munit_plus_assert_size(bypass_count, ==, add_count);
+  }
+  /* check the stored bytes */{
+    int j;
+    for (j = 0; j < add_count; ++j) {
+      int const i = add_count-j-1;
+      unsigned char ch;
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+      ch = p->peek(i);
+#else
+      text_complex::access::api_error ae;
+      ch = p->peek(i, ae);
+      munit_plus_assert_op(ae, ==, text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+      munit_plus_assert_uchar(ch,==,buf[j]);
+    }
+  }
+  return MUNIT_PLUS_OK;
+}
+
+
 
 MunitPlusResult test_blockbuf_str_cycle
   (const MunitPlusParameter params[], void* data)
