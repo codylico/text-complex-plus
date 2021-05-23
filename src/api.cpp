@@ -13,7 +13,7 @@ namespace text_complex {
   namespace access {
     //BEGIN configurations
     char const* api_version(void) noexcept {
-      return "0.3.5-alpha";
+      return "0.3.6-alpha";
     }
     //END   configurations
 

@@ -318,7 +318,7 @@ namespace text_complex {
 
 #if  (!(defined TextComplexAccessP_NO_EXCEPT))
     /**
-     * @brief Assign an insert-copy table with a preset code-value list.
+     * @brief Sort an insert-copy table by alphabet code.
      * @param ict list to sort
      * @throw api_exception on allocation problem
      * @note Useful for decoding from a compressed stream.

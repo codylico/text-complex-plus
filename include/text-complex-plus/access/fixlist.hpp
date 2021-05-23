@@ -65,11 +65,11 @@ namespace text_complex {
      * @brief A single line from a prefix code list.
      */
     struct prefix_line {
-      /** @brief Alphabet code for a prefix. */
+      /** @brief Prefix bits. */
       unsigned short int code;
       /** @brief Length of prefix in bits. */
       unsigned short int len;
-      /** @brief Prefix bits. */
+      /** @brief Alphabet code for a prefix. */
       unsigned long int value;
     };
     //END   prefix code line
@@ -540,7 +540,7 @@ namespace text_complex {
      * @param dst list sorted by Huffman code
      * @param n length of bit string
      * @param bits bit string
-     * @return index if found, `std::numeric_limits<size_t>::max()` otherwise
+     * @return index if found, `std::numeric_limits<size_t>::%max()` otherwise
      * @note Useful for decoding from a compressed stream.
      */
     TCMPLX_AP_API
