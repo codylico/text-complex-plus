@@ -73,7 +73,7 @@ static MunitPlusTest tests_fixlist[] = {
       nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_SINGLE_ITERATION,
       nullptr},
   {(char*)"histogram/item", test_fixlist_hist_item,
-      test_fixlist_hist_setup,test_fixlist_teardown,
+      test_fixlist_hist_setup,test_fixlist_hist_teardown,
       MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
