@@ -24,6 +24,8 @@ static MunitPlusResult test_fixlist_hist_cycle
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_fixlist_hist_item
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_fixlist_codesort
+    (const MunitPlusParameter params[], void* data);
 static void* test_fixlist_setup
     (const MunitPlusParameter params[], void* user_data);
 static void* test_fixlist_gen_setup
@@ -64,6 +66,9 @@ static MunitPlusTest tests_fixlist[] = {
   {(char*)"preset", test_fixlist_preset,
       test_fixlist_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
+  {(char*)"codesort", test_fixlist_codesort,
+      test_fixlist_gen_setup,test_fixlist_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      test_fixlist_gen_params},
   {(char*)"histogram/cycle", test_fixlist_hist_cycle,
       nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_SINGLE_ITERATION,
       nullptr},
@@ -219,6 +224,66 @@ MunitPlusResult test_fixlist_gen_codes
         "  [%" MUNIT_PLUS_SIZE_MODIFIER "u] = {%#x, l %u, v %lu}",
         i, line.code, line.len, line.value);
       munit_plus_assert_uint((line.code>>(line.len)), ==, 0u);
+    }
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_fixlist_codesort
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::prefix_list* const p =
+    static_cast<text_complex::access::prefix_list*>(data);
+  text_complex::access::prefix_list const* const p_c = p;
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    text_complex::access::fixlist_gen_codes(*p);
+#else
+    text_complex::access::api_error ae;
+    text_complex::access::fixlist_gen_codes(*p, ae);
+    munit_plus_assert_int(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+  }
+  /* sort the codes */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    text_complex::access::fixlist_codesort(*p);
+#else
+    text_complex::access::api_error ae;
+    text_complex::access::fixlist_codesort(*p, ae);
+    munit_plus_assert_int(ae,==,text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+  }
+  /* inspect the new codes */if (p_c->size() > 1) {
+    size_t i;
+    size_t const len = p_c->size()-1;
+    for (i = 0; i < len; ++i) {
+      struct text_complex::access::prefix_line const& line = (*p_c)[i];
+      struct text_complex::access::prefix_line const& b_line = (*p_c)[i+1];
+      munit_plus_assert_uint(line.len, <=, b_line.len);
+      munit_plus_assert_uint(
+          (line.code<<(15-line.len)), <=, (b_line.code<<(15-b_line.len))
+        );
+    }
+  }
+  /* binary search */{
+    std::size_t i;
+    std::size_t len = p_c->size();
+    for (i = 0u; i < len; ++i) {
+      unsigned int n;
+      unsigned int bits;
+      size_t j;
+      /* */{
+        struct text_complex::access::prefix_line const& line = (*p_c)[i];
+        n = line.len;
+        bits = line.code;
+      }
+      if (n == 0)
+        continue;
+      j = text_complex::access::fixlist_codebsearch(*p_c, n, bits);
+      munit_plus_assert_size(j, ==, i);
     }
   }
   return MUNIT_PLUS_OK;

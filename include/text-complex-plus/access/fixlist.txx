@@ -40,6 +40,15 @@ namespace text_complex {
         throw api_exception(ae);
       } else return;
     }
+
+    inline
+    void fixlist_codesort(prefix_list& dst) {
+      api_error ae;
+      fixlist_codesort(dst, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT    
   };
 };

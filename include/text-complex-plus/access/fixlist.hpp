@@ -512,7 +512,40 @@ namespace text_complex {
         unsigned int max_bits);
 #endif //TextComplexAccessP_NO_EXCEPT
 
+    /**
+     * @brief Sort a prefix list by Huffman code.
+     * @param dst list to sort
+     * @param[out] ae @em error-code api_error::Success on success,
+     *   nonzero otherwise
+     * @note Useful for decoding from a compressed stream.
+     */
+    TCMPLX_AP_API
+    void fixlist_codesort
+      (prefix_list& dst, api_error& ae) noexcept;
 
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Sort a prefix list by Huffman code.
+     * @param dst list to sort
+     * @throw api_exception on allocation problem
+     * @note Useful for decoding from a compressed stream.
+     */
+    TCMPLX_AP_API
+    void fixlist_codesort(prefix_list& dst);
+#endif //TextComplexAccessP_NO_EXCEPT
+
+
+    /**
+     * @brief Binary search a prefix list by Huffman code.
+     * @param dst list sorted by Huffman code
+     * @param n length of bit string
+     * @param bits bit string
+     * @return index if found, `std::numeric_limits<size_t>::max()` otherwise
+     * @note Useful for decoding from a compressed stream.
+     */
+    TCMPLX_AP_API
+    size_t fixlist_codebsearch
+      (prefix_list const& dst, unsigned int n, unsigned int bits) noexcept;
 
     //END   prefix list / namespace local
     /** @} */

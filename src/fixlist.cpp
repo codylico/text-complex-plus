@@ -12,6 +12,7 @@
 #include <cstring>
 #include <algorithm>
 #include <vector>
+#include <climits>
 
 namespace text_complex {
   namespace access {
@@ -153,6 +154,14 @@ namespace text_complex {
     };
 
     /**
+     * @internal
+     * @brief Code comparison maximum length difference.
+     */
+    static
+    constexpr unsigned int fixlist_codecmp_maxdiff =
+        (CHAR_BIT)*sizeof(unsigned short);
+
+    /**
      * @brief Add two numbers, clamping the result.
      * @param a addend
      * @param b addend
@@ -205,6 +214,15 @@ namespace text_complex {
     bool fixlist_heap_packable
       ( std::vector<prefix_heapitem>::iterator begin,
         std::vector<prefix_heapitem>::iterator end, uint32 frac);
+    /**
+     * @internal
+     * @brief Compare two lines.
+     * @param a one line
+     * @param b another line
+     * @return whether `a` < `b`
+     */
+    static
+    bool fixlist_code_cmp(prefix_line const& a, prefix_line const& b);
 
     //BEGIN prefix-list / static
     prefix_heapitem operator+(prefix_heapitem a, prefix_heapitem b) {
@@ -261,6 +279,17 @@ namespace text_complex {
           return false;
         else return (it->total_frac <= frac);
       }
+    }
+
+    bool fixlist_code_cmp(prefix_line const& a, prefix_line const& b) {
+      bool const a_shorter = a.len < b.len;
+      unsigned short int const diff =
+        a_shorter ? b.len - a.len : a.len - b.len;
+      if (diff >= fixlist_codecmp_maxdiff)
+        return a_shorter;
+      else if (a_shorter)
+        return a.code < (b.code>>diff);
+      else return (a.code>>diff) < b.code;
     }
     //END   prefix-list / static
 
@@ -922,6 +951,32 @@ namespace text_complex {
         }
         ae = api_error::Success;
         return;
+      }
+    }
+
+    void fixlist_codesort(prefix_list& dst, api_error& ae) noexcept {
+      try {
+        std::sort(dst.begin(), dst.end(), fixlist_code_cmp);
+      } catch (std::bad_alloc const& ) {
+        ae = api_error::Memory;
+        return;
+      }
+      ae = api_error::Success;
+      return;
+    }
+
+    size_t fixlist_codebsearch
+      (prefix_list const& dst, unsigned int n, unsigned int bits) noexcept
+    {
+      struct prefix_line key;
+      key.len = static_cast<unsigned short>(n);
+      key.code = static_cast<unsigned short>(bits);
+      /* */{
+        struct prefix_line const* x = std::lower_bound
+          (dst.begin(), dst.end(), key, fixlist_code_cmp);
+        return x < dst.end()
+          ? static_cast<size_t>(x-dst.begin())
+          : std::numeric_limits<size_t>::max();
       }
     }
     //END   prefix_list / namespace local
