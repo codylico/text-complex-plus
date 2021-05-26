@@ -99,4 +99,10 @@ target_compile_features(tcmplx_accessP_testfont
   target_link_libraries(tcmplx_accessP_test_blockbuf
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
 #END   BlockBuf test
+
+#BEGIN ZCvt test
+  add_executable(tcmplx_accessP_test_zcvt tca_zcvt.cpp)
+  target_link_libraries(tcmplx_accessP_test_zcvt
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
+#END   ZCvt test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)

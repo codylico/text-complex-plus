@@ -24,6 +24,7 @@ set(text_complex_access_plus_FILES
   ringslide.cpp
   hashchain.cpp
   blockbuf.cpp
+  zcvt.cpp
   )
 set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/api.hpp
@@ -49,6 +50,7 @@ set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/hashchain.txx
   ../include/text-complex-plus/access/blockbuf.hpp
   ../include/text-complex-plus/access/blockbuf.txx
+  ../include/text-complex-plus/access/zcvt.hpp
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES}
