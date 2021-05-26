@@ -38,7 +38,7 @@ namespace text_complex {
        * @param direct number of direct codes supported (0..120)
        * @param postfix postfix bit count (0..3)
        * @throw std::bad_alloc if something breaks
-       * @note For RFC 1951 semantics, use `special_tf=0`,
+       * @note For RFC 1951 semantics, use `special=false`,
        *   `direct=4`, `postfix=0`.
        */
       distance_ring
