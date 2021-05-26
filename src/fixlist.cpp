@@ -282,14 +282,11 @@ namespace text_complex {
     }
 
     bool fixlist_code_cmp(prefix_line const& a, prefix_line const& b) {
-      bool const a_shorter = a.len < b.len;
-      unsigned short int const diff =
-        a_shorter ? b.len - a.len : a.len - b.len;
-      if (diff >= fixlist_codecmp_maxdiff)
-        return a_shorter;
-      else if (a_shorter)
-        return a.code < (b.code>>diff);
-      else return (a.code>>diff) < b.code;
+      if (a.len < b.len)
+        return true;
+      else if (a.len > b.len)
+        return false;
+      else return a.code < b.code;
     }
     //END   prefix-list / static
 
@@ -974,7 +971,7 @@ namespace text_complex {
       /* */{
         struct prefix_line const* x = std::lower_bound
           (dst.begin(), dst.end(), key, fixlist_code_cmp);
-        return x < dst.end()
+        return (x < dst.end() && x->len == n && x->code == bits)
           ? static_cast<size_t>(x-dst.begin())
           : std::numeric_limits<size_t>::max();
       }
