@@ -46,6 +46,8 @@ namespace text_complex {
      * @brief Library error codes.
      */
     enum struct api_error : int {
+      /** Expecting a ZLIB dictionary */
+      ZDictionary = -12,
       /** Block buffer may overflow */
       BlockOverflow = -11,
       /** Array index out of range */
@@ -69,7 +71,11 @@ namespace text_complex {
       /** Initialization error */
       Init = -1,
       /** Success code */
-      Success = 0
+      Success = 0,
+      /** End of stream */
+      EndOfFile = 1,
+      /** Partial output */
+      Partial = 2
     };
 
     /**

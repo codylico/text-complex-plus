@@ -20,6 +20,8 @@ namespace text_complex {
     //BEGIN error codes
     char const* api_error_toa(api_error v) noexcept {
       switch (v) {
+      case api_error::ZDictionary:
+        return "Expecting a ZLIB dictionary";
       case api_error::BlockOverflow:
         return "Block buffer may overflow";
       case api_error::OutOfRange:
@@ -42,6 +44,10 @@ namespace text_complex {
         return "Initialization error";
       case api_error::Success:
         return "Success";
+      case api_error::EndOfFile:
+        return "End of stream";
+      case api_error::Partial:
+        return "Partial output";
       default:
         return nullptr;
       }
