@@ -13,13 +13,15 @@ namespace text_complex {
   namespace access {
     //BEGIN configurations
     char const* api_version(void) noexcept {
-      return "0.3.6-alpha";
+      return "0.3.7-alpha";
     }
     //END   configurations
 
     //BEGIN error codes
     char const* api_error_toa(api_error v) noexcept {
       switch (v) {
+      case api_error::InsCopyMissing:
+        return "An expected insert-copy code is missing";
       case api_error::ZDictionary:
         return "Expecting a ZLIB dictionary";
       case api_error::BlockOverflow:

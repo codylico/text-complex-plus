@@ -48,6 +48,24 @@ namespace text_complex {
     }
 
     inline
+    block_buffer& block_buffer::try_block(void) {
+      api_error ae;
+      try_block(ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return *this;
+    }
+
+    inline
+    block_buffer& block_buffer::noconv_block(void) {
+      api_error ae;
+      noconv_block(ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return *this;
+    }
+
+    inline
     block_buffer& block_buffer::write(unsigned char const* s, size_t count) {
       api_error ae;
       write(s, count, ae);

@@ -17,6 +17,8 @@ static MunitPlusResult test_blockbuf_item
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_blockbuf_gen
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_blockbuf_noconv
+    (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_blockbuf_bypass
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_blockbuf_add
@@ -38,6 +40,9 @@ static MunitPlusTest tests_blockbuf[] = {
       test_blockbuf_setup,test_blockbuf_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"gen", test_blockbuf_gen,
+      test_blockbuf_setup,test_blockbuf_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"noconv", test_blockbuf_noconv,
       test_blockbuf_setup,test_blockbuf_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"bypass", test_blockbuf_bypass,
@@ -87,6 +92,9 @@ MunitPlusResult test_blockbuf_cycle
   munit_plus_assert_ptr_not_equal(ptr[0],ptr[1]);
   munit_plus_assert_ptr_not_equal(ptr[0],ptr2.get());
   munit_plus_assert_ptr_not_equal(ptr[1],ptr2.get());
+  munit_plus_assert_uint32(ptr[0]->extent(), ==, window_size);
+  munit_plus_assert_uint32(ptr[1]->extent(), ==, window_size);
+  munit_plus_assert_uint32(ptr2->extent(), ==, window_size);
   munit_plus_assert_uint32(ptr[0]->capacity(), ==, block_size);
   munit_plus_assert_uint32(ptr[1]->capacity(), ==, block_size);
   munit_plus_assert_uint32(ptr2->capacity(), ==, block_size);
@@ -279,6 +287,53 @@ MunitPlusResult test_blockbuf_gen
   /* clear */{
     p->clear_output();
     munit_plus_assert_uint32(p->str().size(), ==, 0);
+  }
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_blockbuf_noconv
+  (const MunitPlusParameter params[], void* data)
+{
+  text_complex::access::block_buffer* const p =
+    static_cast<text_complex::access::block_buffer*>(data);
+  std::size_t const count = p->capacity();
+  unsigned char buf[128];
+  if (p == nullptr)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* build the text */{
+    std::size_t i;
+    munit_plus_rand_memory(count, static_cast<munit_plus_uint8_t*>(buf));
+    for (i = 0; i < count; ++i) {
+      buf[i] = (buf[i]&3u)|80u;
+    }
+  }
+  /* add to input */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    p->write(buf, count);
+#else
+    text_complex::access::api_error ae;
+    p->write(buf, count, ae);
+    munit_plus_assert_op(ae, ==, text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    munit_plus_assert_uint32(p->input_size(), ==, count);
+  }
+  /* */{
+#if !(defined TextComplexAccessP_NO_EXCEPT)
+    p->noconv_block();
+#else
+    text_complex::access::api_error ae;
+    p->noconv_block(ae);
+    munit_plus_assert_op(ae, ==, text_complex::access::api_error::Success);
+#endif /*TextComplexAccessP_NO_EXCEPT*/
+    p->clear_input();
+    munit_plus_assert_uint32(p->input_size(), ==, 0);
+  }
+  /* inspect */{
+    text_complex::access::block_string const& output = p->str();
+    munit_plus_assert_uint32(output.size(), >, 0);
+    munit_plus_assert_ptr_not_null(output.data());
+    munit_plus_assert_memory_equal(output.size(), output.data(), buf);
   }
   return MUNIT_PLUS_OK;
 }

@@ -223,6 +223,15 @@ namespace text_complex {
      */
     static
     bool fixlist_code_cmp(prefix_line const& a, prefix_line const& b);
+    /**
+     * @internal
+     * @brief Compare two lines.
+     * @param a one line
+     * @param b another line
+     * @return whether `a` < `b`
+     */
+    static
+    bool fixlist_value_cmp(prefix_line const& a, prefix_line const& b);
 
     //BEGIN prefix-list / static
     prefix_heapitem operator+(prefix_heapitem a, prefix_heapitem b) {
@@ -287,6 +296,10 @@ namespace text_complex {
       else if (a.len > b.len)
         return false;
       else return a.code < b.code;
+    }
+
+    bool fixlist_value_cmp(prefix_line const& a, prefix_line const& b) {
+      return a.value < b.value;
     }
     //END   prefix-list / static
 
@@ -972,6 +985,31 @@ namespace text_complex {
         struct prefix_line const* x = std::lower_bound
           (dst.begin(), dst.end(), key, fixlist_code_cmp);
         return (x < dst.end() && x->len == n && x->code == bits)
+          ? static_cast<size_t>(x-dst.begin())
+          : std::numeric_limits<size_t>::max();
+      }
+    }
+
+    void fixlist_valuesort(prefix_list& dst, api_error& ae) noexcept {
+      try {
+        std::stable_sort(dst.begin(), dst.end(), fixlist_value_cmp);
+      } catch (std::bad_alloc const& ) {
+        ae = api_error::Memory;
+        return;
+      }
+      ae = api_error::Success;
+      return;
+    }
+
+    size_t fixlist_valuebsearch
+      (prefix_list const& dst, unsigned long int value) noexcept
+    {
+      struct prefix_line key;
+      key.value = value;
+      /* */{
+        struct prefix_line const* x = std::lower_bound
+          (dst.begin(), dst.end(), key, fixlist_value_cmp);
+        return (x < dst.end() && x->value == value)
           ? static_cast<size_t>(x-dst.begin())
           : std::numeric_limits<size_t>::max();
       }

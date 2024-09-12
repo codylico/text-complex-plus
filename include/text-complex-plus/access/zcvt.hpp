@@ -25,7 +25,11 @@ namespace text_complex {
      */
     class TCMPLX_AP_API zcvt_state final {
     public:
-      /** @brief ... */
+      /**
+       * @brief ...
+       * @note Using a buffer with a slide ring extent greater than 32768
+       *   can cause output sanity check to fail.
+       */
       block_buffer buffer;
       /** @brief ... */
       prefix_list literals;
@@ -37,6 +41,16 @@ namespace text_complex {
       insert_copy_table values;
       /** @brief ... */
       distance_ring ring;
+      /** @brief Check for large blocks. */
+      distance_ring try_ring;
+      /** @brief Check for large blocks. */
+      prefix_histogram lit_histogram;
+      /** @brief Check for large blocks. */
+      prefix_histogram dist_histogram;
+      /** @brief Check for large blocks. */
+      prefix_histogram seq_histogram;
+      /** @brief Tree description sequence. */
+      block_string sequence_list;
       /** @brief ... */
       unsigned short int bits;
       /** @brief Read count for bits used after a Huffman code. */
@@ -57,6 +71,8 @@ namespace text_complex {
       uint32 index;
       /** @brief Checksum value. */
       uint32 checksum;
+      /** @brief Output internal bit count. */
+      uint32 bit_cap;
 
     public: /** @name rule-of-zero*//** @{ */
       /**
@@ -147,7 +163,7 @@ namespace text_complex {
     /**
      * @brief Convert a zlib stream to a byte stream.
      * @param state the zlib conversion state to use
-     * @param from destination buffer
+     * @param from source buffer
      * @param from_end pointer to end of source buffer
      * @param[out] from_next location of next byte to process
      * @param to destination buffer
@@ -195,6 +211,44 @@ namespace text_complex {
     TCMPLX_AP_API
     size_t zcvt_bypass
       (zcvt_state& state, unsigned char const* buf, size_t sz);
+
+    /**
+     * @brief Convert a byte stream to a zlib stream.
+     * @param state the zlib conversion state to use
+     * @param from source buffer
+     * @param from_end pointer to end of source buffer
+     * @param[out] from_next location of next byte to process
+     * @param to destination buffer
+     * @param to_end pointer to end of destination buffer
+     * @param[out] to_next location of next output byte
+     * @return api_error::Success on success, nonzero otherwise
+     * @note The conversion state referred to by `state` is updated based
+     *   on the conversion result, whether succesful or failed.
+     */
+    TCMPLX_AP_API
+    api_error zcvt_out(zcvt_state& state,
+        unsigned char const* from, unsigned char const* from_end,
+        unsigned char const*& from_next,
+        unsigned char* to, unsigned char* to_end,
+        unsigned char*& to_next);
+
+    /**
+     * @brief Convert a byte stream to a zlib stream.
+     * @param state the zlib conversion state to use
+     * @param to destination buffer
+     * @param to_end pointer to end of destination buffer
+     * @param[out] to_next location of next output byte
+     * @return api_error::Success on success, nonzero otherwise
+     * @note The conversion state referred to by `state` is updated based
+     *   on the conversion result, whether succesful or failed.
+     *
+     * @note Any bytes remaining in the conversion state will
+     *   be processed before outputting the delimiter (Adler32 checksum).
+     */
+    TCMPLX_AP_API
+    api_error zcvt_unshift(zcvt_state& state,
+        unsigned char* to, unsigned char* to_end,
+        unsigned char*& to_next);
     //END   zcvt state / namespace local
     /** @} */
   };

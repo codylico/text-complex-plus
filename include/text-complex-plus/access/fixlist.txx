@@ -49,6 +49,15 @@ namespace text_complex {
         throw api_exception(ae);
       } else return;
     }
+
+    inline
+    void fixlist_valuesort(prefix_list& dst) {
+      api_error ae;
+      fixlist_valuesort(dst, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT    
   };
 };

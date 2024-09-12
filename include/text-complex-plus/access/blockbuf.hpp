@@ -366,9 +366,51 @@ namespace text_complex {
       /** @} */
     public: /** @name methods *//** @{ */
       /**
+       * @brief Process the current block of input bytes.
+       * @return `*this`
+       * @throw api_exception on failure
+       * @note The input buffer is retained.
+       */
+      block_buffer& try_block(void);
+      /**
+       * @brief Process the current block of input bytes.
+       * @param[out] ae @em error-code api_error::Success on success,
+       *   other value on failure
+       * @return `*this`
+       * @note The input buffer is retained.
+       */
+      block_buffer& try_block(api_error& ae) noexcept;
+      /**
+       * @brief Copy input bytes to output without processing.
+       * @return `*this`
+       * @throw api_exception on failure
+       * @note The input buffer is retained.
+       *
+       * @warning The output buffer will @em not follow the output
+       *   format. The bytes are copied "directly" to output
+       *   as is.
+       */
+      block_buffer& noconv_block(void);
+      /**
+       * @brief Copy input bytes to output without processing.
+       * @param[out] ae @em error-code api_error::Success on success,
+       *   other value on failure
+       * @return `*this`
+       * @note The input buffer is retained.
+       *
+       * @warning The output buffer will @em not follow the output
+       *   format. The bytes are copied "directly" to output
+       *   as is.
+       */
+      block_buffer& noconv_block(api_error& ae) noexcept;
+      /**
        * @brief Clear the output buffer.
        */
       void clear_output(void) noexcept;
+      /**
+       * @brief Clear the input buffer.
+       */
+      void clear_input(void) noexcept;
       /**
        * @brief Add some bytes to the slide ring,
        *   bypassing the input buffer.
@@ -405,6 +447,16 @@ namespace text_complex {
        * @throw api_exception on bad index
        */
       unsigned char peek(uint32 i) const;
+      /**
+       * @brief Query the slide ring window size.
+       * @return a window size in bytes
+       */
+      uint32 extent(void) const noexcept;
+      /**
+       * @brief Query the number of bytes held by the sliding window.
+       * @return the count of past bytes in the window
+       */
+      uint32 ring_size(void) const noexcept;
       /** @} */
 
     private: /** @name rule-of-six *//** @{ */

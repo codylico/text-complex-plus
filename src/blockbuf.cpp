@@ -9,6 +9,7 @@
 #include <memory>
 #include <utility>
 #include <new>
+#include <algorithm>
 #include <cstring>
 
 namespace text_complex {
@@ -437,6 +438,65 @@ namespace text_complex {
 
     //BEGIN block_buffer / ostringstream-compat
     block_buffer& block_buffer::flush(api_error& ae) noexcept {
+      api_error try_ae;
+      try_block(try_ae);
+      if (try_ae == api_error::Success)
+        clear_input();
+      ae = try_ae;
+      return *this;
+    }
+
+    block_buffer& block_buffer::write
+        (unsigned char const* s, size_t count, api_error& ae) noexcept
+    {
+      if (count > input_block_size-input.size()) {
+        ae = api_error::BlockOverflow;
+      } else {
+        uint32 const old_size = input.size();
+        size_t i;
+        api_error input_ae = api_error::Success;
+        for (i = 0u; i < count; ++i) {
+          input.push_back(s[i], input_ae);
+          if (input_ae != api_error::Success) {
+            input.resize(old_size, 0u, input_ae);
+            ae = input_ae;
+            return *this;
+          }
+        }
+        ae = api_error::Success;
+      }
+      return *this;
+    }
+
+    block_string const& block_buffer::str(void) const noexcept {
+      return output;
+    }
+    //END   block_buffer / ostringstream-compat
+
+    //BEGIN block_buffer / methods
+    void block_buffer::clear_output(void) noexcept {
+      output.clear();
+      return;
+    }
+
+    block_buffer& block_buffer::noconv_block(api_error& ae) noexcept {
+      uint32 const sz = output.size();
+      uint32 const i_sz = input.size();
+      api_error resize_ae;
+      if (i_sz > std::numeric_limits<size_t>::max()-sz) {
+        ae = api_error::Memory;
+        return *this;
+      }
+      output.resize(sz+i_sz, 0u, resize_ae);
+      if (resize_ae == api_error::Success) {
+        unsigned char const* const i_data = input.data();
+        std::copy(i_data, i_data+i_sz, output.data()+sz);
+      }
+      ae = resize_ae;
+      return *this;
+    }
+
+    block_buffer& block_buffer::try_block(api_error& ae) noexcept {
       api_error res = api_error::Success;
       uint32 const n = 51u;
       uint32 j = output.size();
@@ -529,42 +589,12 @@ namespace text_complex {
         /* close the match */
         res = blockstr_add_copy(output, match_size, v);
       }
-      if (res == api_error::Success)
-        input.clear();
       ae = res;
       return *this;
     }
 
-    block_buffer& block_buffer::write
-        (unsigned char const* s, size_t count, api_error& ae) noexcept
-    {
-      if (count > input_block_size-input.size()) {
-        ae = api_error::BlockOverflow;
-      } else {
-        uint32 const old_size = input.size();
-        size_t i;
-        api_error input_ae = api_error::Success;
-        for (i = 0u; i < count; ++i) {
-          input.push_back(s[i], input_ae);
-          if (input_ae != api_error::Success) {
-            input.resize(old_size, 0u, input_ae);
-            ae = input_ae;
-            return *this;
-          }
-        }
-        ae = api_error::Success;
-      }
-      return *this;
-    }
-
-    block_string const& block_buffer::str(void) const noexcept {
-      return output;
-    }
-    //END   block_buffer / ostringstream-compat
-
-    //BEGIN block_buffer / methods
-    void block_buffer::clear_output(void) noexcept {
-      output.clear();
+    void block_buffer::clear_input(void) noexcept {
+      input.clear();
       return;
     }
     //END   block_buffer / methods
@@ -601,6 +631,14 @@ namespace text_complex {
         ae = api_error::OutOfRange;
         return 0u;
       }
+    }
+
+    uint32 block_buffer::extent(void) const noexcept {
+      return chain ? chain->extent() : 0u;
+    }
+
+    uint32 block_buffer::ring_size(void) const noexcept {
+      return chain ? chain->size() : 0u;
     }
     //BEGIN block_buffer / slide_ring access
   };

@@ -547,6 +547,38 @@ namespace text_complex {
     size_t fixlist_codebsearch
       (prefix_list const& dst, unsigned int n, unsigned int bits) noexcept;
 
+    /**
+     * @brief Sort a prefix list by alphabet value.
+     * @param dst list to sort
+     * @param[out] ae @em error-value api_error::Success on success,
+     *   nonzero otherwise
+     * @note Useful for encoding to a compressed stream.
+     */
+    TCMPLX_AP_API
+    void fixlist_valuesort
+      (prefix_list& dst, api_error& ae) noexcept;
+
+#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+    /**
+     * @brief Sort a prefix list by alphabet value.
+     * @param dst list to sort
+     * @throw api_exception on allocation problem
+     * @note Useful for encoding to a compressed stream.
+     */
+    TCMPLX_AP_API
+    void fixlist_valuesort(prefix_list& dst);
+#endif //TextComplexAccessP_NO_EXCEPT
+
+    /**
+     * @brief Binary search a prefix list by alphabet value.
+     * @param dst list sorted by alphabet value
+     * @param value alphabet value
+     * @return index if found, `std::numeric_limits<size_t>::%max()` otherwise
+     * @note Useful for encoding to a compressed stream.
+     */
+    TCMPLX_AP_API
+    size_t fixlist_valuebsearch
+      (prefix_list const& dst, unsigned long int value) noexcept;
     //END   prefix list / namespace local
     /** @} */
   };

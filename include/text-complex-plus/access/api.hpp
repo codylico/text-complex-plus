@@ -46,6 +46,8 @@ namespace text_complex {
      * @brief Library error codes.
      */
     enum struct api_error : int {
+      /** An expected insert-copy code is missing */
+      InsCopyMissing = -13,
       /** Expecting a ZLIB dictionary */
       ZDictionary = -12,
       /** Block buffer may overflow */
