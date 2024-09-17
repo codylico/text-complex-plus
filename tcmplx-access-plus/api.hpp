@@ -94,6 +94,13 @@ namespace text_complex {
     public /* exception-override */:
       char const* what(void) const noexcept override;
     };
+
+    /**
+     * @brief Throw an exception if the given error code is negative.
+     * @param ae the error code to check
+     * @throw api_exception only if `ae` is negative
+     */
+    void api_throw(api_error ae);
     //END   api exception
   };
 };
