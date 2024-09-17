@@ -19,6 +19,19 @@ int main(int argc, char **argv) {
       } catch (std::exception const& e) {
         std::cout << "\tas except: " << e.what() << std::endl;
       }
+      try {
+        access::api_throw(v);
+        if (pre_v < 0) {
+          std::cout << "\texception should have occured; count as failure."
+            << std::endl;
+          return EXIT_FAILURE;
+        }
+      } catch (std::exception const& e) {
+        if (pre_v >= 0) {
+          std::cout << "\tunexpected; count as failure." << std::endl;
+          return EXIT_FAILURE;
+        }
+      }
 #endif /*TextComplexAccessP_NO_EXCEPT*/
     }
   }

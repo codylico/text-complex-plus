@@ -47,6 +47,15 @@ namespace text_complex {
       else return out;
     }
     //END   api exception / exception-override
+
+    //BEGIN api exception / namespace local
+    inline
+    void api_throw(api_error ae) {
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
+    //END   api exception / namespace local
   };
 };
 #endif //TextComplexAccessP_NO_EXCEPT
