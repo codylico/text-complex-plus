@@ -4,6 +4,7 @@ option(TCMPLX_ACCESS_P_BUILD_TESTS "build some tests" ON)
 if (TCMPLX_ACCESS_P_BUILD_TESTS)
 add_library(munit_plus STATIC
   munit-plus/munit.cpp munit-plus/munit.hpp)
+target_compile_features(munit_plus PUBLIC cxx_noexcept cxx_constexpr)
 add_library(tcmplx_accessP_testfont STATIC
   testfont.cpp testfont.hpp)
 target_link_libraries(tcmplx_accessP_testfont mmaptwo_plus munit_plus)
