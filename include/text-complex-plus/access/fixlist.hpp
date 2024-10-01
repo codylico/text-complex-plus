@@ -56,7 +56,11 @@ namespace text_complex {
        * @note Sort the values before applying the prefix codes.
        *   Use @link fixlist_gen_codes @endlink if necessary.
        */
-      BrotliSimple4B = 5
+      BrotliSimple4B = 5,
+      /**
+       * @brief Code lengths for Brotli window bits.
+       */
+      BrotliWBits = 6
     };
     //END   prefix preset identifiers
 

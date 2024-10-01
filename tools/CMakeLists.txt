@@ -6,4 +6,9 @@ if (TCMPLX_ACCESS_P_BUILD_TOOLS)
   add_executable(tcmplx_accessP_zcvt tca_zcvt.cpp)
   target_link_libraries(tcmplx_accessP_zcvt tcmplx_access_plus)
 #END   ZCvt tool
+
+#BEGIN BrCvt tool
+add_executable(tcmplx_accessP_brcvt tca_brcvt.cpp)
+target_link_libraries(tcmplx_accessP_brcvt tcmplx_access_plus)
+#END   BrCvt tool
 endif (TCMPLX_ACCESS_P_BUILD_TOOLS)
