@@ -1243,7 +1243,7 @@ namespace text_complex {
       }
     }
 
-    api_error zcvt_out(zcvt_state& state,    
+    api_error zcvt_out(zcvt_state& state,
         unsigned char const* from, unsigned char const* from_end,
         unsigned char const*& from_next,
         unsigned char* to, unsigned char* to_end,
@@ -1251,7 +1251,7 @@ namespace text_complex {
     {
       api_error ae = api_error::Success;
       unsigned char* to_out;
-      unsigned char const* p = from; 
+      unsigned char const* p = from;
       for (to_out = to; to_out < to_end && ae == api_error::Success;
           ++to_out)
       {
