@@ -686,7 +686,7 @@ namespace text_complex {
         bit_cap(0u)
     {
       if (n > 16777200u)
-        throw api_exception(api_error::Param);
+        n = 16777200u;
       wbits_select = 24;
       for (unsigned char i = 10; i < 24; ++i) {
         if (n <= (1ul<<i)-16) {
