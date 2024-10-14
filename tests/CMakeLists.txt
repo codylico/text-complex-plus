@@ -105,4 +105,10 @@ target_compile_features(tcmplx_accessP_testfont
   target_link_libraries(tcmplx_accessP_test_zcvt
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
 #END   ZCvt test
+
+#BEGIN BrMeta test
+  add_executable(tcmplx_accessP_test_brmeta tca_brmeta.cpp)
+  target_link_libraries(tcmplx_accessP_test_brmeta
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
+#END   BrMeta test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)
