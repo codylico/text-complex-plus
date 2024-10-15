@@ -11,6 +11,16 @@
 
 namespace text_complex {
   namespace access {
+    inline
+    brotli_meta& brcvt_state::get_metadata() noexcept {
+      return metadata;
+    }
+
+    inline
+    brotli_meta const& brcvt_state::get_metadata() const noexcept {
+      return metadata;
+    }
+
 #if  (!(defined TextComplexAccessP_NO_EXCEPT))
     inline
     size_t brcvt_bypass

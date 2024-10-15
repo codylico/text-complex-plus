@@ -77,8 +77,36 @@ namespace text_complex {
      */
     static api_error brcvt_post_sequence
       (block_string& s, unsigned int len, unsigned int count) noexcept;
+    /**
+     * @brief Start the next block of output.
+     * @param ps Brotli state
+     */
+    static void brcvt_next_block(brcvt_state& ps) noexcept;
+
+    namespace {
+      enum brcvt_istate {
+        BrCvt_WBits = 0,
+        BrCvt_MetaStart = 1,
+        BrCvt_MetaLength = 2,
+        BrCvt_MetaText = 3,
+        BrCvt_LastCheck = 4,
+        BrCvt_Done = 7,
+      };
+      enum brcvt_const : unsigned int {
+        brcvt_MetaHeaderLen = 6,
+      };
+    }
 
     //BEGIN brcvt / static
+    void brcvt_next_block(brcvt_state& state) noexcept {
+      if (state.meta_index < state.metadata.size())
+        state.state = BrCvt_MetaStart;
+      else if (state.h_end)
+        state.state = BrCvt_Done; /* TODO emit end-of-stream mark */
+      else
+        state.state = BrCvt_Done; /* TODO output data */
+    }
+
     api_error brcvt_in_bits
       ( brcvt_state& state, unsigned char y,
         unsigned char* to, unsigned char* to_end,
@@ -89,7 +117,7 @@ namespace text_complex {
       for (i = state.bit_index; i < 8u && ae == api_error::Success; ++i) {
         unsigned int x = (y>>i)&1u;
         switch (state.state) {
-        case 0:
+        case BrCvt_WBits:
           if (state.bit_length == 0)
             fixlist_codesort(state.wbits);
           if (state.bit_length < 7u) {
@@ -100,64 +128,86 @@ namespace text_complex {
             if (j < 16) {
               state.wbits_select =
                 static_cast<unsigned char>(state.wbits[j].value);
-              state.state = 7;
+              state.state = BrCvt_LastCheck;
               break;
             }
           }
           if (state.bit_length >= 7)
             ae = api_error::Sanitize;
           break;
-        case 7: /* end of stream */
-          ae = api_error::EndOfFile;
-          break;
-        case 3:
-          if (state.count < 3u) {
-            state.bits |= (x<<state.count);
-            state.count += 1u;
+        case BrCvt_LastCheck:
+          if (state.bit_length == 0) {
+            state.h_end = (x!=0);
+            state.bit_length = x?4:3;
+            state.count = 0;
+            state.bits = 0;
           }
-          if (state.count >= 3u) {
-            unsigned int const end = state.bits&1u;
-            unsigned int const btype = (state.bits>>1)&3u;
-            if (btype == 3u) {
-              ae = api_error::Sanitize;
+          if (state.count == 1 && state.h_end) {
+            if (x) {
+              state.state = BrCvt_Done;
+              ae = api_error::EndOfFile;
+            }
+          } else if (state.count >= state.bit_length-2) {
+            state.bits |= (x<<(state.count-2));
+          }
+          if (state.count < state.bit_length)
+            state.count += 1;
+          if (state.count >= state.bit_length) {
+            if (state.bits == 3) {
+              state.state = BrCvt_MetaStart;
+              state.bit_length = 0;
             } else {
-              state.h_end = end;
-              if (btype == 0u) {
-                state.state = 4;
-              } else if (btype == 1u) {
-                state.state = 8;
-                /* fixed Huffman codes */{
-                  size_t i;
-                  for (i = 0u; i < 288u; ++i) {
-                    prefix_line& line = state.literals[i];
-                    line.value = static_cast<unsigned long int>(i);
-                    if (i < 144u)
-                      line.len = 8u;
-                    else if (i < 256u)
-                      line.len = 9u;
-                    else if (i < 280u)
-                      line.len = 7u;
-                    else line.len = 8u;
-                  }
-                  for (i = 0u; i < 32u; ++i) {
-                    prefix_line& line = state.distances[i];
-                    line.code = static_cast<unsigned short>(i);
-                    line.len = 5u;
-                    line.value = static_cast<unsigned long int>(i);
-                  }
-                  api_error toss_ae;
-                  fixlist_gen_codes(state.literals, toss_ae);
-                  fixlist_codesort(state.literals, toss_ae);
-                }
-              } else state.state = 13;
-              state.count = 0u;
-              state.bits = 0u;
-              state.backward = 0;
-              state.bit_length = 0u;
+              state.bit_length = (state.bits+4)*4;
+              state.state = 99; /* TODO handle data */
             }
           }
           break;
-        case 4: /* no compression: LEN and NLEN */
+        case BrCvt_MetaStart:
+          if (state.bit_length == 0) {
+            if (x != 0)
+            ae = api_error::Sanitize;
+            else {
+              state.count = 4;
+              state.bit_length = brcvt_MetaHeaderLen;
+              state.bits = 0;
+            }
+          } else if (state.count < brcvt_MetaHeaderLen) {
+            state.bits |= (x << (state.count-4));
+            state.count += 1;
+          }
+          if (state.count >= brcvt_MetaHeaderLen) {
+            state.bit_length = state.bits*8;
+            state.state = (state.bits
+              ? BrCvt_MetaLength : BrCvt_MetaText);
+            state.count = 0;
+            state.backward = 0;
+          }
+          break;
+        case BrCvt_MetaLength:
+          if (state.count < state.bit_length) {
+            state.backward |= ((static_cast<uint32>(x)&1u)<<state.count);
+            state.count += 1;
+          }
+          if (state.count >= state.bit_length) {
+            if (!(state.backward>>(state.count-8)))
+              ae = api_error::Sanitize;
+            state.count = 0;
+            state.state = BrCvt_MetaText;
+          }
+          break;
+        case BrCvt_MetaText:
+          if (x)
+            ae = api_error::Sanitize;
+          else if (state.backward == 0 && i == 7) {
+            state.state = (state.h_end
+              ? BrCvt_Done : BrCvt_LastCheck);
+            if (state.h_end)
+              ae = api_error::EndOfFile;
+          }
+          break;
+        case BrCvt_Done: /* end of stream */
+          ae = api_error::EndOfFile;
+          break;
         case 6: /* */
           break;
         case 19: /* generate code trees */
@@ -640,7 +690,7 @@ namespace text_complex {
           else state.checksum = zutil_adler32(min_count, p, state.checksum);
         }
         switch (state.state) {
-        case 0: /* WBITS */
+        case BrCvt_WBits: /* WBITS */
           if (state.bit_length == 0u) {
             prefix_list& wbits = state.wbits;
             fixlist_valuesort(wbits);
@@ -655,12 +705,65 @@ namespace text_complex {
             state.count += 1u;
           }
           if (state.count > state.bit_length) {
-            state.state = 7;
+            if (state.meta_index < state.metadata.size())
+              state.state = BrCvt_MetaStart;
+            else
+              state.state = BrCvt_Done;
             state.bit_length = 0;
             ae = api_error::EndOfFile;
           }
           break;
-        case 7: /* end of stream */
+        case BrCvt_MetaStart:
+          if (state.bit_length == 0u) {
+            size_t const sz = state.metadata[state.meta_index].size();
+            state.metatext = state.metadata[state.meta_index].data();
+            state.bits = 6;
+            state.count = 0;
+            state.bit_length = brcvt_MetaHeaderLen;
+            state.backward = static_cast<uint32>(sz);
+            if (sz > 65536)
+              state.bits |= 48;
+            else if (sz > 256)
+              state.bits |= 32;
+            else if (sz > 0)
+              state.bits |= 16;
+          }
+          if (state.count < brcvt_MetaHeaderLen) {
+            x = (state.bits>>state.count)&1u;
+            state.count += 1u;
+          }
+          if (state.count >= brcvt_MetaHeaderLen) {
+            if (state.backward)
+              state.state = BrCvt_MetaLength;
+            else if (i == 7)
+              brcvt_next_block(state);
+            else
+              state.state = BrCvt_MetaText;
+            state.bit_length = 0;
+          }
+          break;
+        case BrCvt_MetaLength:
+          if (state.bit_length == 0u) {
+            state.bit_length = (state.bits>>5)*8;
+            state.backward -= 1;
+            state.count = 0;
+          }
+          if (state.count < state.bit_length) {
+            x = (state.backward>>state.count)&1;
+            state.count += 1;
+          }
+          if (state.count >= state.bit_length) {
+            state.state = BrCvt_MetaText;
+            state.backward += 1;
+            state.count = 0;
+          }
+          break;
+        case BrCvt_MetaText:
+          x = 0;
+          if (i == 7 && !state.backward)
+              brcvt_next_block(state);
+          break;
+        case BrCvt_Done: /* end of stream */
           x = 0;
           ae = api_error::EndOfFile;
           break;
@@ -683,7 +786,7 @@ namespace text_complex {
         lit_histogram(288u), dist_histogram(32u), seq_histogram(19u),
         bits(0u), bit_length(0u), state(0u), bit_index(0u),
         backward(0u), count(0u), checksum(0u),
-        bit_cap(0u)
+        bit_cap(0u), meta_index(0), metatext(nullptr), max_len_meta(1024)
     {
       if (n > 16777200u)
         n = 16777200u;
@@ -759,49 +862,37 @@ namespace text_complex {
       unsigned char* to_out = to;
       for (p = from; p < from_end && ae == api_error::Success; ++p) {
         switch (state.state) {
-        case 0: /* WBITS */
+        case BrCvt_WBits: /* WBITS */
+        case BrCvt_LastCheck:
+        case BrCvt_MetaStart:
+        case BrCvt_MetaLength:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
-        case 1: /* dictionary checksum */
-          if (state.count < 4u) {
-            state.checksum = (state.checksum<<8) | (*p);
-            state.count += 1u;
-          }
-          if (state.count >= 4u) {
-            state.state = 2;
-            ae = api_error::ZDictionary;
-          } break;
-        case 2: /* check dictionary checksum */
-        case 3: /* block start */
-          if (state.state == 2) {
-            if (state.backward != state.checksum) {
-              ae = api_error::Sanitize;
+        case BrCvt_MetaText:
+          if (state.count == 0) {
+            /* allocate */
+            size_t const use_backward = (state.backward >= state.max_len_meta)
+              ? state.max_len_meta : state.backward;
+            state.meta_index = state.metadata.size();
+            state.metadata.emplace(use_backward, ae);
+            if (ae != api_error::Success)
               break;
-            } else {
-              state.state = 3;
-              state.count = 0u;
-              state.bits = 0u;
-              state.checksum = 1u;
-            }
+            state.metatext = state.metadata[state.meta_index].data();
+            state.index = state.metadata[state.meta_index].size();
           }
-          ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
+          if (state.count < state.backward) {
+            if (state.count < state.index)
+              state.metatext[state.count] = (*p);
+            state.count += 1;
+          }
+          if (state.count >= state.backward) {
+            state.metatext = nullptr;
+            state.state = (state.h_end
+              ? BrCvt_Done : BrCvt_LastCheck);
+            if (state.h_end)
+              ae = api_error::EndOfFile;
+          }
           break;
-        case 4: /* no compression: LEN and NLEN */
-          if (state.count < 4u) {
-            state.backward = (state.backward <<8) | (*p);
-            state.count += 1u;
-          }
-          if (state.count >= 4u) {
-            unsigned int const len = (state.backward>>16)&65535u;
-            unsigned int const nlen = (~state.backward)&65535u;
-            if (len != nlen) {
-              ae = api_error::Sanitize;
-            } else {
-              state.backward = len;
-              state.state = 5;
-              state.count = 0u;
-            }
-          } break;
         case 5: /* no compression: copy bytes */
           if (state.count < state.backward) {
             if (to_out < to_end) {
@@ -894,25 +985,21 @@ namespace text_complex {
           ++to_out)
       {
         switch (state.state) {
-        case 0: /* WBITS */
+        case BrCvt_WBits: /* WBITS */
+        case BrCvt_MetaStart:
+        case BrCvt_MetaLength:
           ae = brcvt_out_bits(state, from, from_end, from_next, *to_out);
           break;
-        case 1: /* dictionary checksum */
-          if (state.count < 4u) {
-            *to_out = static_cast<unsigned char>(
-                  (state.checksum>>(32u-state.count*8u))&255u
-                );
-            state.count += 1u;
+        case BrCvt_MetaText:
+          assert(state.metatext);
+          if (state.count < state.backward)
+            *to_out = state.metatext[state.count++];
+          ae = api_error::Success;
+          if (state.count >= state.backward) {
+            state.metatext = NULL;
+            brcvt_next_block(state);
+            state.bit_length = 0;
           }
-          if (state.count >= 4u) {
-            state.state = 3u;
-            state.checksum = 1u;
-            state.count = 0u;
-          } break;
-        case 2: /* check dictionary checksum */
-        case 3: /* block start */
-          state.state = 3u;
-          ae = brcvt_out_bits(state, from, from_end, from_next, *to_out);
           break;
         case 4: /* no compression: LEN and NLEN */
           if (state.count == 0u) {
@@ -960,7 +1047,7 @@ namespace text_complex {
             state.state = 7u;
             state.count = 0u;
           } break;
-        case 7:
+        case BrCvt_Done:
           ae = api_error::EndOfFile;
           break;
         case 8: /* encode */

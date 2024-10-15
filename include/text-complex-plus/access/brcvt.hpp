@@ -11,6 +11,7 @@
 #include "fixlist.hpp"
 #include "inscopy.hpp"
 #include "ringdist.hpp"
+#include "brmeta.hpp"
 
 namespace text_complex {
   namespace access {
@@ -78,6 +79,15 @@ namespace text_complex {
       unsigned short checksum;
       /** @brief Output internal bit count. */
       uint32 bit_cap;
+      /** @brief Nonzero metadata block storage. */
+      brotli_meta metadata;
+      /** @brief Number of metadata posted so far. */
+      std::size_t meta_index;
+      /** @brief Text of current metadata to post. */
+      unsigned char* metatext;
+      /** @brief Maximum metadatum length to store aside. */
+      std::size_t max_len_meta;
+
 
     public: /** @name rule-of-zero*//** @{ */
       /**
@@ -121,8 +131,17 @@ namespace text_complex {
       static void operator delete[](void* p, std::size_t sz) noexcept;
       /** @} */
 
-    public: /** @name methods *//** @{ */
-      /** @} */
+    public:
+      /**
+       * @ingroup methods
+       * @return a reference to the metadata array
+       */
+      brotli_meta& get_metadata() noexcept;
+      /**
+       * @ingroup methods
+       * @return a reference to the metadata array
+       */
+      brotli_meta const& get_metadata() const noexcept;
     };
     //END   brcvt state
 
