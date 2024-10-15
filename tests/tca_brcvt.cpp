@@ -24,6 +24,8 @@ static MunitPlusResult test_brcvt_metadata_cycle
   (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_brcvt_zsrtostr_none
   (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_brcvt_flush
+  (const MunitPlusParameter params[], void* data);
 static void* test_brcvt_setup
     (const MunitPlusParameter params[], void* user_data);
 static void test_brcvt_teardown(void* fixture);
@@ -40,6 +42,8 @@ static MunitPlusTest tests_brcvt[] = {
   {(char*)"metadata_cycle", test_brcvt_metadata_cycle,
     test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_TODO,nullptr},
   {(char*)"in/none", test_brcvt_zsrtostr_none,
+    test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_TODO,NULL},
+  {(char*)"flush", test_brcvt_flush,
     test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_TODO,NULL},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
@@ -197,6 +201,58 @@ MunitPlusResult test_brcvt_zsrtostr_none
     munit_plus_assert(ret-to_buf == len);
     munit_plus_assert(src-buf == total);
     munit_plus_assert_memory_equal(len, to_buf, buf+7);
+  }
+  return MUNIT_PLUS_OK;
+}
+
+
+MunitPlusResult test_brcvt_flush
+  (const MunitPlusParameter params[], void* data)
+{
+  tca::brcvt_state* const p = static_cast<tca::brcvt_state*>(data);
+  std::unique_ptr<tca::brcvt_state> const q =
+    tca::brcvt_unique(4096,4096,4096);
+  unsigned char text[16] = {0};
+  int const text_len = munit_plus_rand_int_range(3,16);
+  int const flush_len = munit_plus_rand_int_range(1,text_len-1);
+  unsigned char buf[256] = {0};
+  unsigned char* buf_end = buf;
+  munit_plus_rand_memory(sizeof(text), &text[0]);
+  if (p == NULL || q == NULL) {
+    return MUNIT_PLUS_SKIP;
+  }
+  (void)params;
+  /* encode */
+  {
+    unsigned char const *text_p = text;
+    unsigned char* buf_end = buf;
+    tca::api_error res = tca::brcvt_out(*p,
+      text, text+flush_len, text_p,
+      buf, buf+sizeof(buf), buf_end);
+    munit_plus_assert(res == tca::api_error::Success);
+    munit_plus_assert(buf_end <= buf+sizeof(buf));
+    res = tca::brcvt_flush(*p, buf_end, buf+sizeof(buf), buf_end);
+    munit_plus_assert(res >= tca::api_error::Success);
+    munit_plus_assert(buf_end <= buf+sizeof(buf));
+    res = tca::brcvt_out(*p,
+      text+flush_len, text+text_len, text_p,
+      buf_end, buf+sizeof(buf), buf_end);
+    munit_plus_assert(res == tca::api_error::Success);
+    munit_plus_assert(buf_end <= buf+sizeof(buf));
+    res = tca::brcvt_unshift(*p, buf_end, buf+sizeof(buf), buf_end);
+    munit_plus_assert(res >= tca::api_error::Success);
+    munit_plus_assert(buf_end <= buf+sizeof(buf));
+  }
+  /* decode */
+  {
+    unsigned char dummy[16] = {0};
+    unsigned char* dummy_ptr = dummy;
+    unsigned char const* buf_ptr = buf;
+    tca::api_error res = tca::brcvt_in(*q, buf, buf_end, buf_ptr,
+      dummy, dummy+sizeof(dummy), dummy_ptr);
+    munit_plus_assert(res >= tca::api_error::Success);
+    munit_plus_assert(dummy_ptr-dummy == text_len);
+    munit_plus_assert_memory_equal(text_len, dummy, text);
   }
   return MUNIT_PLUS_OK;
 }

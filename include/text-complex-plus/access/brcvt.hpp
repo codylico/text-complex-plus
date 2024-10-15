@@ -74,6 +74,8 @@ namespace text_complex {
       uint32 index;
       /** @brief Which value to use for WBITS. */
       unsigned char wbits_select;
+      /** @brief Whether to insert an empty metadata block. */
+      bool emptymeta;
       /** @brief Checksum value. */
       [[deprecated]]
       unsigned short checksum;
@@ -266,6 +268,24 @@ namespace text_complex {
      */
     TCMPLX_AP_API
     api_error brcvt_unshift(brcvt_state& state,
+        unsigned char* to, unsigned char* to_end,
+        unsigned char*& to_next);
+
+    /**
+     * @brief Flush a Brotli stream to a byte using an empty metadata block.
+     * @param state the Brotli conversion state to use
+     * @param to destination buffer
+     * @param to_end pointer to end of destination buffer
+     * @param[out] to_next location of next output byte
+     * @return api_error::Success on success, nonzero otherwise
+     * @note The conversion state referred to by `state` is updated based
+     *   on the conversion result, whether successful or failed.
+     *
+     * @note Any bytes remaining in the conversion state will
+     *   be processed before outputting the metadata block.
+     */
+    TCMPLX_AP_API
+    api_error brcvt_flush(brcvt_state& state,
         unsigned char* to, unsigned char* to_end,
         unsigned char*& to_next);
     //END   brcvt state / namespace local

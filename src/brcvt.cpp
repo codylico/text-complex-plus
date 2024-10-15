@@ -101,6 +101,8 @@ namespace text_complex {
     void brcvt_next_block(brcvt_state& state) noexcept {
       if (state.meta_index < state.metadata.size())
         state.state = BrCvt_MetaStart;
+      else if (state.emptymeta)
+        state.state = BrCvt_MetaStart;
       else if (state.h_end)
         state.state = BrCvt_Done; /* TODO emit end-of-stream mark */
       else
@@ -705,7 +707,7 @@ namespace text_complex {
             state.count += 1u;
           }
           if (state.count > state.bit_length) {
-            if (state.meta_index < state.metadata.size())
+            if (state.meta_index < state.metadata.size() || state.emptymeta)
               state.state = BrCvt_MetaStart;
             else
               state.state = BrCvt_Done;
@@ -715,8 +717,15 @@ namespace text_complex {
           break;
         case BrCvt_MetaStart:
           if (state.bit_length == 0u) {
-            size_t const sz = state.metadata[state.meta_index].size();
-            state.metatext = state.metadata[state.meta_index].data();
+            bool const actual_meta =
+              state.meta_index < state.metadata.size();
+            size_t const sz = actual_meta
+              ? state.metadata[state.meta_index].size()
+              : 0;
+            state.metatext = actual_meta
+              ? state.metadata[state.meta_index].data()
+              : nullptr;
+            state.emptymeta = false;
             state.bits = 6;
             state.count = 0;
             state.bit_length = brcvt_MetaHeaderLen;
@@ -785,7 +794,8 @@ namespace text_complex {
         ring(false,4,0), try_ring(false,4,0),
         lit_histogram(288u), dist_histogram(32u), seq_histogram(19u),
         bits(0u), bit_length(0u), state(0u), bit_index(0u),
-        backward(0u), count(0u), checksum(0u),
+        backward(0u), count(0u),
+        wbits_select(0u), emptymeta(false), checksum(0u),
         bit_cap(0u), meta_index(0), metatext(nullptr), max_len_meta(1024)
     {
       if (n > 16777200u)
@@ -1076,6 +1086,16 @@ namespace text_complex {
       unsigned char const tmp[1] = {0u};
       unsigned char const* tmp_next = &tmp[0];
       /* set the end flag: */state.h_end |= 2u;
+      return brcvt_out(state, &tmp[0], &tmp[0], tmp_next, to, to_end, to_next);
+    }
+
+    api_error brcvt_flush(brcvt_state& state,
+        unsigned char* to, unsigned char* to_end,
+        unsigned char*& to_next)
+    {
+      unsigned char const tmp[1] = {0u};
+      unsigned char const* tmp_next = &tmp[0];
+      /* set the flush flag: */state.emptymeta = true;
       return brcvt_out(state, &tmp[0], &tmp[0], tmp_next, to, to_end, to_next);
     }
     //END   brcvt / namespace local
