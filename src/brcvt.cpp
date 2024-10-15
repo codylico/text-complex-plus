@@ -103,10 +103,10 @@ namespace text_complex {
         state.state = BrCvt_MetaStart;
       else if (state.emptymeta)
         state.state = BrCvt_MetaStart;
-      else if (state.h_end)
-        state.state = BrCvt_Done; /* TODO emit end-of-stream mark */
-      else
+      else if (!state.h_end)
         state.state = BrCvt_Done; /* TODO output data */
+      else
+        state.state = BrCvt_LastCheck;
     }
 
     api_error brcvt_in_bits
@@ -771,6 +771,21 @@ namespace text_complex {
           x = 0;
           if (i == 7 && !state.backward)
               brcvt_next_block(state);
+          break;
+        case BrCvt_LastCheck:
+          if (state.bit_length == 0u) {
+            state.bit_length = 2;
+            state.count = 0;
+          }
+          if (state.count < state.bit_length) {
+            x = 1;
+            state.count += 1;
+          }
+          if (state.count >= state.bit_length) {
+            state.state = BrCvt_Done;
+            state.bit_length = 0;
+            ae = api_error::EndOfFile;
+          }
           break;
         case BrCvt_Done: /* end of stream */
           x = 0;
