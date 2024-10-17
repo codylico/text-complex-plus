@@ -237,8 +237,8 @@ namespace text_complex {
      * @param state the zlib conversion state to use
      * @param to destination buffer
      * @param to_end pointer to end of destination buffer
-     * @param[out] to_next location of next output byte
-     * @return api_error::Success on success, nonzero otherwise
+     * @param[out] to_next location of next output byte,
+     *   api_error::EndOfFile at end of stream, other nonzero otherwise
      * @note The conversion state referred to by `state` is updated based
      *   on the conversion result, whether succesful or failed.
      *
