@@ -76,6 +76,11 @@ namespace text_complex {
      */
     static api_error zcvt_post_sequence
       (block_string& s, unsigned int len, unsigned int count) noexcept;
+    /**
+     * @brief Move from an output noconvert block to next state.
+     * @param state the zcvt state to update
+     */
+    static void zcvt_noconv_next(zcvt_state& state) noexcept;
 
     //BEGIN zcvt / static
     api_error zcvt_in_bits
@@ -605,7 +610,7 @@ namespace text_complex {
       for (i = state.bit_index; i < 8u && ae == api_error::Success; ++i) {
         unsigned int x = 0u;
         if ((!(state.h_end&1u))/* if end marker not activated yet */
-        &&  (state.state == 3)/* and not inside a block */)
+        &&  (state.state == 3 && state.count == 0u)/* and not inside a block */)
         {
           uint32 const input_space =
               state.buffer.capacity() - state.buffer.input_size();
@@ -615,7 +620,8 @@ namespace text_complex {
           state.buffer.write(p, min_count, ae);
           if (ae != api_error::Success)
             break;
-          else state.checksum = zutil_adler32(min_count, p, state.checksum);
+          state.checksum = zutil_adler32(min_count, p, state.checksum);
+          p += min_count;
         }
         switch (state.state) {
         case 3: /* block start */
@@ -654,7 +660,7 @@ namespace text_complex {
                 uint32 x_i;
                 for (x_i = 0u; x_i < x_size; ++x_i) {
                   unsigned char const byt = x[x_i];
-                  bool const insert_flag = ((byt&128u)==128u);
+                  bool const insert_flag = ((byt&128u)==0u);
                   unsigned short len;
                   unsigned short j;
                   if (byt&64u) {
@@ -784,6 +790,7 @@ namespace text_complex {
                   fixlist_gen_codes(state.sequence, ae);
                 } else {
                   dynamic = false;
+                  state.buffer.clear_output();
                   state.buffer.noconv_block(ae);
                 }
               }
@@ -805,7 +812,7 @@ namespace text_complex {
               state.bits = 0u;
             } else {
               state.state = 4u;
-              state.backward = state.buffer.input_size();
+              state.backward = state.buffer.str().size();
               state.index = 0u;
               state.count = 0u;
             }
@@ -1022,6 +1029,20 @@ namespace text_complex {
       }
       state.bit_index = i&7u;
       return ae;
+    }
+
+
+    void zcvt_noconv_next(zcvt_state& state) noexcept {
+      if (state.index < state.backward) {
+        state.state = 4u;
+      } else if (state.h_end & 1u) {
+        state.state = 6u;
+      } else {
+        state.state = 3u;
+        state.bits = 0u;
+      }
+      state.count = 0u;
+      return;
     }
     //END   zcvt / static
 
@@ -1274,7 +1295,7 @@ namespace text_complex {
           }
           if (state.count < 2u) {
             *to_out = static_cast<unsigned char>(
-                  (state.backward>>(16u-state.count*8u))&255u
+                  (state.backward>>(8u-state.count*8u))&255u
                 );
             state.count += 1u;
           }
@@ -1325,6 +1346,8 @@ namespace text_complex {
           }
           if (state.count == 4u) {
             state.state = 5u;
+            if (state.extra_length == 0u)
+              zcvt_noconv_next(state);
           } break;
         case 5: /* no compression: copy bytes */
           if (state.extra_length > 0u) {
@@ -1333,19 +1356,11 @@ namespace text_complex {
             state.index += 1u;
           }
           if (state.extra_length == 0u) {
-            if (state.index < state.backward) {
-              state.state = 4u;
-            } else if (state.h_end & 1u) {
-              state.state = 6u;
-            } else {
-              state.state = 3u;
-              state.bits = 0u;
-            }
-            state.count = 0u;
+            zcvt_noconv_next(state);
           }
         case 6: /* end-of-stream checksum */
           if (state.count < 4u) {
-            *to_out = (state.checksum>>(8u*state.count));
+            *to_out = (state.checksum>>(24u-8u*state.count));
             state.count += 1u;
           }
           if (state.count >= 4u) {
