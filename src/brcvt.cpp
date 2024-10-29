@@ -1013,7 +1013,7 @@ namespace text_complex {
         case BrCvt_WBits: /* WBITS */
         case BrCvt_MetaStart:
         case BrCvt_MetaLength:
-          ae = brcvt_out_bits(state, from, from_end, from_next, *to_out);
+          ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
           assert(state.metatext);
@@ -1083,7 +1083,7 @@ namespace text_complex {
         case 17: /* copy zero length */
         case 18: /* copy zero length + 11 */
         case 19: /* generate code trees */
-          ae = brcvt_out_bits(state, from, from_end, from_next, *to_out);
+          ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         }
         if (ae > api_error::Success)

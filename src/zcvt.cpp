@@ -1325,7 +1325,7 @@ namespace text_complex {
         case 2: /* check dictionary checksum */
         case 3: /* block start */
           state.state = 3u;
-          ae = zcvt_out_bits(state, from, from_end, from_next, *to_out);
+          ae = zcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case 4: /* no compression: LEN and NLEN */
           if (state.count == 0u) {
@@ -1378,7 +1378,7 @@ namespace text_complex {
         case 17: /* copy zero length */
         case 18: /* copy zero length + 11 */
         case 19: /* generate code trees */
-          ae = zcvt_out_bits(state, from, from_end, from_next, *to_out);
+          ae = zcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         }
         if (ae > api_error::Success)
