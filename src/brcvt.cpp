@@ -180,7 +180,9 @@ namespace text_complex {
               state.bit_length = 0;
             } else {
               state.bit_length = (state.bits+4)*4;
-              state.state = 99; /* TODO handle data */
+              state.state = BrCvt_InputLength;
+              state.backward = 0;
+              state.count = 0;
             }
           }
           break;
@@ -230,7 +232,29 @@ namespace text_complex {
         case BrCvt_Done: /* end of stream */
           ae = api_error::EndOfFile;
           break;
-        case 6: /* */
+        case BrCvt_InputLength:
+          if (state.count < state.bit_length) {
+            state.backward |= (static_cast<uint32>(x)<<state.count);
+            state.count += 1;
+          }
+          if (state.count >= state.bit_length) {
+            state.bit_length = 0;
+            state.count = 0;
+            if (state.bit_length > 16 && (state.backward>>(state.bit_length-4))==0)
+              ae = api_error::Sanitize;
+            state.backward += 1;
+            state.state = BrCvt_CompressCheck;
+          } break;
+        case BrCvt_CompressCheck:
+          if (x) {
+            state.state = BrCvt_Uncompress;
+          } else {
+            /* TODO implement */
+            ae = api_error::Sanitize;
+          } break;
+        case BrCvt_Uncompress:
+          if (x)
+            ae = api_error::Sanitize;
           break;
         case 19: /* generate code trees */
           {
@@ -248,54 +272,6 @@ namespace text_complex {
               break;
             state.state = 8;
           } [[fallthrough]];
-        case 8: /* decode */
-          if (state.bit_length < 15u) {
-            state.bits = (state.bits<<1) | x;
-            size_t const j = fixlist_codebsearch
-              (state.literals, state.bit_length+1u, state.bits);
-            if (j < std::numeric_limits<size_t>::max()) {
-              unsigned const alpha =
-                static_cast<unsigned>(state.literals[j].value);
-              struct insert_copy_row& row = state.values[alpha];
-              if (row.type == insert_copy_type::Stop) {
-                if (state.h_end)
-                  state.state = 6;
-                else state.state = 3;
-                state.count = 0u;
-              } else if (row.type == insert_copy_type::Literal) {
-                if (to_next < to_end) {
-                  unsigned char const byt = static_cast<unsigned char>(alpha);
-                  (*to_next) = byt;
-                  state.checksum = zutil_adler32(1u, &byt, state.checksum);
-                  to_next += 1u;
-                  state.buffer.bypass(&byt, 1u, ae);
-                  if (ae != api_error::Success)
-                    break;
-                } else {
-                  state.state = 20;
-                  state.bits = static_cast<unsigned char>(alpha);
-                  ae = api_error::Partial;
-                  break;
-                }
-              } else if (row.type == insert_copy_type::Copy
-                  ||  row.type == insert_copy_type::CopyMinus1)
-              {
-                if (row.copy_bits > 0u) {
-                  state.state = 9;
-                  state.extra_length = row.copy_bits;
-                } else state.state = 10;
-                state.count = row.copy_first;
-              } else ae = api_error::Sanitize;
-              state.bit_length = 0u;
-              state.backward = 0u;
-              state.bits = 0u;
-              break;
-            }
-            state.bit_length += 1u;
-          }
-          if (state.bit_length >= 15u) {
-            ae = api_error::Sanitize;
-          } break;
         case 20: /* alpha bringback */
           if (to_next < to_end) {
             unsigned char const byt = static_cast<unsigned char>(state.bits);
@@ -309,17 +285,6 @@ namespace text_complex {
             state.backward = 0u;
           } else {
             ae = api_error::Partial;
-          } break;
-        case 9: /* copy bits */
-          if (state.bit_length < state.extra_length) {
-            state.bits = (state.bits | (x<<state.bit_length));
-            state.bit_length += 1u;
-          }
-          if (state.bit_length >= state.extra_length) {
-            state.count += state.bits;
-            state.bits = 0u;
-            state.bit_length = 0u;
-            state.state = 10;
           } break;
         case 10: /* backward */
           if (state.bit_length < 15u) {
@@ -984,6 +949,8 @@ namespace text_complex {
         case BrCvt_LastCheck:
         case BrCvt_MetaStart:
         case BrCvt_MetaLength:
+        case BrCvt_CompressCheck:
+        case BrCvt_InputLength:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -1011,43 +978,22 @@ namespace text_complex {
               ae = api_error::EndOfFile;
           }
           break;
-        case 5: /* no compression: copy bytes */
+        case BrCvt_Uncompress:
           if (state.count < state.backward) {
-            if (to_out < to_end) {
-              (*to_out) = (*p);
-              state.checksum = zutil_adler32(1u, p, state.checksum);
-              to_out += 1u;
-              state.buffer.bypass(p, 1u, ae);
-              if (ae != api_error::Success)
-                break;
-            } else {
-              ae = api_error::Partial;
-              break;
-            }
-            state.count += 1u;
+            (*to_out) = (*p);
+            to_out += 1;
+            state.count += 1;
           }
           if (state.count >= state.backward) {
+            state.metatext = nullptr;
+            state.state = (state.h_end
+              ? BrCvt_Done : BrCvt_LastCheck);
             if (state.h_end)
-              state.state = 6;
-            else state.state = 3;
-            state.count = 0u;
-            state.backward = 0u;
-          } break;
-        case 6: /* end-of-stream checksum */
-          if (state.count < 4u) {
-            state.backward = (state.backward<<8) | (*p);
-            state.count += 1u;
-          }
-          if (state.count >= 4u) {
-            if (state.checksum != state.backward) {
-              ae = api_error::Sanitize;
-            } else state.state = 7;
+              ae = api_error::EndOfFile;
           } break;
         case 7:
           ae = api_error::EndOfFile;
           break;
-        case 8: /* decode */
-        case 9: /* copy bits */
         case 10: /* backward */
         case 11: /* distance bits */
         case 12: /* output from backward */
