@@ -58,7 +58,10 @@ namespace text_complex {
       unsigned short int bits;
       /** @brief Read count for bits used after a Huffman code. */
       unsigned short int extra_length;
-      /** @brief End indicator. */
+      /**
+       * @brief End indicator.
+       * @note AND 2 = requested; AND 1 = granted.
+       */
       unsigned char h_end;
       /** @brief ... */
       unsigned char bit_length;
