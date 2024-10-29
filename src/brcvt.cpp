@@ -895,7 +895,7 @@ namespace text_complex {
 
     //BEGIN brcvt_state / rule-of-zero
     brcvt_state::brcvt_state(uint32 block_size, uint32 n, size_t chain_length)
-      : buffer(block_size, n, chain_length, false),
+      : buffer(std::min<uint32>(block_size,16777200u), n, chain_length, false),
         literals(288u), distances(32u), sequence(19u),
         wbits(15u), values(286u),
         ring(false,4,0), try_ring(false,4,0),
