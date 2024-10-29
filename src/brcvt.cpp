@@ -150,6 +150,7 @@ namespace text_complex {
               state.wbits_select =
                 static_cast<unsigned char>(state.wbits[j].value);
               state.state = BrCvt_LastCheck;
+              state.bit_length = 0;
               break;
             }
           }
