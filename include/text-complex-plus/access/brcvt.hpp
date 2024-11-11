@@ -105,7 +105,7 @@ namespace text_complex {
        * @throw std::bad_alloc if something breaks
        */
       brcvt_state
-        ( uint32 block_size = 4096u, uint32 n = 32768u,
+        ( uint32 block_size = 4096u, uint32 n = 16777200u,
           size_t chain_length = 256u);
       /** @} */
 
@@ -167,7 +167,7 @@ namespace text_complex {
      */
     TCMPLX_AP_API
     brcvt_state* brcvt_new
-        ( uint32 block_size = 4096u, uint32 n = 32768u,
+        ( uint32 block_size = 4096u, uint32 n = 16777200u,
           size_t chain_length = 256u) noexcept;
 
     /**
@@ -179,7 +179,7 @@ namespace text_complex {
      */
     TCMPLX_AP_API
     util_unique_ptr<brcvt_state> brcvt_unique
-        ( uint32 block_size = 4096u, uint32 n = 32768u,
+        ( uint32 block_size = 4096u, uint32 n = 16777200u,
           size_t chain_length = 256u) noexcept;
 
     /**

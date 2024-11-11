@@ -980,6 +980,8 @@ namespace text_complex {
           break;
         case BrCvt_Uncompress:
           if (state.count < state.backward) {
+            if (!state.buffer.bypass(p, 1))
+              ae = api_error::Memory;
             (*to_out) = (*p);
             to_out += 1;
             state.count += 1;
