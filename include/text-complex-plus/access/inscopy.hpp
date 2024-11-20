@@ -8,6 +8,7 @@
 
 #include "api.hpp"
 #include "util.hpp"
+#include <iosfwd>
 
 namespace text_complex {
   namespace access {
@@ -371,6 +372,16 @@ namespace text_complex {
     size_t inscopy_encode
       ( insert_copy_table const& ict, unsigned long int i,
         unsigned long int c, bool z_tf=false) noexcept;
+
+    /**
+     * @ingroup inscopy
+     * @brief Output a description of an insert-copy type.
+     * @param[out] s output stream
+     * @param t type to describe
+     * @return `s`
+     */
+    TCMPLX_AP_API
+    std::ostream& operator<<(std::ostream &s, insert_copy_type t);
     //END   insert copy table / namespace local
     /** @} */
   };

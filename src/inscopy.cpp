@@ -5,6 +5,7 @@
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
 #include "text-complex-plus/access/inscopy.hpp"
+#include <ostream>
 #include <new>
 #include <stdexcept>
 #include <limits>
@@ -532,6 +533,36 @@ namespace text_complex {
       }
       return (out!=ict.end()) ? static_cast<size_t>(out - ict.begin())
         : std::numeric_limits<size_t>::max();
+    }
+
+    std::ostream& operator<<(std::ostream &o, insert_copy_type t) {
+      std::ostream::sentry s(o);
+      if (!s)
+        return o;
+      else switch (t) {
+      case insert_copy_type::Literal:
+        o << "Literal";
+        break;
+      case insert_copy_type::Stop:
+        o << "Stop";
+        break;
+      case insert_copy_type::Copy:
+        o << "Copy";
+        break;
+      case insert_copy_type::InsertCopy:
+        o << "InsertCopy";
+        break;
+      case insert_copy_type::BlockCount:
+        o << "BlockCount";
+        break;
+      case insert_copy_type::CopyMinus1:
+        o << "CopyMinus1";
+        break;
+      default:
+        o << static_cast<unsigned int>(t);
+        break;
+      }
+      return o;
     }
     //END   insert copy table / namespace local
   };

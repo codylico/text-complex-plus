@@ -4,15 +4,12 @@
 #include "testfont.hpp"
 #include "text-complex-plus/access/inscopy.hpp"
 #include "munit-plus/munit.hpp"
+#include <ostream>
 #include <memory>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-
-
-static std::ostream& operator<<
-  (std::ostream &, text_complex::access::insert_copy_type t);
 
 static MunitPlusResult test_inscopy_cycle
     (const MunitPlusParameter params[], void* data);
@@ -60,38 +57,6 @@ static MunitPlusSuite const suite_inscopy = {
 };
 
 
-
-std::ostream& operator<<
-  (std::ostream &o, text_complex::access::insert_copy_type t)
-{
-  std::ostream::sentry s(o);
-  if (s) {
-    switch (t) {
-    case text_complex::access::insert_copy_type::Literal:
-      o << "Literal";
-      break;
-    case text_complex::access::insert_copy_type::Stop:
-      o << "Stop";
-      break;
-    case text_complex::access::insert_copy_type::Copy:
-      o << "Copy";
-      break;
-    case text_complex::access::insert_copy_type::InsertCopy:
-      o << "InsertCopy";
-      break;
-    case text_complex::access::insert_copy_type::BlockCount:
-      o << "BlockCount";
-      break;
-    case text_complex::access::insert_copy_type::CopyMinus1:
-      o << "CopyMinus1";
-      break;
-    default:
-      o << static_cast<unsigned int>(static_cast<unsigned char>(t));
-      break;
-    }
-  }
-  return o;
-}
 
 unsigned long int test_inscopy_rand_length25(void) {
   /*
