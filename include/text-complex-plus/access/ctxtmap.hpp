@@ -24,7 +24,8 @@ namespace text_complex {
       LSB6 = 0,
       MSB6 = 1,
       UTF8 = 2,
-      Signed = 3
+      Signed = 3,
+      ModeMax
     };
 
     /**

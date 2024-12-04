@@ -4,6 +4,7 @@
  * @author Cody Licorish (svgmovement@gmail.com)
  */
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
+#include "ctxtmap_p.hpp"
 #include "text-complex-plus/access/ctxtmap.hpp"
 #include <new>
 #include <limits>
@@ -107,6 +108,12 @@ namespace text_complex {
         240u, 241u, 242u, 243u, 244u, 245u, 246u, 247u,
         248u, 249u, 250u, 251u, 252u, 253u, 254u, 255u
       };
+
+    //BEGIN context_map / internal
+    unsigned char ctxtmap_getlut2(unsigned char i) noexcept {
+      return ctxtmap_lut2[i];
+    }
+    //END   context_map / internal
 
     //BEGIN context_map / rule-of-six
     context_map::context_map(size_t xbtypes, size_t xctxts)

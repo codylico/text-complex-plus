@@ -11,7 +11,7 @@ set(text_complex_access_plus_FILES
   fixlist.cpp
   ringdist.cpp
   inscopy.cpp
-  ctxtmap.cpp
+  ctxtmap.cpp  ctxtmap_p.hpp
 
   bdict.cpp    bdict_p.hpp  bdict_cb.cpp
   bdict04.cpp  bdict05.cpp  bdict06.cpp  bdict07.cpp  bdict08.cpp
@@ -27,6 +27,7 @@ set(text_complex_access_plus_FILES
   zcvt.cpp
   brcvt.cpp
   brmeta.cpp
+  ctxtspan.cpp
   )
 set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/api.hpp
@@ -58,6 +59,7 @@ set(text_complex_access_plus_HEADERS
   ../include/text-complex-plus/access/brcvt.txx
   ../include/text-complex-plus/access/brmeta.hpp
   ../include/text-complex-plus/access/brmeta.txx
+  ../include/text-complex-plus/access/ctxtspan.hpp
   )
 
 add_library(tcmplx_access_plus ${text_complex_access_plus_FILES}
