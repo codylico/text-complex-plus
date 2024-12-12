@@ -21,6 +21,8 @@ static MunitPlusResult test_ctxtspan_guess_utf8
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_ctxtspan_guess_signed
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ctxtspan_subdivide
+    (const MunitPlusParameter params[], void* data);
 
 
 static MunitPlusTest tests_ctxtspan[] = {
@@ -33,6 +35,8 @@ static MunitPlusTest tests_ctxtspan[] = {
   {(char*)"guess/utf8", test_ctxtspan_guess_utf8,
       nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE, nullptr},
   {(char*)"guess/signed", test_ctxtspan_guess_signed,
+      nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE, nullptr},
+  {(char*)"subdivide", test_ctxtspan_subdivide,
       nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE, nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
@@ -133,6 +137,30 @@ MunitPlusResult test_ctxtspan_guess_signed
     munit_plus_assert(score[tca::context_map_mode::Signed] > score[tca::context_map_mode::UTF8]);
   }
   munit_plus_assert(score[tca::context_map_mode::Signed] > score[tca::context_map_mode::MSB6]);
+  return MUNIT_PLUS_OK;
+}
+
+MunitPlusResult test_ctxtspan_subdivide
+    (const MunitPlusParameter params[], void* data)
+{
+  unsigned char buf[32] = {0};
+  unsigned len = munit_plus_rand_uint32()%33;
+  tca::context_span spans = {};
+  (void)params;
+  (void)data;
+  munit_plus_rand_memory(sizeof(buf), buf);
+  ctxtspan_subdivide(spans, buf, len, 0);
+  munit_plus_assert(spans.count <= tca::CtxtSpan_Size);
+  munit_plus_assert(spans.total_bytes == len);
+  for (std::size_t i = 0; i < spans.count; ++i) {
+    std::size_t next;
+    if (i == spans.count-1)
+      next = spans.total_bytes;
+    else
+      next = spans.offsets[i+1];
+    munit_plus_assert(spans.offsets[i] < next);
+    munit_plus_assert(spans.modes[i] < tca::context_map_mode::ModeMax);
+  }
   return MUNIT_PLUS_OK;
 }
 

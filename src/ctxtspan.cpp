@@ -35,6 +35,21 @@ namespace text_complex {
      */
     static
     unsigned ctxtspan_subscore(unsigned sub, unsigned add);
+    /**
+     * @brief Absolute difference of two unsigned integers.
+     * @param a one integer
+     * @param b other integer
+     * @return a difference
+     */
+    static
+    unsigned ctxtspan_absdiff(unsigned a, unsigned b) noexcept;
+    /**
+     * @brief Select a mode from a score collection.
+     * @param score collection to use
+     * @return a context mode
+     */
+    static
+    context_map_mode ctxtspan_select(context_score const& score) noexcept;
 
     /* BEGIN context span / static */
     int ctxtspan_popcount(unsigned x) {
@@ -52,6 +67,22 @@ namespace text_complex {
 
     unsigned ctxtspan_subscore(unsigned sub, unsigned add) {
         return add > sub ? CtxtSpan_Ceiling : CtxtSpan_Ceiling+add-sub;
+    }
+
+    context_map_mode ctxtspan_select(context_score const& score) noexcept {
+        unsigned current_score = 0;
+        context_map_mode mode = context_map_mode::LSB6;
+        for (context_map_mode i = context_map_mode::LSB6; i < context_map_mode::ModeMax; ++i) {
+            if (score[i] > current_score) {
+                mode = i;
+                current_score = score[i];
+            }
+        }
+        return mode;
+    }
+
+    unsigned ctxtspan_absdiff(unsigned a, unsigned b) noexcept {
+        return a > b ? a - b : b - a;
     }
     /* END   context span / static */
 
@@ -101,6 +132,92 @@ namespace text_complex {
             }
         }
         results = out;
+        return;
+    }
+
+    void ctxtspan_subdivide(context_span& results,
+        void const* buf, size_t buf_len, unsigned margin) noexcept
+    {
+        unsigned char const* const char_buf = static_cast<unsigned char const*>(buf);
+        context_score scores[CtxtSpan_Size] = {};
+        unsigned char groups[CtxtSpan_Size] = {};
+        size_t stops[CtxtSpan_Size] = {};
+        size_t const span_len = (buf_len/CtxtSpan_Size);
+        unsigned char last_group = std::numeric_limits<unsigned char>::max();
+        results = {};
+        for (unsigned i = 0; i < CtxtSpan_Size; ++i) {
+            groups[i] = (unsigned char)i;
+            results.offsets[i] = span_len*i;
+            stops[i] = (i+1>=CtxtSpan_Size) ? buf_len : span_len*(i+1);
+        }
+        /* Initial guesses. */
+        for (unsigned i = 0; i < CtxtSpan_Size; ++i) {
+            size_t const start = results.offsets[i];
+            size_t const stop = stops[i];
+            ctxtspan_guess(scores[i], char_buf+start, stop-start);
+            results.modes[i] = ctxtspan_select(scores[i]);
+        }
+        /* Collapse. */
+        for (unsigned bit = 0; bit < 4; ++bit) {
+            unsigned const substep = 1u<<bit;
+            unsigned const step = substep<<1;
+            for (unsigned i = 0; i < CtxtSpan_Size; i += step) {
+                unsigned const inner = substep>>1;
+                unsigned const next = i+substep;
+                size_t const start = results.offsets[i];
+                size_t const stop = stops[i];
+                unsigned int j;
+                if (groups[i] != groups[i+inner]
+                ||  groups[next] != groups[next+inner])
+                {
+                    /* Previous grouping step failed. */
+                    continue;
+                }
+                /* See if the contexts are similar enough. */
+                if (results.modes[i] != results.modes[next]) {
+                    int const i_mode = static_cast<int>(results.modes[i]);
+                    int const next_mode = static_cast<int>(results.modes[next]);
+                    /*
+                    * Cross difference based on `X` term of seam objective from:
+                    * Agarwala et al. "Interactive Digital Photomontage."
+                    *   ACM Transactions on Graphics (Proceedings of SIGGRAPH 2004), 2004.
+                    * https://grail.cs.washington.edu/projects/photomontage/
+                    */
+                    unsigned const cross_diff =
+                        ctxtspan_absdiff(scores[i].vec[i_mode], scores[i].vec[next_mode])
+                        + ctxtspan_absdiff(scores[next].vec[i_mode], scores[next].vec[next_mode]);
+                    if (cross_diff > margin)
+                        continue;
+                }
+                /* Group the spans. */
+                for (j = i; j < i+step; ++j)
+                    groups[j] = (unsigned char)i;
+                ctxtspan_guess(scores[i], char_buf+start, stop-start);
+                {
+                    context_map_mode const mode = ctxtspan_select(scores[i]);
+                    results.modes[i] = mode;
+                    results.modes[next] = mode;
+                }
+                stops[i] = stops[next];
+                results.offsets[next] = stops[next];
+            }
+        }
+        /* Shift */
+        results.count = 0;
+        results.total_bytes = buf_len;
+        for (unsigned i = 0; i < CtxtSpan_Size; ++i) {
+            size_t const current = results.count;
+            if (groups[i] == last_group || results.offsets[i] == stops[i])
+                continue;
+            last_group = groups[i];
+            results.offsets[current] = results.offsets[i];
+            results.modes[current] = results.modes[i];
+            results.count += 1;
+        }
+        for (size_t i = results.count; i < CtxtSpan_Size; ++i) {
+            results.offsets[i] = buf_len;
+            results.modes[i] = context_map_mode::ModeMax;
+        }
         return;
     }
     /* BEGIN context score / public */

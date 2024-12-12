@@ -30,6 +30,17 @@ namespace text_complex {
         throw api_exception(ae);
       } else return out;
     }
+
+    inline
+    context_map_mode operator++(context_map_mode& mode) noexcept {
+      return mode = static_cast<context_map_mode>(static_cast<unsigned>(mode)+1);
+    }
+    inline
+    context_map_mode operator++(context_map_mode& mode, int) noexcept {
+      context_map_mode old = mode;
+      mode = static_cast<context_map_mode>(static_cast<unsigned>(mode)+1);
+      return old;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT
   };
 };

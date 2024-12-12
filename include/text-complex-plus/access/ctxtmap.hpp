@@ -258,6 +258,21 @@ namespace text_complex {
      */
     TCMPLX_AP_API
     void ctxtmap_revert_movetofront(context_map& x) noexcept;
+
+    /**
+     * @brief Pre-increment a context map mode.
+     * @param mode variable to increment
+     * @return sum
+     */
+    TCMPLX_AP_API
+    context_map_mode operator++(context_map_mode& mode) noexcept;
+    /**
+     * @brief Post-increment a context map mode.
+     * @param mode variable to increment
+     * @return original value
+     */
+    TCMPLX_AP_API
+    context_map_mode operator++(context_map_mode& mode, int) noexcept;
     //END   context map / namespace local
     /** @} */
   };

@@ -11,6 +11,10 @@
 
 namespace text_complex {
   namespace access {
+    /** @brief Various constant expressions for context spans. */
+    enum context_expr {
+      CtxtSpan_Size = 16
+    };
 
     /** @brief Context score vector. */
     struct context_score {
@@ -30,6 +34,20 @@ namespace text_complex {
         unsigned const& operator[](context_map_mode m) const noexcept;
     };
 
+    /** @brief Context mode spans. */
+    struct context_span {
+        /** @brief Total bytes covered. */
+        std::size_t total_bytes;
+        /** @brief Starting offset for each span. */
+        std::size_t offsets[CtxtSpan_Size];
+        /** @brief Context mode for each span. */
+        context_map_mode modes[CtxtSpan_Size];
+        /** @brief Number of offsets in the span. */
+        std::size_t count;
+        /** @return the maximum spans stored in a context span */
+        constexpr std::size_t max_size() { return CtxtSpan_Size; }
+    };
+
     /**
      * @brief Calculate a literal context fitness score.
      * @param[in,out] results score accumulation vector;
@@ -40,6 +58,17 @@ namespace text_complex {
     TCMPLX_AP_API
     void ctxtspan_guess(context_score& results,
         void const* buf, size_t buf_len) noexcept;
+
+    /**
+     * @brief Calculate context modes for parts of a byte array.
+     * @param[out] results new modes for the byte array
+     * @param buf array of bytes to parse
+     * @param buf_len length of array in bytes
+     * @param margin maximum score difference to allow for bad coalescing
+     */
+    TCMPLX_AP_API
+    void ctxtspan_subdivide(context_span& results,
+        void const* buf, size_t buf_len, unsigned margin) noexcept;
   }
 }
 
