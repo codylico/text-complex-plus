@@ -79,13 +79,14 @@ namespace text_complex {
       size_t n;
       struct prefix_line const* v;
     } const fixlist_ps[] = {
-      { 6u, fixlist_ps_BrotliComplex },
-      { 1u, fixlist_ps_BrotliS1 },
-      { 2u, fixlist_ps_BrotliS2 },
-      { 3u, fixlist_ps_BrotliS3 },
-      { 4u, fixlist_ps_BrotliS4A },
-      { 4u, fixlist_ps_BrotliS4B },
-      {15u, fixlist_ps_BrotliWBits}
+      {  6u, fixlist_ps_BrotliComplex },
+      {  1u, fixlist_ps_BrotliS1 },
+      {  2u, fixlist_ps_BrotliS2 },
+      {  3u, fixlist_ps_BrotliS3 },
+      {  4u, fixlist_ps_BrotliS4A },
+      {  4u, fixlist_ps_BrotliS4B },
+      { 15u, fixlist_ps_BrotliWBits},
+      {256u, nullptr}
     };
 
 
@@ -252,6 +253,13 @@ namespace text_complex {
      */
     static
     bool fixlist_value_cmp(prefix_line const& a, prefix_line const& b);
+    /**
+     * @internal
+     * @brief Reverse the bits in a prefix line.
+     * @param line code to reverse
+     */
+    static
+    void fixline_reverse(prefix_line& line) noexcept;
 
     //BEGIN prefix-list / static
     prefix_heapitem operator+(prefix_heapitem a, prefix_heapitem b) {
@@ -320,6 +328,15 @@ namespace text_complex {
 
     bool fixlist_value_cmp(prefix_line const& a, prefix_line const& b) {
       return a.value < b.value;
+    }
+
+    void fixline_reverse(prefix_line& line) noexcept {
+      unsigned short const oldcode = line.code;
+      unsigned short i;
+      line.code = 0;
+      for (i = 0; i < line.len; ++i)
+        line.code = (line.code<<1)|((oldcode>>i)&1u);
+      return;
     }
     //END   prefix-list / static
 
@@ -782,8 +799,33 @@ namespace text_complex {
         size_t const sz = fixlist_ps[i_u].n;
         try {
           prefix_list n_list(sz);
-          std::memcpy(&n_list[0], fixlist_ps[i_u].v,
-            sizeof(struct prefix_line)*sz);
+          if (fixlist_ps[i_u].v)
+            std::memcpy(&n_list[0], fixlist_ps[i_u].v, sizeof(struct prefix_line)*sz);
+          else switch (i) {
+          case prefix_preset::BrotliBlockType:
+            {
+              unsigned mask = ~1u;
+              unsigned base = 0u;
+              for (unsigned j = 0; j < 256; ++j) {
+                prefix_line& line = n_list[j];
+                line.value = j+1;
+                if (j == 0) {
+                  line.len = 1;
+                  line.code = 0;
+                  continue;
+                } else if (j&mask) {
+                  mask <<= 1;
+                  base += 1;
+                }
+                line.len = 4+base;
+                line.code = (base<<1)|1|(j&~mask);
+                fixline_reverse(line);
+              }
+            }break;
+          default:
+            ae = api_error::Init;
+            return;
+          }
           dst = std::move(n_list);
         } catch (std::bad_alloc const& ) {
           ae = api_error::Memory; return;

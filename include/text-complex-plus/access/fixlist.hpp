@@ -60,7 +60,13 @@ namespace text_complex {
       /**
        * @brief Code lengths for Brotli window bits.
        */
-      BrotliWBits = 6
+      BrotliWBits = 6,
+      /**
+       * @brief Code lengths for Brotli literal block types
+       *   `NBLTYPESL`.
+       * @note Also used for `NBLTYPESI`, `NBLTYPESD`, `NTREESL`, and `NTREESD`.
+       */
+      BrotliBlockType = 7,
     };
     //END   prefix preset identifiers
 

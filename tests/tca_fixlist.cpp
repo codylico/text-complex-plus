@@ -299,7 +299,7 @@ MunitPlusResult test_fixlist_preset
   (void)params;
   text_complex::access::prefix_preset x =
     static_cast<text_complex::access::prefix_preset>(
-          testfont_rand_int_range(0,5)
+          testfont_rand_int_range(0,7)
         );
   struct text_complex::access::prefix_line dsp[2];
   /* generate once */{
