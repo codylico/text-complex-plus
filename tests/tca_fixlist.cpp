@@ -326,7 +326,9 @@ MunitPlusResult test_fixlist_preset
     munit_plus_assert_size(p->size(),==,sz);
   }
   dsp[1] = (*p)[i];
-  munit_plus_assert_memory_equal(sizeof(dsp[0]), &dsp[0],&dsp[1]);
+  munit_plus_assert(dsp[0].code == dsp[1].code);
+  munit_plus_assert(dsp[0].len == dsp[1].len);
+  munit_plus_assert(dsp[0].value == dsp[1].value);
   return MUNIT_PLUS_OK;
 }
 
