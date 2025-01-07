@@ -26,12 +26,41 @@ namespace text_complex {
      */
     class TCMPLX_AP_API brcvt_state final {
     public:
+      /** @brief Prefix code tree marshal. */
+      struct treety_box {
+        /** @brief Number of symbols in the tree. */
+        unsigned short count;
+        /** @brief Index of current symbol. */
+        unsigned short index;
+        /** @brief Partial bit sequence. */
+        unsigned short bits;
+        /** @brief Machine state. */
+        unsigned char state;
+        /** @brief Number of bits captured or remaining. */
+        unsigned char bit_length;
+        /** @brief Code length check. */
+        unsigned short len_check;
+        /** @brief Count of nonzero code lengths. */
+        unsigned char nonzero;
+        /** @brief Most recently used code length. */
+        unsigned char last_len;
+        /** @brief The only code length usable. */
+        unsigned char singular;
+        /** @brief Previous nonzero code length. */
+        unsigned char last_nonzero;
+        /** @brief Last repeat count. */
+        unsigned short last_repeat;
+        /** @brief Internal prefix code. */
+        prefix_list nineteen;
+      };
       /**
        * @brief ...
        * @note Using a buffer with a slide ring extent greater than 32768
        *   can cause output sanity check to fail.
        */
       block_buffer buffer;
+      /** @brief Block type prefix code for literals. */
+      prefix_list literal_blocktype;
       /** @brief ... */
       prefix_list literals;
       /** @brief ... */
@@ -94,7 +123,8 @@ namespace text_complex {
       unsigned char* metatext;
       /** @brief Maximum metadatum length to store aside. */
       std::size_t max_len_meta;
-
+      /** @brief Prefix code tree marshal. */
+      treety_box treety;
 
     public: /** @name rule-of-zero*//** @{ */
       /**
