@@ -5,6 +5,7 @@
 #define TCMPLX_AP_WIN32_DLL_INTERNAL
 #include "text-complex-plus/access/brcvt.hpp"
 #include "text-complex-plus/access/zutil.hpp"
+#include "text-complex-plus/access/util.hpp"
 #include <limits>
 #include <new>
 #include <algorithm>
@@ -323,14 +324,14 @@ namespace text_complex {
               state.state += 4;
             } else {
               state.treety.count = static_cast<unsigned short>((state.bits>>4)+(1u<<(state.count-4))+1u);
-              // TODO store `needed_digits2(state.treety.count)` somewhere.
+              // TODO store `util_bitwidth(state.treety.count)` somewhere.
               state.state += 1;
             }
           } break;
         case BrCvt_BlockTypesLAlpha:
           {
             api_error const res = brcvt_inflow19(state.treety, state.literal_blocktype, x,
-              /*`needed_digits2(state.treety.count)`*/);
+              util_bitwidth(state.treety.count));
             if (res == api_error::EndOfFile)
               state.state += 1;
             else if (res != api_error::Success)
@@ -560,7 +561,7 @@ namespace text_complex {
             state.bits = 0u;
             state.bit_length = 0u;
           } break;
-        case 17: /* copy zero length */
+        case 5000017: /* copy zero length */
           if (state.bit_length < 3u) {
             state.bits = (state.bits | (x<<state.bit_length));
             state.bit_length += 1u;
@@ -1285,6 +1286,8 @@ namespace text_complex {
         case BrCvt_MetaLength:
         case BrCvt_CompressCheck:
         case BrCvt_InputLength:
+        case BrCvt_BlockTypesL:
+        case BrCvt_BlockTypesLAlpha:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -1336,8 +1339,6 @@ namespace text_complex {
         case 13: /* hcounts */
         case 14: /* code lengths code lengths */
         case 15: /* literals and distances */
-        case 16: /* copy previous code length */
-        case 17: /* copy zero length */
         case 18: /* copy zero length + 11 */
         case 19: /* generate code trees */
         case 20: /* alpha bringback */

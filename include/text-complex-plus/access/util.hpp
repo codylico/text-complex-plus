@@ -356,6 +356,15 @@ namespace text_complex {
      */
     template <typename t, typename u = t>
     t util_exchange(t& x, u&& y);
+
+    /**
+     * @brief Calculate the minimum number of bits needed to store a value.
+     * @param x value to check
+     * @return a bit count
+     * @see `std::bit_width`.
+     */
+    TCMPLX_AP_API
+    unsigned util_bitwidth(unsigned x) noexcept;
     //END   tools
     /** @} */
   };

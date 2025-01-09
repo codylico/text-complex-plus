@@ -9,6 +9,11 @@
 #include <limits>
 #include <cstring>
 #include <ios>
+#if (defined __cpp_lib_int_pow2)
+#  include <bit>
+#elif (defined _MSC_VER)
+#  include <intrin.h>
+#endif /*_MSC_VER*/
 
 namespace text_complex {
   namespace access {
@@ -58,5 +63,24 @@ namespace text_complex {
       return std::numeric_limits<long int>::min();
     }
     //END   limits
+
+    unsigned util_bitwidth(unsigned x) noexcept {
+#if (defined __cpp_lib_int_pow2)
+      return std::bit_width(x);
+#elif (defined __GNUC__)
+      return x ? std::numeric_limits<unsigned>::digits - __builtin_clz(x) : 0;
+#elif (defined _MSC_VER)
+      unsigned long index = 0;
+      if (!x)
+        return 0;
+      _BitScanReverse(&index, x);
+      return (unsigned)index+1u;
+#else
+      unsigned int y = 0;
+      for (; x > 0; x >>= 1)
+        y += 1;
+      return y;
+#endif /*bitwidth*/
+    }
   };
 };
