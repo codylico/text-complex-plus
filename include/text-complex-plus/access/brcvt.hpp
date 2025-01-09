@@ -108,6 +108,8 @@ namespace text_complex {
       unsigned char wbits_select;
       /** @brief Whether to insert an empty metadata block. */
       bool emptymeta;
+      /** @brief Size of alphabet used by the treety. */
+      unsigned char alphabits;
       /** @brief Scratch space for last byte generated. */
       unsigned char write_scratch;
       /** @brief Checksum value. */

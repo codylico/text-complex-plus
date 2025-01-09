@@ -323,15 +323,16 @@ namespace text_complex {
               fixlist_preset(state.literal_blocktype, prefix_preset::BrotliSimple1);
               state.state += 4;
             } else {
-              state.treety.count = static_cast<unsigned short>((state.bits>>4)+(1u<<(state.count-4))+1u);
-              // TODO store `util_bitwidth(state.treety.count)` somewhere.
+              unsigned const alphasize = (state.bits>>4)+(1u<<(state.count-4))+1u;
+              state.treety.count = static_cast<unsigned short>(alphasize);
+              state.alphabits = util_bitwidth(alphasize+1u); //BITWIDTH(NBLTYPESx + 2)
               state.state += 1;
             }
           } break;
         case BrCvt_BlockTypesLAlpha:
           {
             api_error const res = brcvt_inflow19(state.treety, state.literal_blocktype, x,
-              util_bitwidth(state.treety.count));
+              state.alphabits);
             if (res == api_error::EndOfFile)
               state.state += 1;
             else if (res != api_error::Success)
@@ -622,7 +623,7 @@ namespace text_complex {
     {
       switch (treety.state) {
       case BrCvt_TComplex:
-        treety.bits = (x<<(treety.bit_length++));
+        treety.bits |= (x<<(treety.bit_length++));
         if (treety.bit_length == 2) {
           if (treety.bits == 1) {
             treety.state = BrCvt_TSimpleCount;
@@ -652,7 +653,7 @@ namespace text_complex {
           }
         } break;
       case BrCvt_TSimpleCount:
-        treety.bits = (x<<(treety.bit_length++));
+        treety.bits |= (x<<(treety.bit_length++));
         if (treety.bit_length == 2) {
           unsigned short const new_count = treety.bits+1;
           try {
@@ -667,7 +668,7 @@ namespace text_complex {
           treety.state = BrCvt_TSimpleAlpha;
         } break;
       case BrCvt_TSimpleAlpha:
-        treety.bits = (x<<(treety.bit_length++));
+        treety.bits |= (x<<(treety.bit_length++));
         if (treety.bit_length == alphabits) {
           treety.nineteen[treety.index].value = treety.bits;
           treety.index += 1;
@@ -715,12 +716,16 @@ namespace text_complex {
           }
           if (len > 5)
             return api_error::Success;
-          treety.len_check += (32 >> len);
-          treety.nonzero += (len > 0);
+          treety.bits = 0;
+          treety.bit_length = 0;
+          if (len > 0) {
+            treety.len_check += (32 >> len);
+            treety.nonzero += 1;
+            if (treety.len_check > 32)
+              return api_error::Sanitize;
+          }
           if (treety.nonzero == 1)
             treety.singular = brcvt_clen[treety.index];
-          if (treety.len_check > 32)
-            return api_error::Sanitize;
           treety.nineteen[treety.index++].len = len;
           if (treety.index >= brcvt_CLenExtent || treety.len_check >= 32) {
             if (treety.nonzero > 1 && treety.len_check != 32)
@@ -752,7 +757,7 @@ namespace text_complex {
         } break;
       case BrCvt_TRepeat:
       case BrCvt_TZeroes:
-        treety.bits = (x<<(treety.bit_length++));
+        treety.bits |= (x<<(treety.bit_length++));
         if (treety.bit_length < treety.state-BrCvt_TRepeatStop)
           break;
         else {
@@ -857,10 +862,17 @@ namespace text_complex {
           treety.state = BrCvt_TRepeat;
           treety.bits = 0;
           treety.bit_length = 0;
-        }
+        } else if (value == 17) {
+          if (treety.last_len != 0)
+            treety.last_repeat = 0;
+          treety.state = BrCvt_TZeroes;
+          treety.bits = 0;
+          treety.bit_length = 0;
+        } else return api_error::Sanitize;
       } else return api_error::Sanitize;
       if (treety.index >= treety.count || treety.len_check >= 32768) {
         api_error ae = api_error::Success;
+        treety.state = BrCvt_TDone;
         fixlist_valuesort(prefixes, ae);
         fixlist_gen_codes(prefixes, ae);
         return ae == api_error::Success ? api_error::EndOfFile : api_error::Sanitize;
