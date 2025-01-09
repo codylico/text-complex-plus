@@ -255,6 +255,15 @@ namespace text_complex {
     bool fixlist_value_cmp(prefix_line const& a, prefix_line const& b);
     /**
      * @internal
+     * @brief Compare two lines.
+     * @param a one line
+     * @param b another line
+     * @return whether `a` < `b`
+     */
+    static
+    bool fixlist_codevalue_cmp(prefix_line const& a, prefix_line const& b);
+    /**
+     * @internal
      * @brief Reverse the bits in a prefix line.
      * @param line code to reverse
      */
@@ -328,6 +337,14 @@ namespace text_complex {
 
     bool fixlist_value_cmp(prefix_line const& a, prefix_line const& b) {
       return a.value < b.value;
+    }
+
+    bool fixlist_codevalue_cmp(prefix_line const& a, prefix_line const& b) {
+      if (fixlist_code_cmp(a,b))
+        return true;
+      else if (fixlist_code_cmp(b,a))
+        return false;
+      else return fixlist_value_cmp(a,b);
     }
 
     void fixline_reverse(prefix_line& line) noexcept {
@@ -1075,6 +1092,61 @@ namespace text_complex {
           ? static_cast<size_t>(x-dst.begin())
           : std::numeric_limits<size_t>::max();
       }
+    }
+
+    prefix_preset fixlist_match_preset(prefix_list& dst) noexcept {
+      std::size_t nonzero_start = dst.size();
+      if (dst.size() == 0)
+        return prefix_preset::BrotliComplex;
+      std::make_heap(dst.begin(), dst.end(), fixlist_codevalue_cmp);
+      std::sort_heap(dst.begin(), dst.end(), fixlist_codevalue_cmp);
+      for (std::size_t i = 0; i < dst.size(); ++i) {
+        if (dst[i].len == 0)
+          continue;
+        nonzero_start = i;
+        break;
+      }
+      std::size_t const nonzero_total = dst.size() - nonzero_start;
+      if (nonzero_total < 1 || nonzero_total > 4)
+        return prefix_preset::BrotliComplex;
+      if (nonzero_start > 0) {
+        prefix_list new_list(nonzero_total);
+        std::move(dst.begin()+nonzero_start, dst.end(), new_list.begin());
+        dst = std::move(new_list);
+      }
+      switch (nonzero_total) {
+      case 1:
+        dst[0].len = 0;
+        dst[0].code = 0;
+        return prefix_preset::BrotliSimple1;
+      case 2:
+        for (unsigned i = 0; i < 2; ++i) {
+          dst[i].code = fixlist_ps_BrotliS2[i].code;
+          dst[i].len = fixlist_ps_BrotliS2[i].len;
+        }
+        return prefix_preset::BrotliSimple2;
+      case 3:
+        for (unsigned i = 0; i < 3; ++i) {
+          dst[i].code = fixlist_ps_BrotliS3[i].code;
+          dst[i].len = fixlist_ps_BrotliS3[i].len;
+        }
+        return prefix_preset::BrotliSimple3;
+      case 4:
+        if (dst[0].len == 1) {
+          for (unsigned i = 0; i < 4; ++i) {
+            dst[i].code = fixlist_ps_BrotliS4B[i].code;
+            dst[i].len = fixlist_ps_BrotliS4B[i].len;
+          }
+          return prefix_preset::BrotliSimple4B;
+        } else {
+          for (unsigned i = 0; i < 4; ++i) {
+            dst[i].code = fixlist_ps_BrotliS4A[i].code;
+            dst[i].len = fixlist_ps_BrotliS4A[i].len;
+          }
+          return prefix_preset::BrotliSimple4A;
+        }
+      }
+      return prefix_preset::BrotliComplex;
     }
     //END   prefix_list / namespace local
   };

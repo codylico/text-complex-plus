@@ -12,6 +12,7 @@
 #include "inscopy.hpp"
 #include "ringdist.hpp"
 #include "brmeta.hpp"
+#include "ctxtspan.hpp"
 
 namespace text_complex {
   namespace access {
@@ -127,6 +128,12 @@ namespace text_complex {
       std::size_t max_len_meta;
       /** @brief Prefix code tree marshal. */
       treety_box treety;
+      /** @brief Context span guess for outflow. */
+      context_span guesses;
+      /** @brief Context mode offset for outflow. */
+      unsigned char guess_offset;
+      /** @brief Built-in tree type for block type outflow. */
+      unsigned char blocktype_simple;
 
     public: /** @name rule-of-zero*//** @{ */
       /**

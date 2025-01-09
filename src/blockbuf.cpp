@@ -434,6 +434,10 @@ namespace text_complex {
     uint32 block_buffer::capacity(void) const noexcept {
       return input_block_size;
     }
+
+    block_string const& block_buffer::input_data(void) const noexcept {
+      return input;
+    }
     //END   block_buffer / public
 
     //BEGIN block_buffer / ostringstream-compat

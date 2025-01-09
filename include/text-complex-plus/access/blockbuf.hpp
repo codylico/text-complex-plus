@@ -457,6 +457,12 @@ namespace text_complex {
        * @return the count of past bytes in the window
        */
       uint32 ring_size(void) const noexcept;
+      /**
+       * @brief Inspect the input data.
+       * @param x block buffer
+       * @return start of pending input data in the buffer
+       */
+      block_string const& input_data(void) const noexcept;
       /** @} */
 
     private: /** @name rule-of-six *//** @{ */

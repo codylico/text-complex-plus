@@ -118,6 +118,12 @@ namespace text_complex {
      */
     static api_error brcvt_post19(brcvt_state::treety_box& treety,
       prefix_list& prefixes, unsigned short value);
+    /**
+     * @brief Check whether to emit compression.
+     * @param ps Brotli conversion state
+     * @return Success to proceed with compression, nonzero to emit uncompressed
+     */
+    static api_error brcvt_check_compress(brcvt_state& state);
 
     namespace {
       enum brcvt_istate {
@@ -152,6 +158,7 @@ namespace text_complex {
       enum brcvt_const : unsigned int {
         brcvt_MetaHeaderLen = 6,
         brcvt_CLenExtent = sizeof(brcvt_clen)/sizeof(brcvt_clen[0]),
+        brcvt_Margin = 16,
       };
     }
 
@@ -1001,6 +1008,45 @@ namespace text_complex {
       }
     }
 
+    api_error brcvt_check_compress(brcvt_state& state) {
+      int guess_nonzero = 0;
+      size_t accum = 0;
+      /* calculate the guesses */
+      prefix_histogram ctxt_histogram(4);
+      std::fill(ctxt_histogram.begin(), ctxt_histogram.end(), 0);
+      state.guesses = {};
+      ctxtspan_subdivide(state.guesses,
+        state.buffer.input_data().data(), state.buffer.input_size(),
+        brcvt_Margin);
+      if (state.literal_blocktype.size() != 4)
+        state.literal_blocktype = prefix_list(4);
+      state.guess_offset = (state.guesses.count > 0)
+        ? static_cast<unsigned char>(state.guesses.modes[0]) : 0;
+      for (unsigned ctxt_i = 0; ctxt_i < state.guesses.count; ++ctxt_i) {
+        context_map_mode const mode = state.guesses.modes[ctxt_i];
+        assert(mode < context_map_mode::ModeMax);
+        ctxt_histogram[(static_cast<unsigned>(mode)+4u-state.guess_offset)%4u] += 1;
+      }
+      for (unsigned ctxt_i = 0; ctxt_i < 4u; ++ctxt_i) {
+        prefix_line& line = state.literal_blocktype[ctxt_i];
+        line.value = ctxt_i;
+        if (ctxt_histogram[ctxt_i] > 0)
+          guess_nonzero += 1;
+      }
+      fixlist_gen_lengths(state.literal_blocktype, ctxt_histogram, 3);
+      fixlist_gen_codes(state.literal_blocktype);
+      prefix_preset blocktype_tree = fixlist_match_preset(state.literal_blocktype);
+      if (blocktype_tree == prefix_preset::BrotliComplex)
+        return api_error::Sanitize;
+      state.blocktype_simple = static_cast<unsigned char>(blocktype_tree);
+      accum += 4;
+      accum += (blocktype_tree >= prefix_preset::BrotliSimple3 ? 3 : 2)
+        * state.literal_blocktype.size();
+      accum += (blocktype_tree >= prefix_preset::BrotliSimple4A);
+      /* TODO the rest */
+      return api_error::Success;
+    }
+
     api_error brcvt_out_bits
       ( brcvt_state& state,
         unsigned char const* from, unsigned char const* from_end,
@@ -1169,7 +1215,7 @@ namespace text_complex {
           break;
         case BrCvt_CompressCheck:
           if (state.bit_length == 0) {
-            bool const want_compress = false;
+            bool const want_compress = (brcvt_check_compress(state)==api_error::Success);
             if (!want_compress) {
               x = 1;
               state.buffer.clear_output();
@@ -1184,8 +1230,71 @@ namespace text_complex {
             }
             state.bit_length = 1;
             x = 0;
-            ae = api_error::Sanitize;
+            state.state = BrCvt_BlockTypesL;
           } break;
+        case BrCvt_BlockTypesL:
+          if (state.bit_length == 0) {
+            state.count = 0;
+            switch (state.literal_blocktype.size()) {
+            case 0:
+            case 1:
+              state.bit_length = 1;
+              state.bits = 0;
+              break;
+            case 2:
+              state.bit_length = 4;
+              state.bits = 1;
+              break;
+            case 3:
+            case 4:
+              state.bit_length = 5;
+              state.bits = 3 | ((state.literal_blocktype.size()-3)<<4);
+              break;
+            default:
+              ae = api_error::Sanitize;
+              break;
+            }
+          }
+          if (state.count < state.bit_length) {
+            x = (state.bits>>state.count)&1u;
+            state.count += 1;
+          }
+          if (state.count >= state.bit_length) {
+            state.bit_length = 0;
+            if (state.literal_blocktype.size() > 1)
+              state.state += 1;
+            else
+              state.state += 4;
+          } break;
+        case BrCvt_BlockTypesLAlpha:
+          if (state.bit_length == 0) {
+            size_t const symbols = state.literal_blocktype.size();
+            size_t sym_i;
+            unsigned const shift = 2u+(symbols>=3);
+            assert(symbols <= 4);
+            state.bits = 0;
+            for (sym_i = 0; sym_i < symbols; ++sym_i) {
+              state.bits |= ((state.literal_blocktype[sym_i].value+2)<<(shift*sym_i));
+            }
+            state.bit_length += 2;
+            state.bits = (symbols-1)|(state.bits<<2);
+            if (symbols >= 4) {
+              state.bits |= ((state.blocktype_simple&1u)<<state.bit_length);
+              state.bit_length += 1;
+            }
+            state.bit_length += 2;
+            state.count = 0;
+          }
+          if (state.count < 2) {
+            x = (state.count==0);
+            state.count += 1;
+          } else if (state.count < state.bit_length) {
+            x = (state.bits >> (state.count-2))&1u;
+            state.count += 1;
+          }
+          if (state.count >= state.bit_length)
+            state.state += 1;
+          break;
         case BrCvt_Uncompress:
           x = 0;
           break;
