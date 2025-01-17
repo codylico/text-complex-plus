@@ -503,35 +503,28 @@ namespace text_complex {
 
     api_error zcvt_make_sequence(zcvt_state& state) noexcept {
       unsigned int len = ~0u, len_count = 0u;
-      size_t const lit_sz = state.literals.size();
-      size_t const dist_sz = state.distances.size();
-      size_t i;
       state.sequence_list.clear();
-      for (i = 0u; i < lit_sz; ++i) {
-        unsigned int const n = state.literals[i].len;
+      for (prefix_line const& line : state.literals) {
+        unsigned int const n = line.len;
         if (len != n) {
           api_error const ae = zcvt_post_sequence
             (state.sequence_list, len, len_count);
           if (ae != api_error::Success)
             return ae;
-          else {
-            len = n;
-            len_count = 1u;
-          }
-        }
+          len = n;
+          len_count = 1u;
+        } else len_count += 1u;
       }
-      for (i = 0u; i < dist_sz; ++i) {
-        unsigned int const n = state.distances[i].len;
+      for (prefix_line const& line : state.distances) {
+        unsigned int const n = line.len;
         if (len != n) {
           api_error const ae = zcvt_post_sequence
             (state.sequence_list, len, len_count);
           if (ae != api_error::Success)
             return ae;
-          else {
-            len = n;
-            len_count = 1u;
-          }
-        }
+          len = n;
+          len_count = 1u;
+        } else len_count += 1u;
       }
       return zcvt_post_sequence(state.sequence_list, len, len_count);
     }
