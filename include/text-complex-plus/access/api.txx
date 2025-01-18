@@ -8,10 +8,9 @@
 
 #include "api.hpp"
 
-#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+#if  1 || (!(defined TextComplexAccessP_NO_EXCEPT))
 namespace text_complex {
   namespace access {
-    //BEGIN api exception / rule-of-three
     inline
     api_exception::api_exception(api_error value) noexcept
       : v(value)
@@ -36,9 +35,7 @@ namespace text_complex {
     api_exception::~api_exception(void) noexcept {
       return;
     }
-    //END   api exception / rule-of-three
 
-    //BEGIN api exception / public exception-override
     inline
     char const* api_exception::what(void) const noexcept {
       char const* const out = api_error_toa(v);
@@ -46,7 +43,11 @@ namespace text_complex {
         return "Unknown text_complex error";
       else return out;
     }
-    //END   api exception / exception-override
+
+    inline
+    api_error api_exception::to_error() const noexcept {
+      return v;
+    }
   };
 };
 #endif //TextComplexAccessP_NO_EXCEPT

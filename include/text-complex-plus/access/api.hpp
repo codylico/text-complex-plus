@@ -6,6 +6,7 @@
 #ifndef hg_TextComplexAccessP_api_H_
 #define hg_TextComplexAccessP_api_H_
 
+#include <exception>
 #include <climits>
 #include <cstddef>
 
@@ -100,34 +101,36 @@ namespace text_complex {
   };
 };
 
-#if  (!(defined TextComplexAccessP_NO_EXCEPT))
+#if  1 || (!(defined TextComplexAccessP_NO_EXCEPT))
 #include <exception>
 
 namespace text_complex {
   namespace access {
     /**
-     * @addtogroup api
-     * @{
-     */
-    //BEGIN api exception
-    /**
      * @brief Exception thrown by text-complex API functions.
+     * @ingroup api
      */
     class api_exception : public std::exception {
     private:
       api_error v;
 
-    public /* rule-of-three */:
+    public:
       api_exception(api_error value = api_error::Unknown) noexcept;
       api_exception(api_exception const& ) noexcept;
       api_exception& operator=(api_exception const&) noexcept;
       ~api_exception(void) noexcept override;
 
-    public /* exception-override */:
+      /**
+       * @ingroup exception-override
+       * @return a description of the error message
+       */
       char const* what(void) const noexcept override;
+      /**
+       * @ingroup methods
+       * @return the Access error activating this exception
+       */
+      api_error to_error() const noexcept;
     };
-    //END   api exception
-    /** @} */
   };
 };
 #endif //TextComplexAccessP_NO_EXCEPT
