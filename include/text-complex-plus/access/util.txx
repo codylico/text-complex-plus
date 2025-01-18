@@ -50,6 +50,20 @@ namespace text_complex {
       util_op_delete(p);
       return;
     }
+
+    template <typename t, typename ...u>
+    api_error util_move_make(t& dst, u&&... args)
+      noexcept(noexcept(util_declval<t>() = t(util_declval<u>()...)))
+    {
+      try {
+        dst = t(static_cast<u&&>(args)...);
+      } catch (std::bad_alloc const& ) {
+        return api_error::Memory;
+      } catch (api_exception const& e) {
+        return e.to_error();
+      }
+      return api_error::Success;
+    }
     //END   allocation
 
     //BEGIN util_unique_ptr<t> / rule-of-six

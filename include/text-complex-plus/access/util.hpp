@@ -7,6 +7,7 @@
 #define hg_TextComplexAccessP_Util_H_
 
 #include "api.hpp"
+#include <new>
 
 namespace text_complex {
   namespace access {
@@ -71,6 +72,10 @@ namespace text_complex {
      */
     template <typename t>
     void util_op_delete_type(std::size_t sz, t* p) noexcept;
+
+    template <typename t, typename ...u>
+    api_error util_move_make(t& dst, u&&... args)
+      noexcept(noexcept(util_declval<t>() = t(util_declval<u>()...)));
 
     /**
      * @brief Exportable unique pointer.
