@@ -6,6 +6,7 @@
 #include "text-complex-plus/access/brcvt.hpp"
 #include "text-complex-plus/access/zutil.hpp"
 #include "text-complex-plus/access/util.hpp"
+#include <array>
 #include <limits>
 #include <new>
 #include <algorithm>
@@ -64,11 +65,22 @@ namespace text_complex {
     static api_error brcvt_nonzero
       (api_error a, api_error b, api_error c) noexcept;
     /**
+     * @brief Configure a block count acquisition.
+     * @param ps Brotli conversion state to update
+     * @param value block code [0, 26)
+     * @param next_state follow-up state in case of zero-length extra bits
+     * @return base block count
+     */
+    static uint32 brcvt_config_count
+      (brcvt_state& state, unsigned long value, unsigned char next_state);
+    /**
      * @brief Make a code length sequence.
-     * @param x the brcvt state
+     * @param x the mini-state for tree transmission
+     * @param literals primary tree to encode
      * @return tcmplxA_Success on success, nonzero otherwise
      */
-    static api_error brcvt_make_sequence(brcvt_state& state) noexcept;
+    static api_error brcvt_make_sequence
+      (brcvt_state::treety_box& state, prefix_list const& literals) noexcept;
     /**
      * @brief Add a code length sequence.
      * @param s sequence list
@@ -90,6 +102,12 @@ namespace text_complex {
      */
     static bool brcvt_can_add_input(brcvt_state const& ps) noexcept;
     /**
+     * @brief Resolve skip values.
+     * @param prefixes prefix tree that may participate in code skipping
+     * @return the value with the single nonzero code length, or NoSkip if unavailable
+     */
+    static unsigned short brcvt_resolve_skip(prefix_list const& prefixes) noexcept;
+    /**
      * @brief Process a single bit of a prefix list description.
      * @param[in,out] treety mini-state for description parsing
      * @param[out] prefixes prefix list to update
@@ -98,6 +116,8 @@ namespace text_complex {
      *   applicable symbols
      * @return EndOfFile at the end of a prefix list, Sanitize on
      *   parse failure, otherwise Success
+     * @note At EOF, the extracted prefix list `prefixes` is sorted
+     *   and ready to use.
      */
     static api_error brcvt_inflow19(brcvt_state::treety_box& treety,
       prefix_list& prefixes, unsigned x, unsigned alphabits);
@@ -119,6 +139,24 @@ namespace text_complex {
     static api_error brcvt_post19(brcvt_state::treety_box& treety,
       prefix_list& prefixes, unsigned short value);
     /**
+     * @internal
+     * @brief Emit a single bit of a prefix list description.
+     * @param[in,out] treety mini-state for description parsing
+     * @param[in,out] prefixes prefix list to update
+     * @param[out] x bit to emit
+     * @param alphabits minimum number of bits needed to represent all
+     *   applicable symbols
+     * @return EOF at the end of a prefix list, Sanitize or Memory on
+     *   generator failure, otherwise Success
+     */
+    static api_error brcvt_outflow19(brcvt_state::treety_box& treety,
+      prefix_list& prefixes, unsigned& x, unsigned alphabits);
+    /**
+     * @brief Reset a mini-state.
+     * @param treety mini-state to reset
+     */
+    static void brcvt_reset19(brcvt_state::treety_box& treety);
+    /**
      * @brief Check whether to emit compression.
      * @param ps Brotli conversion state
      * @return Success to proceed with compression, nonzero to emit uncompressed
@@ -139,6 +177,8 @@ namespace text_complex {
         BrCvt_Uncompress = 9,
         BrCvt_BlockTypesL = 16,
         BrCvt_BlockTypesLAlpha = 17,
+        BrCvt_BlockCountLAlpha = 18,
+        BrCvt_BlockStartL = 19,
         BrCvt_BlockTypesI = 20,
         BrCvt_BlockTypesD = 24,
       };
@@ -159,6 +199,8 @@ namespace text_complex {
         brcvt_MetaHeaderLen = 6,
         brcvt_CLenExtent = sizeof(brcvt_clen)/sizeof(brcvt_clen[0]),
         brcvt_Margin = 16,
+        brcvt_BlockCountBits = 5,
+        brcvt_NoSkip = std::numeric_limits<short>::max(),
       };
     }
 
@@ -308,6 +350,12 @@ namespace text_complex {
             state.bit_length = 0;
             state.bits = 0;
             state.count = 0;
+            state.blocktypeL_skip = brcvt_NoSkip;
+            state.blockcountL_skip = brcvt_NoSkip;
+            state.blocktypeI_skip = brcvt_NoSkip;
+            state.blockcountI_skip = brcvt_NoSkip;
+            state.blocktypeD_skip = brcvt_NoSkip;
+            state.blockcountD_skip = brcvt_NoSkip;
           } break;
         case BrCvt_Uncompress:
           if (x)
@@ -324,31 +372,76 @@ namespace text_complex {
               state.bit_length += (state.bits>>1);
           }
           if (state.count >= state.bit_length) {
-            state.treety = {};
+            brcvt_reset19(state.treety);
+            state.blocktypeL_index = 0;
             if (state.count == 1) {
               state.treety.count = 1;
               fixlist_preset(state.literal_blocktype, prefix_preset::BrotliSimple1);
               state.state += 4;
+              state.blocktypeL_max = 0;
             } else {
               unsigned const alphasize = (state.bits>>4)+(1u<<(state.count-4))+1u;
               state.treety.count = static_cast<unsigned short>(alphasize);
               state.alphabits = util_bitwidth(alphasize+1u); //BITWIDTH(NBLTYPESx + 2)
               state.state += 1;
+              state.blocktypeL_max = static_cast<unsigned char>(alphasize-1u);
             }
           } break;
         case BrCvt_BlockTypesLAlpha:
           {
             api_error const res = brcvt_inflow19(state.treety, state.literal_blocktype, x,
               state.alphabits);
-            if (res == api_error::EndOfFile)
+            if (res == api_error::EndOfFile) {
+              state.blocktypeL_skip = brcvt_resolve_skip(state.literal_blocktype);
+              brcvt_reset19(state.treety);
               state.state += 1;
-            else if (res != api_error::Success)
+            } else if (res != api_error::Success)
               ae = res;
           } break;
-            /* TODO implement */
-            ae = api_error::Sanitize;
-            break;
-        case 19: /* generate code trees */
+        case BrCvt_BlockCountLAlpha:
+          {
+            api_error const res = brcvt_inflow19(state.treety, state.literal_blockcount, x, 5);
+            if (res == api_error::EndOfFile) {
+              state.blockcountL_skip = brcvt_resolve_skip(state.literal_blockcount);
+              state.state += 1;
+              state.bit_length = 0;
+              state.bits = 0;
+              state.count = 0;
+              state.extra_length = 0;
+              state.blocktypeL_index = 0;
+              state.blocktypeL_remaining = 0;
+              fixlist_codesort(state.literal_blockcount, ae);
+              if (ae == api_error::Success)
+                inscopy_codesort(state.blockcounts, ae);
+              if (state.blockcountL_skip != brcvt_NoSkip)
+                state.blocktypeL_remaining = brcvt_config_count(state, state.blockcountL_skip, state.state + 1);
+            } else if (res != api_error::Success)
+              ae = res;
+          } break;
+        case BrCvt_BlockStartL:
+          if (state.extra_length == 0) {
+            size_t code_index = ~0;
+            state.bits = (state.bits<<1) | x;
+            state.bit_length += 1;
+            code_index = fixlist_codebsearch(state.literal_blockcount, state.bit_length, state.bits);
+            if (code_index >= 26) {
+              if (state.bit_length >= 15)
+                ae = api_error::Sanitize;
+              break;
+            }
+            prefix_line const& line = state.literal_blockcount[code_index];
+            state.blocktypeL_remaining = brcvt_config_count(state, line.value, state.state + 1);
+          } else if (state.bit_length < state.extra_length) {
+            state.bits |= (x<< state.bit_length++);
+            if (state.bit_length >= state.extra_length) {
+              state.blocktypeL_remaining += state.bits;
+              state.bits = 0;
+              state.bit_length = 0;
+              state.state += 1;
+            }
+          } else ae = api_error::Sanitize;
+          break;
+        case 5000019: /* generate code trees */
           {
             fixlist_gen_codes(state.literals, ae);
             if (ae != api_error::Success)
@@ -593,7 +686,7 @@ namespace text_complex {
             state.bits = 0u;
             state.bit_length = 0u;
           } break;
-        case 18: /* copy zero length + 11 */
+        case 5000018: /* copy zero length + 11 */
           if (state.bit_length < 7u) {
             state.bits = (state.bits | (x<<state.bit_length));
             state.bit_length += 1u;
@@ -623,6 +716,31 @@ namespace text_complex {
       }
       state.bit_index = i&7u;
       return ae;
+    }
+
+    unsigned short brcvt_resolve_skip(prefix_list const& prefixes) noexcept {
+      constexpr unsigned long Mark = std::numeric_limits<unsigned long>::max();
+      unsigned long last_nonzero = Mark;
+      for (prefix_line const& line : prefixes) {
+        if (line.len == 0)
+          continue;
+        else if (last_nonzero != Mark)
+          return brcvt_NoSkip;
+        else last_nonzero = line.value;
+      }
+      return last_nonzero == Mark ? brcvt_NoSkip : static_cast<unsigned short>(last_nonzero);
+    }
+
+    uint32 brcvt_config_count
+      (brcvt_state& state, unsigned long value, unsigned char next_state)
+    {
+      insert_copy_row const& row = state.blockcounts[static_cast<std::size_t>(value)];
+      state.extra_length = row.insert_bits;
+      state.bits = 0;
+      state.bit_length = 0;
+      if (!state.extra_length)
+        state.state = next_state;
+      return row.insert_first;
     }
 
     api_error brcvt_inflow19(brcvt_state::treety_box& treety,
@@ -816,6 +934,15 @@ namespace text_complex {
         return api_error::EndOfFile;
     }
 
+    void brcvt_reset19(brcvt_state::treety_box& treety) {
+      prefix_list nineteen = std::move(treety.nineteen);
+      block_string compress = std::move(treety.sequence_list);
+      treety = {};
+      treety.sequence_list = std::move(compress);
+      treety.sequence_list.clear();
+      treety.nineteen = std::move(nineteen);
+    }
+
     api_error brcvt_post19(brcvt_state::treety_box& treety,
       prefix_list& prefixes, unsigned short value)
     {
@@ -887,6 +1014,186 @@ namespace text_complex {
       return api_error::Success;
     }
 
+    api_error brcvt_outflow19(brcvt_state::treety_box& treety,
+      prefix_list& prefixes, unsigned& x, unsigned alphabits)
+    {
+      switch (treety.state) {
+      case BrCvt_TComplex:
+        if (treety.bit_length == 0) {
+          prefix_preset const preset = fixlist_match_preset(prefixes);
+          if (preset != prefix_preset::BrotliComplex) {
+            treety.bits = 1;
+            treety.count = static_cast<unsigned short>(preset);
+          } else {
+            constexpr uint32 lines = sizeof(brcvt_clen);
+            int res = 0;
+            prefix_histogram histogram;
+            if (util_move_make(histogram, lines) != api_error::Success)
+              return api_error::Memory;
+            std::fill(histogram.begin(), histogram.end(), 0);
+            uint32 nonzero = 0;
+            if (brcvt_make_sequence(treety, prefixes) != api_error::Success)
+              return api_error::Memory;
+            for (uint32 i = 0; i < treety.sequence_list.size(); ++i) {
+              unsigned char const code = treety.sequence_list[i];
+              assert(code < histogram.size());
+              histogram[code] += 1;
+              if (code >= 16)
+                i += 1;
+            }
+            uint32 shortcut = 0;
+            for (uint32 shortcut = 0; shortcut < 3; ++shortcut) {
+              if (histogram[brcvt_clen[shortcut]])
+                break;
+            }
+            treety.bits = (shortcut - (shortcut==1));
+            if (util_move_make(treety.nineteen, lines) != api_error::Success)
+              return api_error::Memory;
+            for (uint32 i = 0; i < lines; ++i)
+              treety.nineteen[i].value = i;
+            api_error ae;
+            fixlist_gen_lengths(treety.nineteen, histogram, 5, ae);
+            if (ae != api_error::Success)
+              return api_error::Memory;
+            fixlist_gen_codes(treety.nineteen, ae);
+            assert(ae == api_error::Success);
+            treety.count = 0;
+            treety.nonzero = 0;
+            for (uint32 i = 0; i < lines; ++i) {
+              unsigned char clen = brcvt_clen[i];
+              if (histogram[clen] == 0)
+                continue;
+              else if (!treety.nonzero)
+                treety.nonzero = clen;
+              treety.count = i+1;
+              nonzero += 1;
+            }
+            if (nonzero < 2)
+              treety.count = static_cast<unsigned short>(lines);
+            else nonzero = 0;
+          }
+        }
+        x = (treety.bits>>treety.bit_length++)&1u;
+        if (treety.bit_length >= 2) {
+          treety.bit_length = 0;
+          if (treety.bits == 1) {
+            treety.state = BrCvt_TSimpleCount;
+            treety.index = 0;
+          } else {
+            treety.state = BrCvt_TNineteen;
+            treety.index = treety.bits;
+          }
+        } break;
+      case BrCvt_TSimpleCount:
+        if (treety.bit_length == 0) {
+          treety.bits = treety.count - 1 - (treety.count==static_cast<unsigned>(prefix_preset::BrotliSimple4B));
+        }
+        x = (treety.bits>>treety.bit_length++)&1u;
+        if (treety.bit_length >= 2) {
+          treety.state = BrCvt_TSimpleAlpha;
+          treety.bit_length = 0;
+        } break;
+      case BrCvt_TSimpleAlpha:
+        if (treety.bit_length == 0) {
+          if (treety.index >= prefixes.size())
+            return api_error::Sanitize;
+          treety.bits = static_cast<unsigned short>(prefixes[treety.index].value);
+        }
+        x = (treety.bits>>treety.bit_length++)&1u;
+        if (treety.bit_length >= alphabits) {
+          unsigned const effective = treety.count - (treety.count==static_cast<unsigned>(prefix_preset::BrotliSimple4B));
+          treety.index += 1;
+          treety.bit_length = 0;
+          if (treety.index < effective)
+            break;
+          treety.state = BrCvt_TDone;
+          if (treety.count < static_cast<unsigned>(prefix_preset::BrotliSimple4A))
+            return api_error::EndOfFile;
+          treety.state = BrCvt_TSimpleFour;
+        } break;
+      case BrCvt_TSimpleFour:
+        x = (treety.count==static_cast<unsigned>(prefix_preset::BrotliSimple4B));
+        treety.state = BrCvt_TDone;
+        return api_error::EndOfFile;
+      case BrCvt_TNineteen:
+        if (treety.bit_length == 0) {
+          unsigned short const len = treety.nineteen[treety.index].len;
+          switch (len) {
+          case 0: treety.bit_length = 2; treety.bits = 0u; break;
+          case 1: treety.bit_length = 4; treety.bits = 14u; break;
+          case 2: treety.bit_length = 3; treety.bits = 6u; break;
+          case 3: treety.bit_length = 2; treety.bits = 1u; break;
+          case 4: treety.bit_length = 2; treety.bits = 2u; break;
+          case 5: treety.bit_length = 2; treety.bits = 15u; break;
+          default: return api_error::Sanitize;
+          }
+        }
+        if (treety.bit_length > 0)
+          x = (treety.bits>>--treety.bit_length)&1u;
+        if (treety.bit_length == 0) {
+          treety.index += 1;
+          if (treety.index < treety.count)
+            break;
+          assert(treety.bit_length == 0);
+          if (treety.nonzero >= 16) {
+            treety.state = treety.nonzero;
+            treety.index = 1;
+            assert(treety.sequence_list.size() >= 2);
+          } else if (treety.nonzero > 0) {
+            treety.state = BrCvt_TDone;
+            return api_error::EndOfFile;
+          } else {
+            treety.index = 0;
+            treety.state = BrCvt_TSymbols;
+          }
+        } break;
+      case BrCvt_TRepeat:
+      case BrCvt_TZeroes:
+        if (treety.bit_length == 0) {
+          treety.bits = treety.sequence_list[treety.index];
+          treety.count = treety.state - 14;
+        }
+        x = (treety.bits>>treety.bit_length++)&1u;
+        if (treety.bit_length >= treety.count) {
+          treety.index += 1;
+          if (treety.index >= treety.sequence_list.size()) {
+            treety.state = BrCvt_TDone;
+            return api_error::EndOfFile;
+          } else if (treety.nonzero) {
+            assert(treety.sequence_list[treety.index] == treety.nonzero);
+            treety.index += 1;
+          } else treety.state = BrCvt_TSymbols;
+        } break;
+      case BrCvt_TSymbols:
+        if (treety.bit_length == 0) {
+          unsigned char const code = treety.sequence_list[treety.index];
+          prefix_line const& line = treety.nineteen[code];
+          treety.bits = line.code;
+          treety.bit_length = line.len;
+        }
+        if (treety.bit_length > 0)
+          x = (treety.bits>>--treety.bit_length)&1u;
+        if (treety.bit_length == 0) {
+          unsigned char const code = treety.sequence_list[treety.index];
+          treety.index += 1;
+          if (treety.index >= treety.sequence_list.size()) {
+            if (code >= 16)
+              return api_error::Sanitize;
+            treety.state = BrCvt_TDone;
+            return api_error::EndOfFile;
+          } else if (code >= 16)
+            treety.state = code;
+          // otherwise stay put
+        } break;
+      case BrCvt_TDone:
+        return api_error::EndOfFile;
+      default:
+        return api_error::Sanitize;
+      }
+      return api_error::Success;
+    }
+
+
     unsigned int brcvt_cinfo(uint32 window_size) {
       unsigned int out = 0u;
       uint32 v;
@@ -909,37 +1216,28 @@ namespace text_complex {
       return brcvt_nonzero(a,brcvt_nonzero(b,c));
     }
 
-    api_error brcvt_make_sequence(brcvt_state& state) noexcept {
+    api_error brcvt_make_sequence
+      (brcvt_state::treety_box& state, prefix_list const& literals) noexcept
+    {
       unsigned int len = ~0u, len_count = 0u;
-      size_t const lit_sz = state.literals.size();
-      size_t const dist_sz = state.distances.size();
+      size_t const lit_sz = literals.size();
       size_t i;
+      auto const* end = literals.begin();
       state.sequence_list.clear();
-      for (i = 0u; i < lit_sz; ++i) {
-        unsigned int const n = state.literals[i].len;
-        if (len != n) {
-          api_error const ae = brcvt_post_sequence
-            (state.sequence_list, len, len_count);
-          if (ae != api_error::Success)
-            return ae;
-          else {
-            len = n;
-            len_count = 1u;
-          }
-        }
+      for (prefix_line const& line : literals) {
+        if (line.len > 0)
+          end = (&line)+1;
       }
-      for (i = 0u; i < dist_sz; ++i) {
-        unsigned int const n = state.distances[i].len;
+      for (auto const* line = literals.begin(); line < end; ++line) {
+        unsigned int const n = line->len;
         if (len != n) {
           api_error const ae = brcvt_post_sequence
             (state.sequence_list, len, len_count);
           if (ae != api_error::Success)
             return ae;
-          else {
-            len = n;
-            len_count = 1u;
-          }
-        }
+          len = n;
+          len_count = 1u;
+        } else len_count += 1u;
       }
       return brcvt_post_sequence(state.sequence_list, len, len_count);
     }
@@ -956,56 +1254,30 @@ namespace text_complex {
     api_error brcvt_post_sequence
       (block_string& s, unsigned int len, unsigned int count) noexcept
     {
+      api_error ae = api_error::Success;
+      unsigned int i;
       if (count == 0u)
         return api_error::Success;
-      else if ((len==0u && count < 3u) || count < 4u) {
-        unsigned int i;
-        for (i = 0u; i < count; ++i) {
-          api_error ae;
+      else if (count < 4u) {
+        for (unsigned i = 0; i < count && ae == api_error::Success; ++i)
           s.push_back(static_cast<unsigned char>(len), ae);
-          if (ae != api_error::Success)
-            return ae;
-        }
-        return api_error::Success;
       } else if (len == 0u) {
-        unsigned int i;
-        api_error ae = api_error::Success;
-        for (i = 0u; i < len && ae == api_error::Success; ) {
-          unsigned int const x = len-i;
-          if (x > 138u) {
-            ae = brcvt_post_two(s, 18u, 127u);
-            i += 138u;
-          } else if (x >= 11u) {
-            ae = brcvt_post_two(s, 18u, x-11u);
-            i += x;
-          } else if (x >= 3u) {
-            ae = brcvt_post_two(s, 17u, x-3u);
-            i += x;
-          } else {
-            s.push_back(0u, ae);
-            i += 1u;
-          }
+        unsigned const recount = count-3;
+        int width = static_cast<int>(util_bitwidth(recount));
+        for (i = width-width%3; i >= 0 && ae == api_error::Success; i -= 3) {
+          unsigned int const x = (recount>>i)&7u;
+          ae = brcvt_post_two(s, 17, static_cast<unsigned char>(x));
         }
-        return ae;
       } else {
-        unsigned int i;
-        api_error ae;
         s.push_back(static_cast<unsigned char>(len), ae);
-        for (i = 1u; i < len && ae == api_error::Success; ) {
-          unsigned int const x = len-i;
-          if (x > 6u) {
-            ae = brcvt_post_two(s, 16u, 3u);
-            i += 6u;
-          } else if (x >= 3u) {
-            ae = brcvt_post_two(s, 17u, x-3u);
-            i += x;
-          } else {
-            s.push_back(static_cast<unsigned char>(len), ae);
-            i += 1u;
-          }
+        unsigned const recount = count-3;
+        unsigned const width = util_bitwidth(recount);
+        for (int i = static_cast<int>(width&~1u); i >= 0 && ae == api_error::Success; i -= 2) {
+          unsigned int const x = (recount>>i)&3u;
+          ae = brcvt_post_two(s, 16, static_cast<unsigned char>(x));
         }
-        return ae;
       }
+      return ae;
     }
 
     api_error brcvt_check_compress(brcvt_state& state) {
@@ -1267,34 +1539,140 @@ namespace text_complex {
               state.state += 4;
           } break;
         case BrCvt_BlockTypesLAlpha:
+          {
+            api_error const res = brcvt_outflow19(state.treety, state.literal_blocktype, x,
+              state.alphabits);
+            if (res == api_error::EndOfFile) {
+              state.bit_length = 0;
+              brcvt_reset19(state.treety);
+              state.state += 1;
+            } else if (res != api_error::Success)
+              ae = res;
+          } break;
+        case BrCvt_BlockCountLAlpha:
           if (state.bit_length == 0) {
-            size_t const symbols = state.literal_blocktype.size();
-            size_t sym_i;
-            unsigned const shift = 2u+(symbols>=3);
-            assert(symbols <= 4);
-            state.bits = 0;
-            for (sym_i = 0; sym_i < symbols; ++sym_i) {
-              state.bits |= ((state.literal_blocktype[sym_i].value+2)<<(shift*sym_i));
+            state.bit_length += 1;
+            prefix_histogram histogram;
+            ae = util_move_make(histogram, 26);
+            if (ae != api_error::Success)
+              break;
+            std::fill(histogram.begin(), histogram.end(), 0);
+            block_string const& data = state.buffer.str();
+            size_t const output_len = data.size();
+            size_t i;
+            size_t guess_i = 0;
+            size_t total = 0;
+            size_t literals = 0;
+            size_t coverage = 0;
+            // Reparse the text.
+            for (std::size_t i = 0; i < output_len; ++i) {
+              int const copy = (data[i]&128u);
+              unsigned len = data[i]&63u;
+              if (data[i] & 64u && i+1 < output_len) {
+                i += 1;
+                len = (len<<8) | data[i];
+              }
+              if (copy && i+i < output_len) {
+                unsigned extend = 0;
+                i += 1;
+                if (data[i] < 128)
+                  extend = 3;
+                else if (data[i] < 192)
+                  extend = 2;
+                else extend = 4;
+                if (extend >= output_len - i)
+                  break;
+                i += (extend-1);
+              } else if (len > output_len - i) {
+                ae = api_error::Sanitize;
+                break;
+              } else i += len;
+              for (; guess_i < state.guesses.count; ++guess_i) {
+                size_t const limit = (guess_i >= state.guesses.count-1)
+                  ? state.guesses.total_bytes : state.guesses.offsets[guess_i+1];
+                size_t const remaining = total - limit;
+                if (len < remaining) {
+                  literals += len;
+                  break;
+                }
+                len -= remaining;
+                literals += remaining;
+                state.guess_lengths[guess_i] = literals;
+                literals = 0;
+              }
+              total += len;
             }
-            state.bit_length += 2;
-            state.bits = (symbols-1)|(state.bits<<2);
-            if (symbols >= 4) {
-              state.bits |= ((state.blocktype_simple&1u)<<state.bit_length);
-              state.bit_length += 1;
+            if (ae != api_error::Success)
+              break;
+            assert(total == output_len);
+            // Populate histogram.
+            inscopy_lengthsort(state.blockcounts);
+            for (std::size_t i = 0; i < state.guesses.count; ++i) {
+              size_t const v = inscopy_encode(state.blockcounts, state.guess_lengths[i], 0, 0);
+              if (v >= 26) {
+                ae = api_error::Sanitize;
+                break;
+              }
+              histogram[v] += 1;
             }
-            state.bit_length += 2;
-            state.count = 0;
+            if (ae != api_error::Success)
+              break;
+            ae = util_move_make(state.literal_blockcount, 26);
+            if (ae != api_error::Success)
+              break;
+            for (unsigned i = 0; i < 26; ++i) {
+              state.literal_blockcount[i].value = i;
+              coverage += (histogram[i] != 0);
+            }
+            fixlist_gen_lengths(state.literal_blockcount, histogram, 15, ae);
+            if (ae != api_error::Success)
+              break;
+            fixlist_gen_codes(state.literal_blockcount, ae);
+            if (ae != api_error::Success)
+              break;
           }
-          if (state.count < 2) {
-            x = (state.count==0);
-            state.count += 1;
-          } else if (state.count < state.bit_length) {
-            x = (state.bits >> (state.count-2))&1u;
-            state.count += 1;
+          /* render tree to output */
+          {
+            api_error const res = brcvt_outflow19(state.treety, state.literal_blockcount, x, 5);
+            if (res == api_error::EndOfFile) {
+              state.bit_length = 0;
+              brcvt_reset19(state.treety);
+              state.state += 1;
+              fixlist_valuesort(state.literal_blockcount, ae);
+            } else if (res != api_error::Success)
+              ae = res;
+          } break;
+        case BrCvt_BlockStartL:
+          if (state.bit_length == 0) {
+            std::size_t const code_index =
+              inscopy_encode(state.blockcounts, state.guess_lengths[0], 0,0);
+            if (code_index >= state.blockcounts.size()) {
+              ae = api_error::Sanitize;
+              break;
+            }
+            insert_copy_row const& row = state.blockcounts[code_index];
+            std::size_t const value_index =
+              fixlist_valuebsearch(state.literal_blockcount, row.code);
+            if (value_index >= state.literal_blockcount.size()) {
+              ae = api_error::Sanitize;
+              break;
+            }
+            prefix_line const& line = state.literal_blockcount[value_index];
+            state.count = (state.guess_lengths[0] - row.insert_first);
+            state.extra_length = row.insert_bits;
+            state.bits = line.code;
+            state.bit_cap = line.len;
           }
-          if (state.count >= state.bit_length)
+          if (state.bit_length < state.bit_cap) {
+            x = (state.bits >> (state.bit_cap - state.bit_length - 1u))&1u;
+          } else {
+            x = (state.count >> (state.bit_length - state.bit_cap)) & 1u;
+          }
+          state.bit_length += 1;
+          if (state.bit_length >= state.bit_cap + state.extra_length) {
             state.state += 1;
-          break;
+            state.bit_length = 0;
+          } break;
         case BrCvt_Uncompress:
           x = 0;
           break;
@@ -1325,7 +1703,14 @@ namespace text_complex {
         bits(0u), bit_length(0u), state(0u), bit_index(0u),
         backward(0u), count(0u),
         wbits_select(0u), emptymeta(false), write_scratch(0), checksum(0u),
-        bit_cap(0u), meta_index(0), metatext(nullptr), max_len_meta(1024)
+        bit_cap(0u), meta_index(0), metatext(nullptr), max_len_meta(1024),
+        treety{},
+        blocktypeL_index(0), blocktypeL_max(0),
+        guess_lengths{},
+        blocktypeL_remaining(0),
+        blocktypeL_skip(brcvt_NoSkip), blockcountL_skip(brcvt_NoSkip),
+        blocktypeI_skip(brcvt_NoSkip), blockcountI_skip(brcvt_NoSkip),
+        blocktypeD_skip(brcvt_NoSkip), blockcountD_skip(brcvt_NoSkip)
     {
       if (n > 16777200u)
         n = 16777200u;
@@ -1339,7 +1724,8 @@ namespace text_complex {
       fixlist_preset(wbits, prefix_preset::BrotliWBits);
       inscopy_preset(values, insert_copy_preset::Deflate);
       inscopy_codesort(values);
-      sequence_list.reserve(286u+30u);
+      inscopy_preset(blockcounts, insert_copy_preset::BrotliBlock);
+      inscopy_codesort(blockcounts);
       return;
     }
     //END   brcvt_state / rule-of-zero
@@ -1409,6 +1795,8 @@ namespace text_complex {
         case BrCvt_InputLength:
         case BrCvt_BlockTypesL:
         case BrCvt_BlockTypesLAlpha:
+        case BrCvt_BlockCountLAlpha:
+        case BrCvt_BlockStartL:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -1460,8 +1848,6 @@ namespace text_complex {
         case 13: /* hcounts */
         case 14: /* code lengths code lengths */
         case 15: /* literals and distances */
-        case 18: /* copy zero length + 11 */
-        case 19: /* generate code trees */
         case 20: /* alpha bringback */
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
@@ -1514,6 +1900,10 @@ namespace text_complex {
         case BrCvt_Nibbles:
         case BrCvt_InputLength:
         case BrCvt_CompressCheck:
+        case BrCvt_BlockTypesL:
+        case BrCvt_BlockTypesLAlpha:
+        case BrCvt_BlockCountLAlpha:
+        case BrCvt_BlockStartL:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
@@ -1543,10 +1933,6 @@ namespace text_complex {
         case 13: /* hcounts */
         case 14: /* code lengths code lengths */
         case 15: /* literals and distances */
-        case 16: /* copy previous code length */
-        case 17: /* copy zero length */
-        case 18: /* copy zero length + 11 */
-        case 19: /* generate code trees */
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         }

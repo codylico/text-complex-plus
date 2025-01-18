@@ -53,6 +53,8 @@ namespace text_complex {
         unsigned short last_repeat;
         /** @brief Internal prefix code. */
         prefix_list nineteen;
+        /** @brief Tree description sequence. */
+        block_string sequence_list;
       };
       /**
        * @brief ...
@@ -62,6 +64,8 @@ namespace text_complex {
       block_buffer buffer;
       /** @brief Block type prefix code for literals. */
       prefix_list literal_blocktype;
+      /** @brief Block count prefix code for literals. */
+      prefix_list literal_blockcount;
       /** @brief ... */
       prefix_list literals;
       /** @brief ... */
@@ -72,6 +76,8 @@ namespace text_complex {
       prefix_list wbits;
       /** @brief ... */
       insert_copy_table values;
+      /** @brief Block count insert-copy table */
+      insert_copy_table blockcounts;
       /** @brief ... */
       distance_ring ring;
       /** @brief Check for large blocks. */
@@ -82,8 +88,6 @@ namespace text_complex {
       prefix_histogram dist_histogram;
       /** @brief Check for large blocks. */
       prefix_histogram seq_histogram;
-      /** @brief Tree description sequence. */
-      block_string sequence_list;
       /** @brief ... */
       unsigned short int bits;
       /** @brief Read count for bits used after a Huffman code. */
@@ -132,7 +136,31 @@ namespace text_complex {
       context_span guesses;
       /** @brief Context mode offset for outflow. */
       unsigned char guess_offset;
-      /** @brief Built-in tree type for block type outflow. */
+      /** @brief Current literal block type. */
+      unsigned char blocktypeL_index;
+      /** @brief Maximum literal block type. */
+      unsigned char blocktypeL_max;
+      /** @brief Context span effective lengths for outflow. */
+      uint32 guess_lengths[CtxtSpan_Size];
+      /** @brief Remaining items under the current literal blocktype. */
+      uint32 blocktypeL_remaining;
+      /** @brief Literal type skip code. */
+      unsigned short blocktypeL_skip;
+      /** @brief Literal count skip code. */
+      unsigned short blockcountL_skip;
+      /** @brief Insert-and-copy type skip code. */
+      unsigned short blocktypeI_skip;
+      /** @brief Insert-and-copy count skip code. */
+      unsigned short blockcountI_skip;
+      /** @brief Distance type skip code. */
+      unsigned short blocktypeD_skip;
+      /** @brief Distance count skip code. */
+      unsigned short blockcountD_skip;
+      /**
+       * @brief Built-in tree type for block type outflow.
+       * @todo Test for removal.
+       */
+      [[deprecated("Unused field; ignore.")]]
       unsigned char blocktype_simple;
 
     public: /** @name rule-of-zero*//** @{ */
