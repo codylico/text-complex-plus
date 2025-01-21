@@ -8,6 +8,7 @@
 
 #include "api.hpp"
 #include <new>
+#include <cstddef>
 
 namespace text_complex {
   namespace access {
@@ -50,6 +51,15 @@ namespace text_complex {
      */
     TCMPLX_AP_API
     void util_op_delete(void* p) noexcept;
+
+    /**
+     * @tparam t type to check
+     * @return maximum elements representable in an array of this type.
+     */
+    template <typename t>
+    constexpr std::size_t util_size_limit() {
+      return static_cast<std::size_t>(-1)/sizeof(t);
+    }
 
     /**
      * @brief Allocate and initialize some memory.

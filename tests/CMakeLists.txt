@@ -123,4 +123,10 @@ target_compile_features(tcmplx_accessP_testfont
   target_link_libraries(tcmplx_accessP_test_ctxtspan
     tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
 #END   CtxtSpan test
+
+#BEGIN GaspForest test
+  add_executable(tcmplx_accessP_test_gaspvec tca_gaspvec.cpp)
+  target_link_libraries(tcmplx_accessP_test_gaspvec
+    tcmplx_accessP_testfont munit_plus tcmplx_access_plus)
+#END   GaspForest test
 endif (TCMPLX_ACCESS_P_BUILD_TESTS)
