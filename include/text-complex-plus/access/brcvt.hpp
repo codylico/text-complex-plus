@@ -66,6 +66,10 @@ namespace text_complex {
       prefix_list literal_blocktype;
       /** @brief Block count prefix code for literals. */
       prefix_list literal_blockcount;
+      /** @brief Block type prefix code for insert-and-copy. */
+      prefix_list insert_blocktype;
+      /** @brief Block count prefix code for insert-and-copy. */
+      prefix_list insert_blockcount;
       /** @brief ... */
       prefix_list literals;
       /** @brief ... */
@@ -140,10 +144,16 @@ namespace text_complex {
       unsigned char blocktypeL_index;
       /** @brief Maximum literal block type. */
       unsigned char blocktypeL_max;
+      /** @brief Current insert-and-copy block type. */
+      unsigned char blocktypeI_index;
+      /** @brief Maximum insert-and-copy block type. */
+      unsigned char blocktypeI_max;
       /** @brief Context span effective lengths for outflow. */
       uint32 guess_lengths[CtxtSpan_Size];
       /** @brief Remaining items under the current literal blocktype. */
       uint32 blocktypeL_remaining;
+      /** @brief Remaining items under the current insert-and-copy blocktype. */
+      uint32 blocktypeI_remaining;
       /** @brief Literal type skip code. */
       unsigned short blocktypeL_skip;
       /** @brief Literal count skip code. */
