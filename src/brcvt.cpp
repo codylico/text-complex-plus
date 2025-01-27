@@ -386,6 +386,7 @@ namespace text_complex {
               state.treety.count = 1;
               fixlist_preset(state.literal_blocktype, prefix_preset::BrotliSimple1);
               state.state += 4;
+              state.blocktypeL_skip = 0;
               state.blocktypeL_max = 0;
               state.blocktypeL_remaining = std::numeric_limits<uint32>::max();
             } else {
@@ -465,6 +466,7 @@ namespace text_complex {
               state.treety.count = 1;
               fixlist_preset(state.insert_blocktype, prefix_preset::BrotliSimple1);
               state.state += 4;
+              state.blocktypeI_skip = 0;
               state.blocktypeI_max = 0;
               state.blocktypeI_remaining = std::numeric_limits<uint32>::max();
             } else {
@@ -499,8 +501,8 @@ namespace text_complex {
               state.blocktypeI_index = 0;
               state.blocktypeI_remaining = 0;
               fixlist_codesort(state.insert_blockcount, ae);
-              if (state.blockcountL_skip != brcvt_NoSkip)
-                state.blocktypeL_remaining = brcvt_config_count(state, state.blockcountI_skip, state.state + 1);
+              if (state.blockcountI_skip != brcvt_NoSkip)
+                state.blocktypeI_remaining = brcvt_config_count(state, state.blockcountI_skip, state.state + 1);
             } else if (res != api_error::Success)
               ae = res;
           } break;
@@ -544,6 +546,7 @@ namespace text_complex {
               state.treety.count = 1;
               fixlist_preset(state.distance_blocktype, prefix_preset::BrotliSimple1);
               state.state += 4;
+              state.blocktypeD_skip = 0;
               state.blocktypeD_max = 0;
               state.blocktypeD_remaining = std::numeric_limits<uint32>::max();
             } else {
@@ -886,7 +889,9 @@ namespace text_complex {
     unsigned short brcvt_resolve_skip(prefix_list const& prefixes) noexcept {
       constexpr unsigned long Mark = std::numeric_limits<unsigned long>::max();
       unsigned long last_nonzero = Mark;
-      for (prefix_line const& line : prefixes) {
+      if (prefixes.size() == 1) {
+        return static_cast<unsigned short>(prefixes[0].value);
+      } else for (prefix_line const& line : prefixes) {
         if (line.len == 0)
           continue;
         else if (last_nonzero != Mark)
