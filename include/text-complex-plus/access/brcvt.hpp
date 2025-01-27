@@ -70,6 +70,10 @@ namespace text_complex {
       prefix_list insert_blocktype;
       /** @brief Block count prefix code for insert-and-copy. */
       prefix_list insert_blockcount;
+      /** @brief Block type prefix code for distances. */
+      prefix_list distance_blocktype;
+      /** @brief Block count prefix code for distances. */
+      prefix_list distance_blockcount;
       /** @brief ... */
       prefix_list literals;
       /** @brief ... */
@@ -148,12 +152,18 @@ namespace text_complex {
       unsigned char blocktypeI_index;
       /** @brief Maximum insert-and-copy block type. */
       unsigned char blocktypeI_max;
+      /** @brief Current distance block type. */
+      unsigned char blocktypeD_index;
+      /** @brief Maximum distance block type. */
+      unsigned char blocktypeD_max;
       /** @brief Context span effective lengths for outflow. */
       uint32 guess_lengths[CtxtSpan_Size];
       /** @brief Remaining items under the current literal blocktype. */
       uint32 blocktypeL_remaining;
       /** @brief Remaining items under the current insert-and-copy blocktype. */
       uint32 blocktypeI_remaining;
+      /** @brief Remaining items under the current distance blocktype. */
+      uint32 blocktypeD_remaining;
       /** @brief Literal type skip code. */
       unsigned short blocktypeL_skip;
       /** @brief Literal count skip code. */

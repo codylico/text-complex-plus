@@ -184,6 +184,10 @@ namespace text_complex {
         BrCvt_BlockCountIAlpha = 22,
         BrCvt_BlockStartI = 23,
         BrCvt_BlockTypesD = 24,
+        BrCvt_BlockTypesDAlpha = 25,
+        BrCvt_BlockCountDAlpha = 26,
+        BrCvt_BlockStartD = 27,
+        BrCvt_NPostfix = 28,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -517,6 +521,85 @@ namespace text_complex {
             state.bits |= (x<< state.bit_length++);
             if (state.bit_length >= state.extra_length) {
               state.blocktypeI_remaining += state.bits;
+              state.bits = 0;
+              state.bit_length = 0;
+              state.state += 1;
+            }
+          } else ae = api_error::Sanitize;
+          break;
+        case BrCvt_BlockTypesD:
+          if (state.bit_length == 0) {
+            state.count = 1;
+            state.bits = x;
+            state.bit_length = (x ? 4 : 1);
+          } else if (state.count < state.bit_length) {
+            state.bits |= ((x&1u)<<(state.count++));
+            if (state.count == 4 && (state.bits&14u))
+              state.bit_length += (state.bits>>1);
+          }
+          if (state.count >= state.bit_length) {
+            brcvt_reset19(state.treety);
+            state.blocktypeD_index = 0;
+            if (state.count == 1) {
+              state.treety.count = 1;
+              fixlist_preset(state.distance_blocktype, prefix_preset::BrotliSimple1);
+              state.state += 4;
+              state.blocktypeD_max = 0;
+              state.blocktypeD_remaining = std::numeric_limits<uint32>::max();
+            } else {
+              unsigned const alphasize = (state.bits>>4)+(1u<<(state.count-4))+1u;
+              state.treety.count = static_cast<unsigned short>(alphasize);
+              state.alphabits = util_bitwidth(alphasize+1u); //BITWIDTH(NBLTYPESx + 2)
+              state.state += 1;
+              state.blocktypeD_max = static_cast<unsigned char>(alphasize-1u);
+            }
+          } break;
+        case BrCvt_BlockTypesDAlpha:
+          {
+            api_error const res = brcvt_inflow19(state.treety, state.distance_blocktype, x,
+              state.alphabits);
+            if (res == api_error::EndOfFile) {
+              state.blocktypeD_skip = brcvt_resolve_skip(state.distance_blocktype);
+              brcvt_reset19(state.treety);
+              state.state += 1;
+            } else if (res != api_error::Success)
+              ae = res;
+          } break;
+        case BrCvt_BlockCountDAlpha:
+          {
+            api_error const res = brcvt_inflow19(state.treety, state.distance_blockcount, x, 5);
+            if (res == api_error::EndOfFile) {
+              state.blockcountD_skip = brcvt_resolve_skip(state.distance_blockcount);
+              state.state += 1;
+              state.bit_length = 0;
+              state.bits = 0;
+              state.count = 0;
+              state.extra_length = 0;
+              state.blocktypeD_index = 0;
+              state.blocktypeD_remaining = 0;
+              fixlist_codesort(state.distance_blockcount, ae);
+              if (state.blockcountD_skip != brcvt_NoSkip)
+                state.blocktypeD_remaining = brcvt_config_count(state, state.blockcountD_skip, state.state + 1);
+            } else if (res != api_error::Success)
+              ae = res;
+          } break;
+        case BrCvt_BlockStartD:
+          if (state.extra_length == 0) {
+            size_t code_index = ~0;
+            state.bits = (state.bits<<1) | x;
+            state.bit_length += 1;
+            code_index = fixlist_codebsearch(state.distance_blockcount, state.bit_length, state.bits);
+            if (code_index >= 26) {
+              if (state.bit_length >= 15)
+                ae = api_error::Sanitize;
+              break;
+            }
+            prefix_line const& line = state.distance_blockcount[code_index];
+            state.blocktypeD_remaining = brcvt_config_count(state, line.value, state.state + 1);
+          } else if (state.bit_length < state.extra_length) {
+            state.bits |= (x<< state.bit_length++);
+            if (state.bit_length >= state.extra_length) {
+              state.blocktypeD_remaining += state.bits;
               state.bits = 0;
               state.bit_length = 0;
               state.state += 1;
@@ -1761,6 +1844,12 @@ namespace text_complex {
           state.state = BrCvt_BlockTypesD;
           state.bit_length = 0;
           break;
+        case BrCvt_BlockTypesD:
+          // hardcode single distance block type
+          x = 0;
+          state.state = BrCvt_NPostfix;
+          state.bit_length = 0;
+          break;
         case BrCvt_Uncompress:
           x = 0;
           break;
@@ -1891,6 +1980,9 @@ namespace text_complex {
         case BrCvt_BlockCountIAlpha:
         case BrCvt_BlockStartI:
         case BrCvt_BlockTypesD:
+        case BrCvt_BlockTypesDAlpha:
+        case BrCvt_BlockCountDAlpha:
+        case BrCvt_BlockStartD:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -2001,6 +2093,10 @@ namespace text_complex {
         case BrCvt_BlockTypesIAlpha:
         case BrCvt_BlockCountIAlpha:
         case BrCvt_BlockStartI:
+        case BrCvt_BlockTypesD:
+        case BrCvt_BlockTypesDAlpha:
+        case BrCvt_BlockCountDAlpha:
+        case BrCvt_BlockStartD:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
