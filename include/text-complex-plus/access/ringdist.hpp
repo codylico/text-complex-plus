@@ -154,6 +154,15 @@ namespace text_complex {
        *   as necessary.
        */
       unsigned int encode(uint32 back_dist, uint32& extra);
+
+      /**
+       * @return the direct parameter from construction
+       */
+      unsigned int get_direct() const noexcept;
+      /**
+       * @return the postfix parameter from construction
+       */
+      unsigned int get_postfix() const noexcept;
       /** @} */
 
     private: /** @name rule-of-six *//** @{ */

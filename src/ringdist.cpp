@@ -393,6 +393,13 @@ namespace text_complex {
         return dcode;
       }
     }
+
+    unsigned int distance_ring::get_direct() const noexcept {
+      return direct_one - 1u;
+    }
+    unsigned int distance_ring::get_postfix() const noexcept {
+      return postfix;
+    }
     //END   distance_ring / public
   };
 };
