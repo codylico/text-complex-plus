@@ -389,6 +389,7 @@ namespace text_complex {
               state.blocktypeL_skip = 0;
               state.blocktypeL_max = 0;
               state.blocktypeL_remaining = std::numeric_limits<uint32>::max();
+              state.bit_length = 0;
             } else {
               unsigned const alphasize = (state.bits>>4)+(1u<<(state.count-4))+1u;
               state.treety.count = static_cast<unsigned short>(alphasize);
@@ -469,6 +470,7 @@ namespace text_complex {
               state.blocktypeI_skip = 0;
               state.blocktypeI_max = 0;
               state.blocktypeI_remaining = std::numeric_limits<uint32>::max();
+              state.bit_length = 0;
             } else {
               unsigned const alphasize = (state.bits>>4)+(1u<<(state.count-4))+1u;
               state.treety.count = static_cast<unsigned short>(alphasize);
@@ -549,6 +551,7 @@ namespace text_complex {
               state.blocktypeD_skip = 0;
               state.blocktypeD_max = 0;
               state.blocktypeD_remaining = std::numeric_limits<uint32>::max();
+              state.bit_length = 0;
             } else {
               unsigned const alphasize = (state.bits>>4)+(1u<<(state.count-4))+1u;
               state.treety.count = static_cast<unsigned short>(alphasize);
