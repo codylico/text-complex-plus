@@ -188,6 +188,7 @@ namespace text_complex {
         BrCvt_BlockCountDAlpha = 26,
         BrCvt_BlockStartD = 27,
         BrCvt_NPostfix = 28,
+        BrCvt_ContextTypesL = 29,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -612,6 +613,28 @@ namespace text_complex {
             }
           } else ae = api_error::Sanitize;
           break;
+        case BrCvt_NPostfix:
+          if (state.bit_length == 0)
+            state.bits = 0;
+          if (state.bit_length < 6) {
+            state.bits |= (x<<state.bit_length);
+            state.bit_length += 1;
+          }
+          if (state.bit_length >= 6) {
+            unsigned const postfix = state.bits&3;
+            unsigned const direct = (state.bits>>2)<<postfix;
+            try {
+              distance_ring tryring(true,direct,postfix);
+              state.ring = tryring;
+              state.try_ring = std::move(tryring);
+            } catch (api_exception const& ae_ring) {
+              ae = ae_ring.to_error();
+              break;
+            }
+            state.state = BrCvt_ContextTypesL;
+            state.bit_length = 0;
+            state.count = 0;
+          } break;
         case 5000019: /* generate code trees */
           {
             fixlist_gen_codes(state.literals, ae);
@@ -1858,6 +1881,25 @@ namespace text_complex {
           state.state = BrCvt_NPostfix;
           state.bit_length = 0;
           break;
+        case BrCvt_NPostfix:
+          if (state.bit_length == 0) {
+            unsigned const postfix = state.ring.get_postfix();
+            unsigned const direct = state.ring.get_direct();
+            if (postfix > 3 || (direct & ((1u<<postfix)-1u))) {
+              ae = api_error::Sanitize;
+              break;
+            }
+            state.bits = postfix|(direct>>postfix);
+          }
+          if (state.bit_length < 6) {
+            x = (state.bits>>state.bit_length)&1u;
+            state.bit_length += 1;
+          }
+          if (state.bit_length >= 6) {
+            state.state = BrCvt_ContextTypesL;
+            state.bit_length = 0;
+            state.count = 0;
+          } break;
         case BrCvt_Uncompress:
           x = 0;
           break;
@@ -1991,6 +2033,7 @@ namespace text_complex {
         case BrCvt_BlockTypesDAlpha:
         case BrCvt_BlockCountDAlpha:
         case BrCvt_BlockStartD:
+        case BrCvt_NPostfix:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -2105,6 +2148,7 @@ namespace text_complex {
         case BrCvt_BlockTypesDAlpha:
         case BrCvt_BlockCountDAlpha:
         case BrCvt_BlockStartD:
+        case BrCvt_NPostfix:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
