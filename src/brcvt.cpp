@@ -189,6 +189,7 @@ namespace text_complex {
         BrCvt_BlockStartD = 27,
         BrCvt_NPostfix = 28,
         BrCvt_ContextTypesL = 29,
+        BrCvt_TreeCountL = 30,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -397,6 +398,12 @@ namespace text_complex {
               state.alphabits = util_bitwidth(alphasize+1u); //BITWIDTH(NBLTYPESx + 2)
               state.state += 1;
               state.blocktypeL_max = static_cast<unsigned char>(alphasize-1u);
+            }
+            try {
+              state.literals_map = context_map(state.treety.count, 64);
+            } catch (std::bad_alloc const& ) {
+              ae = api_error::Memory;
+              break;
             }
           } break;
         case BrCvt_BlockTypesLAlpha:
@@ -633,7 +640,25 @@ namespace text_complex {
             }
             state.state = BrCvt_ContextTypesL;
             state.bit_length = 0;
-            state.count = 0;
+            state.bits = 0;
+            state.count = static_cast<uint32>(state.literals_map.block_types());
+            state.index = 0;
+          } break;
+        case BrCvt_ContextTypesL:
+          if (state.bit_length < 2) {
+            state.bits |= (x<<state.bit_length);
+            state.bit_length += 1;
+          }
+          if (state.bit_length >= 2) {
+            state.literals_map.set_mode(state.index,
+              static_cast<context_map_mode>(state.bits), ae);
+            state.index += 1;
+            state.bits = 0;
+            state.bit_length = 0;
+          }
+          if (state.index >= state.count) {
+            state.state = BrCvt_TreeCountL;
+            state.bit_length = 0;
           } break;
         case 5000019: /* generate code trees */
           {
@@ -1897,6 +1922,24 @@ namespace text_complex {
           }
           if (state.bit_length >= 6) {
             state.state = BrCvt_ContextTypesL;
+            state.bit_length = 0;
+            state.count = 0;
+          } break;
+        case BrCvt_ContextTypesL:
+          if (state.bit_length == 0) {
+            size_t const contexts = state.literal_blocktype.size();
+            for (size_t i = 0; i < contexts; ++i) {
+              prefix_line const& line = state.literal_blocktype[i];
+              state.bits |= ((line.value&3u)<<state.bit_length);
+              state.bit_length += 2;
+            }
+          }
+          if (state.count < state.bit_length) {
+            x = (state.bits>>state.count)&1u;
+            state.count += 1;
+          }
+          if (state.count >= state.bit_length) {
+            state.state = BrCvt_TreeCountL;
             state.bit_length = 0;
             state.count = 0;
           } break;
