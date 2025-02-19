@@ -13,6 +13,7 @@
 #include "ringdist.hpp"
 #include "brmeta.hpp"
 #include "ctxtspan.hpp"
+#include "gaspvec.hpp"
 
 namespace text_complex {
   namespace access {
@@ -92,6 +93,8 @@ namespace text_complex {
       distance_ring try_ring;
       /** @brief Context map for dancing through the literals' Huffman forest. */
       context_map literals_map;
+      /** @brief The literals' Huffman forest. */
+      gasp_vector literals_forest;
       /** @brief Check for large blocks. */
       prefix_histogram lit_histogram;
       /** @brief Check for large blocks. */

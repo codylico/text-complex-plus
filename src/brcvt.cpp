@@ -10,6 +10,7 @@
 #include <limits>
 #include <new>
 #include <algorithm>
+#include <cstring>
 #include <cassert>
 
 namespace text_complex {
@@ -190,6 +191,8 @@ namespace text_complex {
         BrCvt_NPostfix = 28,
         BrCvt_ContextTypesL = 29,
         BrCvt_TreeCountL = 30,
+        BrCvt_ContextRunMax = 31,
+        BrCvt_TreeCountD = 38,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -660,6 +663,42 @@ namespace text_complex {
             state.state = BrCvt_TreeCountL;
             state.bit_length = 0;
           } break;
+        case BrCvt_TreeCountL:
+          if (state.bit_length == 0) {
+            state.count = 1;
+            state.bits = x;
+            state.bit_length = (x ? 4 : 1);
+          } else if (state.count < state.bit_length) {
+            state.bits |= ((x&1u)<<(state.count++));
+            if (state.count == 4 && (state.bits&14u))
+              state.bit_length += (state.bits>>1);
+          }
+          if (state.count >= state.bit_length) {
+            unsigned const alphasize = (state.count == 1) ? 1u
+              : ((state.bits>>4)+(1u<<(state.count-4))+1u);
+            if (alphasize > 256 || alphasize == 0) {
+              ae = api_error::Sanitize;
+              break;
+            }
+            try {
+              state.literals_forest = gasp_vector(alphasize);
+            } catch (std::bad_alloc const& ) {
+              ae = api_error::Memory;
+              break;
+            }
+            if (alphasize == 1) {
+              std::memset(&state.literals_map(0,0), 0,
+                state.literals_map.block_types() * state.literals_map.contexts());
+              state.state = BrCvt_TreeCountD;
+              state.bit_length = 0;
+            } else {
+              state.state = BrCvt_ContextRunMax;
+              state.bit_length = 0;
+            }
+          } break;
+        case BrCvt_ContextRunMax:
+          /* TODO this state */
+          break;
         case 5000019: /* generate code trees */
           {
             fixlist_gen_codes(state.literals, ae);
@@ -1943,6 +1982,36 @@ namespace text_complex {
             state.bit_length = 0;
             state.count = 0;
           } break;
+        case BrCvt_TreeCountL:
+          if (state.bit_length == 0) {
+            size_t const btypes = state.literal_blocktype.size();
+            state.count = 0;
+            switch (btypes) {
+            case 1:
+              state.bits = 0;
+              state.bit_length = 1;
+              break;
+            case 2:
+              state.bits = 1;
+              state.bit_length = 4;
+              break;
+            default:
+              state.bits = 3|(((btypes&1u)^1u)<<4);
+              state.bit_length = 5;
+              break;
+            }
+          }
+          if (state.count < state.bit_length) {
+            x = (state.bits>>state.count)&1u;
+            state.count += 1;
+          }
+          if (state.count >= state.bit_length) {
+            state.state = (state.count == 1) ? BrCvt_TreeCountD : BrCvt_ContextRunMax;
+            state.bit_length = 0;
+          } break;
+        case BrCvt_ContextRunMax:
+          /* TODO this state */
+          break;
         case BrCvt_Uncompress:
           x = 0;
           break;
@@ -2077,6 +2146,10 @@ namespace text_complex {
         case BrCvt_BlockCountDAlpha:
         case BrCvt_BlockStartD:
         case BrCvt_NPostfix:
+        case BrCvt_ContextTypesL:
+        case BrCvt_TreeCountL:
+        case BrCvt_TreeCountD:
+        case BrCvt_ContextRunMax:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -2192,6 +2265,10 @@ namespace text_complex {
         case BrCvt_BlockCountDAlpha:
         case BrCvt_BlockStartD:
         case BrCvt_NPostfix:
+        case BrCvt_ContextTypesL:
+        case BrCvt_TreeCountL:
+        case BrCvt_TreeCountD:
+        case BrCvt_ContextRunMax:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
