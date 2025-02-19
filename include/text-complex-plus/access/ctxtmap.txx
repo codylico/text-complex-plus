@@ -41,6 +41,21 @@ namespace text_complex {
       mode = static_cast<context_map_mode>(static_cast<unsigned>(mode)+1);
       return old;
     }
+
+    inline context_map_mode context_map::get_mode(std::size_t i) const {
+      api_error ae;
+      context_map_mode const out = get_mode(i, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return out;
+    }
+    inline void context_map::set_mode(std::size_t i, context_map_mode v) {
+      api_error ae;
+      set_mode(i, v, ae);
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT
   };
 };

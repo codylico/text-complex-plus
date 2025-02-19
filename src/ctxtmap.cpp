@@ -117,7 +117,7 @@ namespace text_complex {
 
     //BEGIN context_map / rule-of-six
     context_map::context_map(size_t xbtypes, size_t xctxts)
-      : p(nullptr), ctxts(0u), btypes(0u)
+      : p(nullptr), modes(nullptr), ctxts(0u), btypes(0u)
     {
       resize(xbtypes, xctxts);
       return;
@@ -128,13 +128,14 @@ namespace text_complex {
         delete[] p;
         p = nullptr;
       }
+      modes = nullptr;
       btypes = 0u;
       ctxts = 0u;
       return;
     }
 
     context_map::context_map(context_map const& other)
-      : p(nullptr), ctxts(0u), btypes(0u)
+      : p(nullptr), modes(nullptr), ctxts(0u), btypes(0u)
     {
       duplicate(other);
       return;
@@ -146,7 +147,7 @@ namespace text_complex {
     }
 
     context_map::context_map(context_map&& other) noexcept
-      : p(nullptr), ctxts(0u), btypes(0u)
+      : p(nullptr), modes(nullptr), ctxts(0u), btypes(0u)
     {
       transfer(static_cast<context_map&&>(other));
       return;
@@ -162,12 +163,14 @@ namespace text_complex {
         return;
       resize(other.btypes, other.ctxts);
       std::memcpy(p, other.p, btypes*ctxts);
+      std::memcpy(modes, other.modes, btypes);
       return;
     }
 
     void context_map::transfer(context_map&& other) noexcept {
       /* release */
       unsigned char *const np = other.p; other.p = nullptr;
+      unsigned char *const nmodes = util_exchange(other.modes, nullptr);
       size_t const nbtypes = other.btypes; other.btypes = 0u;
       size_t const nctxts = other.ctxts; other.ctxts = 0u;
       /* reset */{
@@ -175,6 +178,7 @@ namespace text_complex {
           delete[] p;
         }
         p = np;
+        modes = nmodes;
         btypes = nbtypes;
         ctxts = nctxts;
       }
@@ -182,18 +186,20 @@ namespace text_complex {
     }
 
     void context_map::resize(size_t b, size_t c) {
-      if (c > 0u && b >= std::numeric_limits<size_t>::max()/c) {
+      if (c > 0u && (b > 256 || b >= std::numeric_limits<size_t>::max()/c-1u)) {
         throw std::bad_alloc();
       } else if (c == 0u || b == 0u) {
         if (p) {
           delete[] p;
           p = nullptr;
         }
+        modes = nullptr;
       } else {
-        unsigned char* const np = new unsigned char[b*c];
+        unsigned char* const np = new unsigned char[b*(c+1u)];
         if (p)
           delete[] p;
         p = np;
+        modes = np+(b*c);
       }
       ctxts = c;
       btypes = b;
@@ -256,6 +262,24 @@ namespace text_complex {
 
     unsigned char const* context_map::data(void) const noexcept {
       return p;
+    }
+
+    context_map_mode context_map::get_mode(std::size_t i, api_error& ae) const noexcept {
+      if (i >= btypes) {
+        ae = api_error::OutOfRange;
+        return context_map_mode::ModeMax;
+      }
+      ae = api_error::Success;
+      return static_cast<context_map_mode>(modes[i]);
+    }
+    void context_map::set_mode(std::size_t i, context_map_mode v, api_error& ae) noexcept {
+      if (i >= btypes) {
+        ae = api_error::OutOfRange;
+        return;
+      }
+      ae = api_error::Success;
+      modes[i] = static_cast<unsigned char>(v);
+      return;
     }
     //END   context_map / public
 

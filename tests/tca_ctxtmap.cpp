@@ -11,6 +11,8 @@
 #include <cstring>
 
 
+namespace tca = text_complex::access;
+
 static MunitPlusResult test_ctxtmap_cycle
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_ctxtmap_item
@@ -22,6 +24,8 @@ static MunitPlusResult test_ctxtmap_litcontext
 static MunitPlusResult test_ctxtmap_imtf
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_ctxtmap_mtf
+    (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ctxtmap_modes
     (const MunitPlusParameter params[], void* data);
 static void* test_ctxtmap_setup
     (const MunitPlusParameter params[], void* user_data);
@@ -49,6 +53,9 @@ static MunitPlusTest tests_ctxtmap[] = {
       test_ctxtmap_setup,test_ctxtmap_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {(char*)"mtf", test_ctxtmap_mtf,
+      test_ctxtmap_setup,test_ctxtmap_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
+      nullptr},
+  {(char*)"modes", test_ctxtmap_modes,
       test_ctxtmap_setup,test_ctxtmap_teardown,MUNIT_PLUS_TEST_OPTION_NONE,
       nullptr},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
@@ -270,6 +277,26 @@ MunitPlusResult test_ctxtmap_mtf
   }
   return MUNIT_PLUS_OK;
 }
+
+MunitPlusResult test_ctxtmap_modes
+  (const MunitPlusParameter params[], void* data)
+{
+  auto* const p = static_cast<tca::context_map*>(data);
+  if (!p)
+    return MUNIT_PLUS_SKIP;
+  (void)params;
+  /* */{
+    size_t blocks = p->block_types();
+    auto mode = static_cast<tca::context_map_mode>(testfont_rand_int_range(0,3));
+    size_t choice = testfont_rand_size_range(0,blocks-1);
+    p->set_mode(choice, mode);
+    munit_plus_assert(p->get_mode(choice) == mode);
+  }
+  return MUNIT_PLUS_OK;
+}
+
+
+
 
 
 int main(int argc, char **argv) {

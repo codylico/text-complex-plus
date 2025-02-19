@@ -35,6 +35,7 @@ namespace text_complex {
     class TCMPLX_AP_API context_map final {
     private:
       unsigned char *p;
+      unsigned char *modes;
       size_t btypes;
       size_t ctxts;
 
@@ -121,6 +122,37 @@ namespace text_complex {
        */
       unsigned char const* data(void) const noexcept;
       /** @} */
+
+      /**
+       * @ingroup methods
+       * @brief Inspect the context mode for a block type in a context map.
+       * @param i row (block type) selector
+       * @param[out] ae error code on failure
+       * @return the context mode at the given coordinates
+       */
+      context_map_mode get_mode(std::size_t i, api_error& ae) const noexcept;
+      /**
+       * @ingroup methods
+       * @brief Inspect the context mode for a block type in a context map.
+       * @param i row (block type) selector
+       * @return the context mode at the given coordinates
+       */
+      context_map_mode get_mode(std::size_t i) const;
+      /**
+       * @ingroup methods
+       * @brief Modify the context mode for a block type in a context map.
+       * @param i row (block type) selector
+       * @param v new context mode
+       * @param[out] ae error code on failure
+       */
+      void set_mode(std::size_t i, context_map_mode v, api_error& ae) noexcept;
+      /**
+       * @ingroup methods
+       * @brief Modify the context mode for a block type in a context map.
+       * @param i row (block type) selector
+       * @param v new context mode
+       */
+      void set_mode(std::size_t i, context_map_mode v);
 
     public: /** @name matrix-compat *//** @{ */
       /**
