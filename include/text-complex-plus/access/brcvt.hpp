@@ -75,6 +75,8 @@ namespace text_complex {
       prefix_list distance_blocktype;
       /** @brief Block count prefix code for distances. */
       prefix_list distance_blockcount;
+      /** @brief Context transcode prefixes. */
+      prefix_list context_tree;
       /** @brief ... */
       prefix_list literals;
       /** @brief ... */
@@ -95,6 +97,8 @@ namespace text_complex {
       context_map literals_map;
       /** @brief The literals' Huffman forest. */
       gasp_vector literals_forest;
+      /** @brief The distances' Huffman forest. */
+      gasp_vector distances_forest;
       /** @brief Check for large blocks. */
       prefix_histogram lit_histogram;
       /** @brief Check for large blocks. */
@@ -161,6 +165,10 @@ namespace text_complex {
       unsigned char blocktypeD_index;
       /** @brief Maximum distance block type. */
       unsigned char blocktypeD_max;
+      /** @brief Field for context map transcoding. */
+      unsigned char rlemax;
+      /** @brief Field for context map encoding. */
+      block_string context_encode;
       /** @brief Context span effective lengths for outflow. */
       uint32 guess_lengths[CtxtSpan_Size];
       /** @brief Remaining items under the current literal blocktype. */

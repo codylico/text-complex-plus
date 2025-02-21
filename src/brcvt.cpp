@@ -163,6 +163,16 @@ namespace text_complex {
      * @return Success to proceed with compression, nonzero to emit uncompressed
      */
     static api_error brcvt_check_compress(brcvt_state& state);
+    /**
+     * @brief Encode a nonzero entry in a context map using run-length encoding.
+     * @param[out] buffer storage of intermediate encoding
+     * @param zeroes number of preceding zeroes
+     * @param map_datum if nonzero, the entry to encode
+     * @param[in,out] rlemax_ptr reference to integer holding maximum RLE keyword used
+     * @return Success on success, nonzero on allocation failure
+     */
+    static api_error brcvt_encode_map(block_string& buffer, std::size_t zeroes,
+      unsigned char map_datum, unsigned& rlemax_ptr) noexcept;
 
     namespace {
       enum brcvt_istate {
@@ -191,8 +201,11 @@ namespace text_complex {
         BrCvt_NPostfix = 28,
         BrCvt_ContextTypesL = 29,
         BrCvt_TreeCountL = 30,
-        BrCvt_ContextRunMax = 31,
+        BrCvt_ContextRunMaxL = 31,
+        BrCvt_ContextPrefixL = 32,
         BrCvt_TreeCountD = 38,
+        BrCvt_ContextRunMaxD = 39,
+        BrCvt_ContextPrefixD = 40,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -213,6 +226,8 @@ namespace text_complex {
         brcvt_Margin = 16,
         brcvt_BlockCountBits = 5,
         brcvt_NoSkip = std::numeric_limits<short>::max(),
+        brcvt_RepeatBit = 128,
+        brcvt_ZeroBit = 64,
       };
     }
 
@@ -692,11 +707,33 @@ namespace text_complex {
               state.state = BrCvt_TreeCountD;
               state.bit_length = 0;
             } else {
-              state.state = BrCvt_ContextRunMax;
+              state.state = BrCvt_ContextRunMaxL;
               state.bit_length = 0;
+              state.rlemax = 0;
             }
           } break;
-        case BrCvt_ContextRunMax:
+        case BrCvt_ContextRunMaxL:
+        case BrCvt_ContextRunMaxD:
+          if (state.bit_length == 0) {
+            state.count = 1;
+            state.bits = x;
+            state.bit_length = (x ? 5 : 1);
+          } else if (state.count < state.bit_length) {
+            state.bits |= ((x&1u)<<(state.count++));
+          }
+          if (state.count >= state.bit_length) {
+            gasp_vector const& forest = (state.state == BrCvt_ContextRunMaxL)
+              ? state.literals_forest : state.distances_forest;
+            size_t const ntrees = forest.size();
+            state.rlemax = (state.bits ? (state.bits>>1)+1u : 0u);
+            state.bit_length = 0;
+            state.state += 1;
+            brcvt_reset19(state.treety);
+            state.treety.count = static_cast<unsigned short>(state.rlemax + ntrees);
+            state.alphabits = static_cast<unsigned char>(state.rlemax + ntrees);
+          } break;
+        case BrCvt_ContextPrefixL:
+        case BrCvt_ContextPrefixD:
           /* TODO this state */
           break;
         case 5000019: /* generate code trees */
@@ -1572,11 +1609,49 @@ namespace text_complex {
         return api_error::Sanitize;
       state.blocktype_simple = static_cast<unsigned char>(blocktype_tree);
       accum += 4;
-      accum += (blocktype_tree >= prefix_preset::BrotliSimple3 ? 3 : 2)
-        * state.literal_blocktype.size();
+      std::size_t const btypes = state.literal_blocktype.size();
+      accum += (blocktype_tree >= prefix_preset::BrotliSimple3 ? 3 : 2) * btypes;
       accum += (blocktype_tree >= prefix_preset::BrotliSimple4A);
+      if (btypes != state.literals_map.block_types()) {
+        try {
+          state.literals_map = context_map(btypes, 64);
+        } catch (std::bad_alloc const&) {
+          return api_error::Memory;
+        }
+      }
+      for (std::size_t btype_j = 0; btype_j < btypes; ++btype_j) {
+        for (unsigned ctxt_i = 0; ctxt_i < 64; ++ctxt_i)
+          state.literals_map(btype_j, ctxt_i) = static_cast<unsigned char>(btype_j);
+      }
+      state.context_encode.clear();
       /* TODO the rest */
       return api_error::Success;
+    }
+
+    api_error brcvt_encode_map(block_string& buffer, std::size_t zeroes,
+      unsigned char map_datum, unsigned& rlemax_ptr) noexcept
+    {
+      unsigned char code[3] = {0};
+      int len = 0;
+      if (zeroes > 0) {
+        code[len] = util_bitwidth(static_cast<unsigned>(zeroes))-1u;
+        len += 1;
+        if (zeroes > 1) {
+          if (code[0] > rlemax_ptr)
+            rlemax_ptr = code[0];
+          code[0] |= brcvt_ZeroBit;
+          code[len] = (unsigned char)(((1u<<code[0])-1u)&zeroes) | brcvt_RepeatBit;
+          len += 1;
+        }
+      }
+      if (map_datum) {
+        code[len] = map_datum;
+        len += 1;
+      }
+      api_error ae = api_error::Success;
+      for (int i = 0; i < len && ae == api_error::Success; ++i)
+        buffer.push_back(code[i], ae);
+      return ae;
     }
 
     api_error brcvt_out_bits
@@ -2006,11 +2081,83 @@ namespace text_complex {
             state.count += 1;
           }
           if (state.count >= state.bit_length) {
-            state.state = (state.count == 1) ? BrCvt_TreeCountD : BrCvt_ContextRunMax;
+            state.state = (state.count == 1) ? BrCvt_TreeCountD : BrCvt_ContextRunMaxL;
             state.bit_length = 0;
           } break;
-        case BrCvt_ContextRunMax:
+        case BrCvt_ContextRunMaxL:
+          if (state.bit_length == 0) {
+            context_map& map = state.literals_map;
+            size_t const total = map.block_types() * map.contexts();
+            size_t zeroes = 0;
+            unsigned int rlemax = 0;
+            ctxtmap_apply_movetofront(map);
+            unsigned char const* const map_data = map.data();
+            state.context_encode.clear();
+            for (size_t j = 0; j < total && ae == api_error::Success; ++j) {
+              if (map_data[j] || zeroes >= 63) {
+                ae = brcvt_encode_map(state.context_encode, zeroes, map_data[j], rlemax);
+                zeroes = (map_data[j]==0);
+              } else zeroes += 1;
+            }
+            if (zeroes > 0 && ae == api_error::Success)
+              ae = brcvt_encode_map(state.context_encode, zeroes, 0, rlemax);
+#ifndef NDEBUG
+            ctxtmap_revert_movetofront(map);
+#endif //NDEBUG
+            if (ae != api_error::Success)
+              break;
+            state.rlemax = static_cast<unsigned char>(rlemax);
+            state.count = 0;
+            if (state.rlemax == 0) {
+              state.bits = 0;
+              state.bit_length = 1;
+            } else {
+              state.bits = 1u | ((rlemax-1)<<1u);
+              state.bit_length = 5;
+            }
+          }
+          if (state.count < state.bit_length) {
+            x = (state.bits>>state.count)&1u;
+            state.count += 1;
+          }
+          if (state.count >= state.bit_length) {
+            std::size_t const btypes = state.literal_blocktype.size();
+            constexpr unsigned HistogramSize = 10;
+            prefix_histogram histogram(HistogramSize);
+            unsigned int const rlemax = state.rlemax;
+            unsigned char const alphabits = static_cast<unsigned char>(rlemax+btypes);
+            /* calculate prefix tree */
+            try {
+              state.context_tree = prefix_list(alphabits);
+            } catch (std::bad_alloc const&) {
+              ae = api_error::Memory;
+              break;
+            }
+            for (std::size_t j = 0; j < state.context_encode.size(); ++j) {
+              unsigned char const ch = state.context_encode[j];
+              if (ch < brcvt_ZeroBit) {
+                if (ch == 0)
+                  histogram[0] += 1;
+                else {
+                  assert(ch+rlemax < HistogramSize);
+                  histogram[ch+rlemax] += 1;
+                }
+              } else if (!(ch & brcvt_RepeatBit)) {
+                histogram[ch&(brcvt_ZeroBit-1)] += 1;
+              } else continue;
+            }
+            fixlist_gen_lengths(state.context_tree, histogram, 8);
+            fixlist_gen_codes(state.context_tree);
+            brcvt_reset19(state.treety);
+            state.alphabits = alphabits;
+            state.state += 1;
+          } break;
+        case BrCvt_ContextPrefixL:
           /* TODO this state */
+          break;
+        case BrCvt_ContextRunMaxD:
+        case BrCvt_ContextPrefixD:
+          ae = api_error::Sanitize;
           break;
         case BrCvt_Uncompress:
           x = 0;
@@ -2046,6 +2193,8 @@ namespace text_complex {
         treety{}, guesses{},
         blocktypeL_index(0), blocktypeL_max(0),
         blocktypeI_index(0), blocktypeI_max(0),
+        blocktypeD_index(0), blocktypeD_max(0),
+        rlemax(0),
         guess_lengths{},
         blocktypeL_remaining(0),blocktypeI_remaining(0),
         blocktypeL_skip(brcvt_NoSkip), blockcountL_skip(brcvt_NoSkip),
@@ -2148,8 +2297,9 @@ namespace text_complex {
         case BrCvt_NPostfix:
         case BrCvt_ContextTypesL:
         case BrCvt_TreeCountL:
+        case BrCvt_ContextRunMaxL:
         case BrCvt_TreeCountD:
-        case BrCvt_ContextRunMax:
+        case BrCvt_ContextRunMaxD:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -2267,8 +2417,9 @@ namespace text_complex {
         case BrCvt_NPostfix:
         case BrCvt_ContextTypesL:
         case BrCvt_TreeCountL:
+        case BrCvt_ContextRunMaxL:
         case BrCvt_TreeCountD:
-        case BrCvt_ContextRunMax:
+        case BrCvt_ContextRunMaxD:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
