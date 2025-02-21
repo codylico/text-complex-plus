@@ -723,7 +723,7 @@ namespace text_complex {
           }
           if (state.count >= state.bit_length) {
             gasp_vector const& forest = (state.state == BrCvt_ContextRunMaxL)
-              ? state.literals_forest : state.distances_forest;
+              ? state.literals_forest : state.distance_forest;
             size_t const ntrees = forest.size();
             state.rlemax = (state.bits ? (state.bits>>1)+1u : 0u);
             state.bit_length = 0;

@@ -98,7 +98,7 @@ namespace text_complex {
       /** @brief The literals' Huffman forest. */
       gasp_vector literals_forest;
       /** @brief The distances' Huffman forest. */
-      gasp_vector distances_forest;
+      gasp_vector distance_forest;
       /** @brief Check for large blocks. */
       prefix_histogram lit_histogram;
       /** @brief Check for large blocks. */
