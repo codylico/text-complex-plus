@@ -2146,8 +2146,12 @@ namespace text_complex {
                 histogram[ch&(brcvt_ZeroBit-1)] += 1;
               } else continue;
             }
-            fixlist_gen_lengths(state.context_tree, histogram, 8);
-            fixlist_gen_codes(state.context_tree);
+            fixlist_gen_lengths(state.context_tree, histogram, 8, ae);
+            if (ae != api_error::Success)
+              break;
+            fixlist_gen_codes(state.context_tree, ae);
+            if (ae != api_error::Success)
+              break;
             brcvt_reset19(state.treety);
             state.alphabits = alphabits;
             state.state += 1;
