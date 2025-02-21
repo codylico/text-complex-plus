@@ -97,6 +97,8 @@ namespace text_complex {
       context_map literals_map;
       /** @brief The literals' Huffman forest. */
       gasp_vector literals_forest;
+      /** @brief Context map for dancing through the distances' Huffman forest. */
+      context_map distance_map;
       /** @brief The distances' Huffman forest. */
       gasp_vector distance_forest;
       /** @brief Check for large blocks. */
@@ -189,6 +191,8 @@ namespace text_complex {
       unsigned short blocktypeD_skip;
       /** @brief Distance count skip code. */
       unsigned short blockcountD_skip;
+      /** @brief Context map prefix tree skip code. */
+      unsigned short context_skip;
       /**
        * @brief Built-in tree type for block type outflow.
        * @todo Test for removal.

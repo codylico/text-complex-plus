@@ -203,9 +203,16 @@ namespace text_complex {
         BrCvt_TreeCountL = 30,
         BrCvt_ContextRunMaxL = 31,
         BrCvt_ContextPrefixL = 32,
+        BrCvt_ContextValuesL = 33,
+        BrCvt_ContextRepeatL = 34,
+        BrCvt_ContextInvertL = 35,
         BrCvt_TreeCountD = 38,
         BrCvt_ContextRunMaxD = 39,
         BrCvt_ContextPrefixD = 40,
+        BrCvt_ContextValuesD = 41,
+        BrCvt_ContextRepeatD = 42,
+        BrCvt_ContextInvertD = 43,
+        BrCvt_GaspVectorL = 44,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -734,6 +741,94 @@ namespace text_complex {
           } break;
         case BrCvt_ContextPrefixL:
         case BrCvt_ContextPrefixD:
+          {
+            api_error const res = brcvt_inflow19(state.treety, state.context_tree, x,
+              state.alphabits);
+            if (res == api_error::EndOfFile) {
+              context_map& map = (state.state == BrCvt_ContextPrefixL)
+                ? state.literals_map : state.distance_map;
+              state.context_skip = brcvt_resolve_skip(state.context_tree);
+              brcvt_reset19(state.treety);
+              state.bit_length = 0;
+              state.bits = 0;
+              state.index = 0;
+              state.count = map.block_types()*map.contexts();
+              if (state.context_skip == brcvt_NoSkip) {
+                state.state += 1;
+              } else if (state.context_skip == 0 || state.context_skip > state.rlemax) {
+                unsigned char const fill = (state.context_skip ?
+                  state.context_skip - state.rlemax : 0);
+                std::memset(map.data(), fill, state.count*sizeof(char));
+                state.state += 3;
+              } else {
+                state.extra_length = state.context_skip;
+                state.state += 2;
+              }
+            } else if (res != api_error::Success)
+              ae = res;
+          } break;
+        case BrCvt_ContextValuesL:
+        case BrCvt_ContextValuesD:
+          if (state.bit_length < 16) {
+            context_map& map = (state.state == BrCvt_ContextValuesL)
+              ? state.literals_map : state.distance_map;
+            state.bits = (state.bits<<1)|x;
+            state.bit_length += 1;
+            std::size_t const line_index = fixlist_codebsearch(state.context_tree, state.bit_length, state.bits);
+            if (line_index >= state.context_tree.size())
+              break;
+            state.bits = 0;
+            state.bit_length = 0;
+            prefix_line const& line = state.context_tree[line_index];
+            if (line.value == 0 || line.value > state.rlemax) {
+              /* single value */
+              map.data()[state.index] = static_cast<unsigned char>(line.value);
+              state.index += 1;
+              if (state.index >= state.count)
+                state.state += 2;
+            } else {
+              state.extra_length = line.value;
+              state.state += 1;
+            }
+          }
+          if (state.bit_length >= 16)
+            ae = api_error::Sanitize;
+          break;
+        case BrCvt_ContextRepeatL:
+        case BrCvt_ContextRepeatD:
+          if (state.bit_length < state.extra_length) {
+            state.bits |= (x<<state.bit_length);
+            state.bit_length += 1;
+          }
+          if (state.bit_length >= state.extra_length) {
+            context_map& map = (state.state == BrCvt_ContextRepeatL)
+              ? state.literals_map : state.distance_map;
+            std::size_t const total = state.bits | (1ul<<state.extra_length);
+            if (total > state.count - state.index) {
+              ae = api_error::Sanitize;
+              break;
+            }
+            std::memset(map.data()+state.index, 0, total*sizeof(char));
+            state.index += total;
+            state.bits = 0;
+            state.bit_length = 0;
+            if (state.index >= state.count)
+              state.state += 1; /* IMTF bit */
+            else if (state.context_skip == brcvt_NoSkip)
+              state.state -= 1; /* next */
+            else/* stay put and */break;
+          } break;
+        case BrCvt_ContextInvertL:
+        case BrCvt_ContextInvertD:
+          if (x) {
+            int const literals = (state.state == BrCvt_ContextInvertL);
+            context_map& map = literals ? state.literals_map : state.distance_map;
+            ctxtmap_revert_movetofront(map);
+            state.state = (literals ? BrCvt_TreeCountD : BrCvt_GaspVectorL);
+            state.bit_length = 0;
+            state.bits = 0;
+          } break;
+        case BrCvt_GaspVectorL:
           /* TODO this state */
           break;
         case 5000019: /* generate code trees */
@@ -2157,10 +2252,74 @@ namespace text_complex {
             state.state += 1;
           } break;
         case BrCvt_ContextPrefixL:
+          {
+            api_error const res = brcvt_outflow19(state.treety, state.context_tree, x, state.alphabits);
+            if (res == api_error::EndOfFile) {
+              state.bit_length = 0;
+              state.index = 0;
+              state.count = static_cast<uint32>(state.context_encode.size());
+              brcvt_reset19(state.treety);
+              state.state += 1;
+              fixlist_valuesort(state.context_tree, ae);
+            } else if (res != api_error::Success)
+              ae = res;
+          } break;
+        case BrCvt_ContextValuesL:
+          if (state.bit_length == 0) {
+            unsigned char const code = state.context_encode[state.index];
+            unsigned int const extra = (code&brcvt_ZeroBit)
+              ? code & (brcvt_ZeroBit-1u) : 0;
+            unsigned int const value = extra ? extra : (code?code+state.rlemax:0);
+            std::size_t const line_index = fixlist_valuebsearch(state.context_tree, value);
+            if (line_index >= state.context_tree.size()) {
+              ae = api_error::Sanitize;
+              break;
+            }
+            prefix_line const& line = state.context_tree[line_index];
+            state.bits = line.code;
+            state.bit_length = static_cast<unsigned char>(line.len);
+            state.extra_length = extra;
+          }
+          if (state.bit_length > 0)
+            x = (state.bits>>(--state.bit_length))&1u;
+          if (state.bit_length == 0) {
+            state.index += 1;
+            state.bits = 0;
+            if (state.index >= state.count)
+              state.state += 2;
+            else if (state.extra_length > 0)
+              state.state += 1;
+          } break;
+        case BrCvt_ContextRepeatL:
+          if (state.bit_length == 0) {
+            assert(state.index < state.context_encode.size());
+            state.bits = state.context_encode[state.index];
+          }
+          if (state.bit_length < state.extra_length) {
+            x = (state.bits>>state.bit_length)&1u;
+            state.bit_length += 1;
+          }
+          if (state.bit_length >= state.extra_length) {
+            state.index += 1;
+            state.bits = 0;
+            state.bit_length = 0;
+            if (state.index >= state.count)
+              state.state += 1;
+            else
+              state.state -= 1;
+          } break;
+        case BrCvt_ContextInvertL:
+          x = 1;
+          state.state = BrCvt_TreeCountD;
+          break;
+        case BrCvt_GaspVectorL:
           /* TODO this state */
           break;
         case BrCvt_ContextRunMaxD:
         case BrCvt_ContextPrefixD:
+        case BrCvt_ContextValuesD:
+        case BrCvt_ContextRepeatD:
+        case BrCvt_ContextInvertD:
           ae = api_error::Sanitize;
           break;
         case BrCvt_Uncompress:
@@ -2203,7 +2362,8 @@ namespace text_complex {
         blocktypeL_remaining(0),blocktypeI_remaining(0),
         blocktypeL_skip(brcvt_NoSkip), blockcountL_skip(brcvt_NoSkip),
         blocktypeI_skip(brcvt_NoSkip), blockcountI_skip(brcvt_NoSkip),
-        blocktypeD_skip(brcvt_NoSkip), blockcountD_skip(brcvt_NoSkip)
+        blocktypeD_skip(brcvt_NoSkip), blockcountD_skip(brcvt_NoSkip),
+        context_skip(brcvt_NoSkip)
     {
       if (n > 16777200u)
         n = 16777200u;
@@ -2302,8 +2462,17 @@ namespace text_complex {
         case BrCvt_ContextTypesL:
         case BrCvt_TreeCountL:
         case BrCvt_ContextRunMaxL:
+        case BrCvt_ContextPrefixL:
+        case BrCvt_ContextValuesL:
+        case BrCvt_ContextRepeatL:
+        case BrCvt_ContextInvertL:
         case BrCvt_TreeCountD:
         case BrCvt_ContextRunMaxD:
+        case BrCvt_ContextPrefixD:
+        case BrCvt_ContextValuesD:
+        case BrCvt_ContextRepeatD:
+        case BrCvt_ContextInvertD:
+        case BrCvt_GaspVectorL:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -2422,8 +2591,17 @@ namespace text_complex {
         case BrCvt_ContextTypesL:
         case BrCvt_TreeCountL:
         case BrCvt_ContextRunMaxL:
+        case BrCvt_ContextPrefixL:
+        case BrCvt_ContextValuesL:
+        case BrCvt_ContextRepeatL:
+        case BrCvt_ContextInvertL:
         case BrCvt_TreeCountD:
         case BrCvt_ContextRunMaxD:
+        case BrCvt_ContextPrefixD:
+        case BrCvt_ContextValuesD:
+        case BrCvt_ContextRepeatD:
+        case BrCvt_ContextInvertD:
+        case BrCvt_GaspVectorL:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
