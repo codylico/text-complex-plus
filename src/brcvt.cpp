@@ -1307,7 +1307,7 @@ namespace text_complex {
           treety.bits = (treety.bits<<1)|x;
           treety.bit_length += 1;
           code_index = fixlist_codebsearch(treety.nineteen, treety.bit_length, treety.bits);
-          if (code_index < treety.count) {
+          if (code_index < treety.nineteen.size()) {
             api_error const res = brcvt_post19(treety, prefixes,
               treety.nineteen[code_index].value);
             if (res != api_error::Success)
@@ -1385,6 +1385,8 @@ namespace text_complex {
           treety.index += 1;
           treety.last_repeat = 0;
           treety.last_len = value;
+          treety.bits = 0;
+          treety.bit_length = 0;
           if (value) {
             unsigned short const push = (32768>>value);
             if (push > 32768-treety.len_check)
@@ -1410,7 +1412,12 @@ namespace text_complex {
         api_error ae = api_error::Success;
         treety.state = BrCvt_TDone;
         fixlist_valuesort(prefixes, ae);
+        if (ae != api_error::Success)
+          return api_error::Sanitize;
         fixlist_gen_codes(prefixes, ae);
+        if (ae != api_error::Success)
+          return api_error::Sanitize;
+        fixlist_codesort(prefixes, ae);
         return ae == api_error::Success ? api_error::EndOfFile : api_error::Sanitize;
       }
       return api_error::Success;
