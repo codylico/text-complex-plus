@@ -592,6 +592,12 @@ namespace text_complex {
               state.state += 1;
               state.blocktypeD_max = static_cast<unsigned char>(alphasize-1u);
             }
+            try {
+              state.distance_map = context_map(state.treety.count, 4);
+            } catch (std::bad_alloc const& ) {
+              ae = api_error::Memory;
+              break;
+            }
           } break;
         case BrCvt_BlockTypesDAlpha:
           {
@@ -686,6 +692,7 @@ namespace text_complex {
             state.bit_length = 0;
           } break;
         case BrCvt_TreeCountL:
+        case BrCvt_TreeCountD:
           if (state.bit_length == 0) {
             state.count = 1;
             state.bits = x;
@@ -696,6 +703,9 @@ namespace text_complex {
               state.bit_length += (state.bits>>1);
           }
           if (state.count >= state.bit_length) {
+            bool const literal = (state.state == BrCvt_TreeCountL);
+            gasp_vector& forest_ref =
+              (literal ? state.literals_forest : state.distance_forest);
             unsigned const alphasize = (state.count == 1) ? 1u
               : ((state.bits>>4)+(1u<<(state.count-4))+1u);
             if (alphasize > 256 || alphasize == 0) {
@@ -703,18 +713,18 @@ namespace text_complex {
               break;
             }
             try {
-              state.literals_forest = gasp_vector(alphasize);
+              forest_ref = gasp_vector(alphasize);
             } catch (std::bad_alloc const& ) {
               ae = api_error::Memory;
               break;
             }
             if (alphasize == 1) {
-              std::memset(&state.literals_map(0,0), 0,
-                state.literals_map.block_types() * state.literals_map.contexts());
-              state.state = BrCvt_TreeCountD;
+              context_map& map = (literal ? state.literals_map : state.distance_map);
+              std::memset(&map(0,0), 0, map.block_types() * map.contexts());
+              state.state = (literal ? BrCvt_TreeCountD : BrCvt_GaspVectorL);
               state.bit_length = 0;
             } else {
-              state.state = BrCvt_ContextRunMaxL;
+              state.state += 1;
               state.bit_length = 0;
               state.rlemax = 0;
             }
@@ -822,7 +832,7 @@ namespace text_complex {
         case BrCvt_ContextInvertD:
           if (x) {
             int const literals = (state.state == BrCvt_ContextInvertL);
-            context_map& map = literals ? state.literals_map : state.distance_map;
+            context_map& map = (literals ? state.literals_map : state.distance_map);
             ctxtmap_revert_movetofront(map);
             state.state = (literals ? BrCvt_TreeCountD : BrCvt_GaspVectorL);
             state.bit_length = 0;
@@ -2311,6 +2321,10 @@ namespace text_complex {
         case BrCvt_ContextInvertL:
           x = 1;
           state.state = BrCvt_TreeCountD;
+          break;
+        case BrCvt_TreeCountD: // hard-code single distance tree
+          x = 0;
+          state.state = BrCvt_GaspVectorL;
           break;
         case BrCvt_GaspVectorL:
           /* TODO this state */
