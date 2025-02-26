@@ -805,7 +805,8 @@ namespace text_complex {
             prefix_line const& line = state.context_tree[line_index];
             if (line.value == 0 || line.value > state.rlemax) {
               /* single value */
-              map.data()[state.index] = static_cast<unsigned char>(line.value);
+              auto const value = static_cast<unsigned char>(line.value ? line.value-state.rlemax : 0);
+              map.data()[state.index] = value;
               state.index += 1;
               if (state.index >= state.count)
                 state.state += 2;
