@@ -108,7 +108,7 @@ namespace text_complex {
       /** @brief Check for large blocks. */
       prefix_histogram seq_histogram;
       /** @brief ... */
-      unsigned short int bits;
+      uint32 bits;
       /** @brief Read count for bits used after a Huffman code. */
       unsigned short int extra_length;
       /**
