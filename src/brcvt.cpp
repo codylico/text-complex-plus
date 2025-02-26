@@ -830,10 +830,12 @@ namespace text_complex {
           } break;
         case BrCvt_ContextInvertL:
         case BrCvt_ContextInvertD:
-          if (x) {
-            int const literals = (state.state == BrCvt_ContextInvertL);
-            context_map& map = (literals ? state.literals_map : state.distance_map);
-            ctxtmap_revert_movetofront(map);
+          {
+            bool const literals = (state.state == BrCvt_ContextInvertL);
+            if (x) {
+              context_map& map = (literals ? state.literals_map : state.distance_map);
+              ctxtmap_revert_movetofront(map);
+            }
             state.state = (literals ? BrCvt_TreeCountD : BrCvt_GaspVectorL);
             state.bit_length = 0;
             state.bits = 0;
