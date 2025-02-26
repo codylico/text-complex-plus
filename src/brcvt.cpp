@@ -173,6 +173,12 @@ namespace text_complex {
      */
     static api_error brcvt_encode_map(block_string& buffer, std::size_t zeroes,
       unsigned char map_datum, unsigned& rlemax_ptr) noexcept;
+    /**
+     * @brief Prepare for the inflow of a compressed stream.
+     * @param state state to prepare
+     * @param[out] ae error code to update on failure
+     */
+    static void brcvt_reset_compress(brcvt_state& state, api_error& ae) noexcept;
 
     namespace {
       enum brcvt_istate {
@@ -257,6 +263,20 @@ namespace text_complex {
         return ps.bit_length == 0;
       else return (ps.state >= BrCvt_MetaStart)
         && (ps.state <= BrCvt_MetaText);
+    }
+
+    void brcvt_reset_compress(brcvt_state& state, api_error& ae) noexcept {
+      inscopy_codesort(state.blockcounts, ae);
+      state.state = BrCvt_BlockTypesL;
+      state.bit_length = 0;
+      state.bits = 0;
+      state.count = 0;
+      state.blocktypeL_skip = brcvt_NoSkip;
+      state.blockcountL_skip = brcvt_NoSkip;
+      state.blocktypeI_skip = brcvt_NoSkip;
+      state.blockcountI_skip = brcvt_NoSkip;
+      state.blocktypeD_skip = brcvt_NoSkip;
+      state.blockcountD_skip = brcvt_NoSkip;
     }
 
     api_error brcvt_in_bits
@@ -374,23 +394,16 @@ namespace text_complex {
             if (state.bit_length > 16 && (state.backward>>(state.bit_length-4))==0)
               ae = api_error::Sanitize;
             state.backward += 1;
-            state.state = BrCvt_CompressCheck;
+            if (state.h_end)
+              brcvt_reset_compress(state, ae);
+            else
+              state.state = BrCvt_CompressCheck;
           } break;
         case BrCvt_CompressCheck:
           if (x) {
             state.state = BrCvt_Uncompress;
           } else {
-            inscopy_codesort(state.blockcounts, ae);
-            state.state = BrCvt_BlockTypesL;
-            state.bit_length = 0;
-            state.bits = 0;
-            state.count = 0;
-            state.blocktypeL_skip = brcvt_NoSkip;
-            state.blockcountL_skip = brcvt_NoSkip;
-            state.blocktypeI_skip = brcvt_NoSkip;
-            state.blockcountI_skip = brcvt_NoSkip;
-            state.blocktypeD_skip = brcvt_NoSkip;
-            state.blockcountD_skip = brcvt_NoSkip;
+            brcvt_reset_compress(state, ae);
           } break;
         case BrCvt_Uncompress:
           if (x)
