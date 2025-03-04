@@ -101,6 +101,8 @@ namespace text_complex {
       context_map distance_map;
       /** @brief The distances' Huffman forest. */
       gasp_vector distance_forest;
+      /** @brief The Huffman forest for insert-and-copy. */
+      gasp_vector insert_forest;
       /** @brief Check for large blocks. */
       prefix_histogram lit_histogram;
       /** @brief Check for large blocks. */
@@ -191,6 +193,12 @@ namespace text_complex {
       unsigned short blocktypeD_skip;
       /** @brief Distance count skip code. */
       unsigned short blockcountD_skip;
+      /** @brief Skip code for literals. */
+      unsigned short literal_skip;
+      /** @brief Skip code for insert-and-copy. */
+      unsigned short insert_skip;
+      /** @brief Skip code for distances. */
+      unsigned short distance_skip;
       /** @brief Context map prefix tree skip code. */
       unsigned short context_skip;
       /**

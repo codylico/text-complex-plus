@@ -179,6 +179,18 @@ namespace text_complex {
      * @param[out] ae error code to update on failure
      */
     static void brcvt_reset_compress(brcvt_state& state, api_error& ae) noexcept;
+    /**
+     * @brief Get the active forest.
+     * @param ps state to inspect
+     * @return a pointer to a forest if available
+     */
+    static gasp_vector& brcvt_active_forest(brcvt_state& ps) noexcept;
+    /**
+     * @brief Get the active skip code.
+     * @param ps state to inspect
+     * @return a pointer to a skip code if available
+     */
+    static unsigned short& brcvt_active_skip(brcvt_state& ps) noexcept;
 
     namespace {
       enum brcvt_istate {
@@ -219,6 +231,9 @@ namespace text_complex {
         BrCvt_ContextRepeatD = 42,
         BrCvt_ContextInvertD = 43,
         BrCvt_GaspVectorL = 44,
+        BrCvt_GaspVectorI = 45,
+        BrCvt_GaspVectorD = 46,
+        BrCvt_DataInsertCopy = 47,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -265,6 +280,23 @@ namespace text_complex {
         && (ps.state <= BrCvt_MetaText);
     }
 
+    gasp_vector& brcvt_active_forest(brcvt_state& state) noexcept {
+      switch (state.state) {
+      case BrCvt_GaspVectorI: return state.insert_forest;
+      case BrCvt_GaspVectorD: return state.distance_forest;
+      case BrCvt_GaspVectorL:
+      default: return state.literals_forest;
+      }
+    }
+    unsigned short& brcvt_active_skip(brcvt_state& state) noexcept {
+      switch (state.state) {
+      case BrCvt_GaspVectorI: return state.insert_skip;
+      case BrCvt_GaspVectorD: return state.distance_skip;
+      case BrCvt_GaspVectorL:
+      default: return state.literal_skip;
+      }
+    }
+
     void brcvt_reset_compress(brcvt_state& state, api_error& ae) noexcept {
       inscopy_codesort(state.blockcounts, ae);
       state.state = BrCvt_BlockTypesL;
@@ -277,6 +309,9 @@ namespace text_complex {
       state.blockcountI_skip = brcvt_NoSkip;
       state.blocktypeD_skip = brcvt_NoSkip;
       state.blockcountD_skip = brcvt_NoSkip;
+      state.literal_skip = brcvt_NoSkip;
+      state.insert_skip = brcvt_NoSkip;
+      state.distance_skip = brcvt_NoSkip;
     }
 
     api_error brcvt_in_bits
@@ -524,6 +559,11 @@ namespace text_complex {
               state.state += 1;
               state.blocktypeI_max = static_cast<unsigned char>(alphasize-1u);
             }
+            try {
+              state.insert_forest = gasp_vector(state.treety.count);
+            } catch (std::bad_alloc const&) {
+              ae = api_error::Memory;
+            }
           } break;
         case BrCvt_BlockTypesIAlpha:
           {
@@ -736,6 +776,7 @@ namespace text_complex {
               std::memset(&map(0,0), 0, map.block_types() * map.contexts());
               state.state = (literal ? BrCvt_TreeCountD : BrCvt_GaspVectorL);
               state.bit_length = 0;
+              state.index = 0;
             } else {
               state.state += 1;
               state.bit_length = 0;
@@ -853,8 +894,40 @@ namespace text_complex {
             state.state = (literals ? BrCvt_TreeCountD : BrCvt_GaspVectorL);
             state.bit_length = 0;
             state.bits = 0;
+            state.index = 0;
           } break;
         case BrCvt_GaspVectorL:
+        case BrCvt_GaspVectorI:
+        case BrCvt_GaspVectorD:
+          if (state.bit_length == 0) {
+            state.bit_length = 1;
+            brcvt_reset19(state.treety);
+            if (state.state == BrCvt_GaspVectorD) {
+              state.alphabits = (16 + state.ring.get_direct()
+                + (48 << state.ring.get_postfix()));
+            } else state.alphabits = ((state.state == BrCvt_GaspVectorL) ? 256 : 704);
+          }
+          if (state.bit_length > 0) {
+            brcvt_state::treety_box& treety = state.treety;
+            gasp_vector& forest = brcvt_active_forest(state);
+            prefix_list& tree = forest[state.index];
+            api_error const res = brcvt_inflow19(treety, tree, x, state.alphabits);
+            if (res == api_error::EndOfFile) {
+              if (state.index == 0)
+                brcvt_active_skip(state) = brcvt_resolve_skip(tree);
+              state.bit_length = 0;
+              state.index += 1;
+              if (state.index >= forest.size()) {
+                state.state += 1;
+                state.index = 0;
+                if (state.state != BrCvt_DataInsertCopy || state.insert_skip == brcvt_NoSkip)
+                  break;
+                /* TODO handle an insert skip */
+              }
+            } else if (res != api_error::Success)
+              ae = res;
+          } break;
+        case BrCvt_DataInsertCopy:
           /* TODO this state */
           break;
         case 5000019: /* generate code trees */
@@ -2400,6 +2473,7 @@ namespace text_complex {
         blocktypeL_skip(brcvt_NoSkip), blockcountL_skip(brcvt_NoSkip),
         blocktypeI_skip(brcvt_NoSkip), blockcountI_skip(brcvt_NoSkip),
         blocktypeD_skip(brcvt_NoSkip), blockcountD_skip(brcvt_NoSkip),
+        literal_skip(brcvt_NoSkip), insert_skip(brcvt_NoSkip), distance_skip(brcvt_NoSkip),
         context_skip(brcvt_NoSkip)
     {
       if (n > 16777200u)
@@ -2510,6 +2584,9 @@ namespace text_complex {
         case BrCvt_ContextRepeatD:
         case BrCvt_ContextInvertD:
         case BrCvt_GaspVectorL:
+        case BrCvt_GaspVectorI:
+        case BrCvt_GaspVectorD:
+        case BrCvt_DataInsertCopy:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -2639,6 +2716,9 @@ namespace text_complex {
         case BrCvt_ContextRepeatD:
         case BrCvt_ContextInvertD:
         case BrCvt_GaspVectorL:
+        case BrCvt_GaspVectorI:
+        case BrCvt_GaspVectorD:
+        case BrCvt_DataInsertCopy:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
