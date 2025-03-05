@@ -204,6 +204,7 @@ namespace text_complex {
         BrCvt_Done = 7,
         BrCvt_CompressCheck = 8,
         BrCvt_Uncompress = 9,
+        BrCvt_BadToken = 10,
         BrCvt_BlockTypesL = 16,
         BrCvt_BlockTypesLAlpha = 17,
         BrCvt_BlockCountLAlpha = 18,
@@ -234,6 +235,7 @@ namespace text_complex {
         BrCvt_GaspVectorI = 45,
         BrCvt_GaspVectorD = 46,
         BrCvt_DataInsertCopy = 47,
+        BrCvt_Literal = 56,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -256,6 +258,12 @@ namespace text_complex {
         brcvt_NoSkip = std::numeric_limits<short>::max(),
         brcvt_RepeatBit = 128,
         brcvt_ZeroBit = 64,
+      };
+
+      struct brcvt_token {
+        uint32 first;
+        unsigned short second;
+        unsigned char state;
       };
     }
 
@@ -295,6 +303,82 @@ namespace text_complex {
       case BrCvt_GaspVectorL:
       default: return state.literal_skip;
       }
+    }
+
+
+    brcvt_token brcvt_next_token
+      (brcvt_state::forward_box& fwd, context_span const& guesses,
+        unsigned char const* data, std::size_t size)
+    {
+      brcvt_token out = {};
+      if (fwd.ostate == 0) {
+        fwd.stop = static_cast<uint32>(guesses.count > 1
+          ? guesses.offsets[1] : guesses.total_bytes);
+        fwd.ostate = BrCvt_DataInsertCopy;
+      }
+      if (fwd.i >= size)
+        return brcvt_token{};
+      switch (fwd.ostate) {
+      case BrCvt_DataInsertCopy:
+        {
+          /* acquire all inserts */
+          uint32 total = 0;
+          std::size_t next_i;
+          uint32 literals = 0;
+          uint32 first_literals = 0;
+          out.state = BrCvt_DataInsertCopy;
+          /* compose insert length */
+          for (next_i = fwd.i; next_i < size; ++next_i) {
+            unsigned short next_span = 0;
+            unsigned char const ch = data[next_i];
+            if (literals) {
+              literals -= 1;
+              continue;
+            } else if (ch & 128u)
+              break;
+            next_span = (ch & 63u);
+            if (ch & 64u) {
+              assert(next_i < size-1u);
+              next_i += 1;
+              next_span = (next_span << 8) + data[next_i] + 64u;
+            }
+            if (next_span == 0 && first_literals == 0) {
+              fwd.i = next_i+1;
+              if (fwd.i >= size) {
+                fwd.ostate = BrCvt_Done;
+                return brcvt_token{};
+              }
+              continue;
+            }
+            if (!first_literals)
+              first_literals = next_span;
+            literals = next_span;
+            assert(literals <= 16777216-total);
+            total += literals;
+          }
+          out.first = total;
+          if (next_i >= size)
+            break;
+          /* parse copy length */{
+            unsigned char const ch = data[next_i];
+            unsigned short next_span = 0;
+            assert(ch & 128u);
+            next_span = (ch & 63u);
+            if (ch & 64u) {
+              assert(next_i < size-1u);
+              next_i += 1;
+              next_span = (next_span << 8) + data[next_i] + 64u;
+            }
+            out.second = next_span;
+          }
+          fwd.i += (1 + ((data[fwd.i]&64u)!=0));
+          fwd.ostate = BrCvt_Literal;
+        } break;
+      default:
+        out.state = BrCvt_BadToken;
+        break;
+      }
+      return out;
     }
 
     void brcvt_reset_compress(brcvt_state& state, api_error& ae) noexcept {
@@ -1825,6 +1909,44 @@ namespace text_complex {
           state.literals_map(btype_j, ctxt_i) = static_cast<unsigned char>(btype_j);
       }
       state.context_encode.clear();
+      try {
+        /* prepare the fixed-size forests */
+        if (state.insert_forest.size() != 1)
+          state.insert_forest = gasp_vector(1);
+        if (state.distance_forest.size() != 1)
+          state.distance_forest = gasp_vector(1);
+        /* prepare the variable-size forest */
+        if (state.literals_forest.size() != btypes)
+          state.literals_forest = gasp_vector(btypes);
+      } catch (std::bad_alloc const& ) {
+        return api_error::Memory;
+      }
+      /* fill the histograms */{
+        std::size_t const size = state.buffer.str().size();
+        unsigned char const* const data = state.buffer.str().data();
+        std::size_t stop = (state.guesses.count > 1
+            ? state.guesses.offsets[1] : state.guesses.total_bytes);
+        std::array<uint32, CtxtSpan_Size+1> literal_lengths;
+        uint32 literal_counter = 0;
+        brcvt_state::forward_box try_fwd = {0};
+        std::fill(state.ins_histogram.begin(), state.ins_histogram.end(), 0);
+        std::fill(state.dist_histogram.begin(), state.dist_histogram.end(), 0);
+        for (prefix_histogram& gram : state.lit_histogram)
+          std::fill(gram.begin(), gram.end(), 0);
+        for (std::size_t i = 0; i < size; ++i) {
+          brcvt_token next = brcvt_next_token(try_fwd, state.guesses, data, size);
+          if (try_fwd.i <= i)
+            return api_error::Sanitize;
+          i = try_fwd.i-1;
+          switch (next.state) {
+          case BrCvt_DataInsertCopy:
+            /* TODO use the inscopy instance to update the histogram */
+            break;
+          default:
+            return api_error::Sanitize;
+          }
+        }
+      }
       /* TODO the rest */
       return api_error::Success;
     }
@@ -2458,7 +2580,7 @@ namespace text_complex {
         literals(288u), distances(32u), sequence(19u),
         wbits(15u), values(286u),
         ring(false,4,0), try_ring(false,4,0),
-        lit_histogram(288u), dist_histogram(32u), seq_histogram(19u),
+        lit_histogram{{256u}, {256u}, {256u}, {256u}}, dist_histogram(68u), ins_histogram(704u),
         bits(0u), bit_length(0u), state(0u), bit_index(0u),
         backward(0u), count(0u),
         wbits_select(0u), emptymeta(false), write_scratch(0), checksum(0u),

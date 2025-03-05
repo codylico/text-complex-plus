@@ -57,6 +57,17 @@ namespace text_complex {
         /** @brief Tree description sequence. */
         block_string sequence_list;
       };
+
+      struct forward_box {
+        std::size_t i;
+        uint32 literal_i;
+        uint32 literal_total;
+        uint32 pos;
+        uint32 stop;
+        unsigned short literal_span;
+        unsigned char ostate;
+        unsigned char ctxt_i;
+      };
       /**
        * @brief ...
        * @note Using a buffer with a slide ring extent greater than 32768
@@ -103,12 +114,12 @@ namespace text_complex {
       gasp_vector distance_forest;
       /** @brief The Huffman forest for insert-and-copy. */
       gasp_vector insert_forest;
-      /** @brief Check for large blocks. */
-      prefix_histogram lit_histogram;
-      /** @brief Check for large blocks. */
+      /** @brief Histogram used for generating literal trees. */
+      prefix_histogram lit_histogram[4];
+      /** @brief Histogram used for generating distance trees. */
       prefix_histogram dist_histogram;
-      /** @brief Check for large blocks. */
-      prefix_histogram seq_histogram;
+      /** @brief Histogram used for generating insert-and-copy trees. */
+      prefix_histogram ins_histogram;
       /** @brief ... */
       uint32 bits;
       /** @brief Read count for bits used after a Huffman code. */
