@@ -57,14 +57,18 @@ namespace text_complex {
         /** @brief Tree description sequence. */
         block_string sequence_list;
       };
-
+      /**
+       * @brief Demand-driven output bit negotiator.
+       * @note This structure allows meta-blocks to emit zero bytes.
+       */
       struct forward_box {
         std::size_t i;
         uint32 literal_i;
         uint32 literal_total;
         uint32 pos;
         uint32 stop;
-        unsigned short literal_span;
+        uint32 accum;
+        unsigned short command_span;
         unsigned char ostate;
         unsigned char ctxt_i;
       };

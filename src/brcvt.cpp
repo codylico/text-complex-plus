@@ -6,6 +6,8 @@
 #include "text-complex-plus/access/brcvt.hpp"
 #include "text-complex-plus/access/zutil.hpp"
 #include "text-complex-plus/access/util.hpp"
+#include "text-complex-plus/access/bdict.hpp"
+#include "text-complex-plus/access/ringdist.hpp"
 #include <array>
 #include <limits>
 #include <new>
@@ -236,6 +238,9 @@ namespace text_complex {
         BrCvt_GaspVectorD = 46,
         BrCvt_DataInsertCopy = 47,
         BrCvt_Literal = 56,
+        BrCvt_Distance = 57,
+        BrCvt_LiteralRestart = 58,
+        BrCvt_BDict = 59,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -306,9 +311,9 @@ namespace text_complex {
     }
 
 
-    brcvt_token brcvt_next_token
+    static brcvt_token brcvt_next_token
       (brcvt_state::forward_box& fwd, context_span const& guesses,
-        unsigned char const* data, std::size_t size)
+        unsigned char const* data, std::size_t size, unsigned char wbits_select)
     {
       brcvt_token out = {};
       if (fwd.ostate == 0) {
@@ -318,12 +323,23 @@ namespace text_complex {
       }
       if (fwd.i >= size)
         return brcvt_token{};
+      else if (fwd.pos >= fwd.stop && fwd.i < size) {
+        fwd.ctxt_i += 1;
+        for (; fwd.ctxt_i < guesses.count; ++fwd.ctxt_i) {
+          fwd.stop = static_cast<uint32>(fwd.ctxt_i+1 < guesses.count
+            ? guesses.offsets[fwd.ctxt_i+1] : guesses.total_bytes);
+          if (fwd.pos < fwd.stop) {
+            out.state = BrCvt_LiteralRestart;
+            return out;
+          }
+        }
+      }
       switch (fwd.ostate) {
       case BrCvt_DataInsertCopy:
         {
           /* acquire all inserts */
           uint32 total = 0;
-          std::size_t next_i;
+          size_t next_i;
           uint32 literals = 0;
           uint32 first_literals = 0;
           out.state = BrCvt_DataInsertCopy;
@@ -345,8 +361,9 @@ namespace text_complex {
             if (next_span == 0 && first_literals == 0) {
               fwd.i = next_i+1;
               if (fwd.i >= size) {
+                out.state = 0;
                 fwd.ostate = BrCvt_Done;
-                return brcvt_token{};
+                return out;
               }
               continue;
             }
@@ -357,6 +374,9 @@ namespace text_complex {
             total += literals;
           }
           out.first = total;
+          fwd.accum += total;
+          if (fwd.accum >= 16777200u)
+            fwd.accum = 16777200u;
           if (next_i >= size)
             break;
           /* parse copy length */{
@@ -372,7 +392,91 @@ namespace text_complex {
             out.second = next_span;
           }
           fwd.i += (1 + ((data[fwd.i]&64u)!=0));
-          fwd.ostate = BrCvt_Literal;
+          if (out.first == 0)
+            fwd.ostate = BrCvt_Distance;
+          else
+            fwd.ostate = BrCvt_Literal;
+          fwd.literal_i = 0;
+          fwd.command_span = (unsigned short)first_literals;
+          fwd.literal_total = total;
+        } break;
+      case BrCvt_Literal:
+        out.state = BrCvt_Literal;
+        out.first = data[fwd.i];
+        fwd.i += 1;
+        fwd.literal_i += 1;
+        if (fwd.i >= size)
+          fwd.ostate = BrCvt_Done;
+        else if (fwd.literal_i >= fwd.literal_total) {
+          /* check for copy count */
+          unsigned char const ch = data[fwd.i];
+          unsigned short next_span = (ch & 63u);
+          if (ch & 64u) {
+            assert(fwd.i < size-1u);
+            fwd.i += 1;
+            next_span = (next_span << 8) + data[fwd.i] + 64u;
+          }
+          fwd.i += 1;
+          fwd.ostate = BrCvt_Distance;
+          fwd.pos += next_span;
+          fwd.command_span = next_span;
+        } else if (fwd.literal_i >= fwd.command_span) {
+          assert(fwd.command_span <= fwd.literal_total);
+          fwd.literal_total -= fwd.command_span;
+          fwd.literal_i = 0;
+          for (std::size_t next_i = fwd.i; next_i < size; ++next_i) {
+            unsigned short next_span = 0;
+            unsigned char const ch = data[next_i];
+            if (ch & 128u) {
+              return brcvt_token{BrCvt_BadToken};
+            } else if ((ch & 63u) == 0u)
+              continue;
+            next_span = (ch & 63u);
+            if (ch & 64u) {
+              assert(next_i < size-1u);
+              next_i += 1;
+              next_span = (next_span << 8) + data[next_i] + 64u;
+            }
+            fwd.i = next_i+1;
+            fwd.command_span = next_span;
+            break;
+          }
+        } break;
+      case BrCvt_Distance:
+        {
+          unsigned char const root = data[fwd.i];
+          if (root < 128) {
+            /* bdict command */
+            uint32 const past_window = static_cast<uint32>((1ul<<wbits_select)-16ul);
+            unsigned const n_words = bdict_word_count(fwd.command_span);
+            unsigned short const filter = root & 127u;
+            if (n_words == 0 || size < 3 || fwd.i > size-3)
+              return brcvt_token{BrCvt_BadToken};
+            fwd.i += 1;
+            unsigned const selector = (data[fwd.i]<<8)|data[fwd.i+1];
+            if (selector >= n_words)
+              return brcvt_token{BrCvt_BadToken};
+            fwd.i += 2;
+            uint32 const word_id = filter * n_words + selector;
+            uint32 const past_counter = std::min<uint32>(fwd.accum, past_window);
+            out.state = BrCvt_BDict;
+            out.first = past_counter + word_id;
+          } else {
+            uint32 distance = 0;
+            unsigned const byte_count = (root&64u) ? 4 : 2;
+            unsigned j;
+            if (size < byte_count || fwd.i > size-byte_count) {
+              return brcvt_token{BrCvt_BadToken};
+            }
+            for (j = 0; j < byte_count; ++j, ++fwd.i) {
+              unsigned const digit = data[fwd.i] & (j ? 255u : 63u);
+              distance = (distance<<8) | digit;
+            }
+            out.state = BrCvt_Distance;
+            out.first = distance + ((root&64u)<<8); /* +16384 when 30-bit sequence */
+          }
+          fwd.accum += fwd.command_span;
+          fwd.ostate = (fwd.i >= size ? BrCvt_Done : BrCvt_DataInsertCopy);
         } break;
       default:
         out.state = BrCvt_BadToken;
@@ -1865,6 +1969,13 @@ namespace text_complex {
     api_error brcvt_check_compress(brcvt_state& state) {
       int guess_nonzero = 0;
       size_t accum = 0;
+      std::size_t try_bit_count = 0;
+      /* prepare for encoding */{
+        api_error ae{};
+        inscopy_lengthsort(state.values, ae);
+        if (ae != api_error::Success)
+          return ae;
+      }
       /* calculate the guesses */
       prefix_histogram ctxt_histogram(4);
       std::fill(ctxt_histogram.begin(), ctxt_histogram.end(), 0);
@@ -1928,26 +2039,66 @@ namespace text_complex {
             ? state.guesses.offsets[1] : state.guesses.total_bytes);
         std::array<uint32, CtxtSpan_Size+1> literal_lengths;
         uint32 literal_counter = 0;
-        brcvt_state::forward_box try_fwd = {0};
+        uint32 next_copy = 0;
+        brcvt_state::forward_box try_fwd = {};
+        //TODO: try_fwd.accum = ps->fwd.accum;
         std::fill(state.ins_histogram.begin(), state.ins_histogram.end(), 0);
         std::fill(state.dist_histogram.begin(), state.dist_histogram.end(), 0);
         for (prefix_histogram& gram : state.lit_histogram)
           std::fill(gram.begin(), gram.end(), 0);
+        unsigned ctxt_i = 0;
         for (std::size_t i = 0; i < size; ++i) {
-          brcvt_token next = brcvt_next_token(try_fwd, state.guesses, data, size);
+          brcvt_token next =
+            brcvt_next_token(try_fwd, state.guesses, data, size, state.wbits_select);
           if (try_fwd.i <= i)
             return api_error::Sanitize;
           i = try_fwd.i-1;
           switch (next.state) {
           case BrCvt_DataInsertCopy:
-            /* TODO use the inscopy instance to update the histogram */
+            /* */{
+              std::size_t const icv = inscopy_encode(state.values, next.first,
+                next.second ? next.second : 2);
+              if (icv >= 704u)
+                return api_error::Sanitize;
+              insert_copy_row const& icv_row = state.values[icv];
+              assert(icv_row.code < 704u);
+              state.ins_histogram[icv_row.code] += 1;
+              try_bit_count += icv_row.insert_bits;
+              try_bit_count += icv_row.copy_bits;
+            } break;
+          case BrCvt_LiteralRestart:
+            literal_lengths[ctxt_i] = literal_counter;
+            literal_counter = 0;
+            ctxt_i = try_fwd.ctxt_i;
             break;
+          case BrCvt_Literal:
+            {
+              prefix_histogram& hist = state.lit_histogram[
+                static_cast<unsigned>(state.guesses.modes[ctxt_i])];
+              hist[next.first&255u] += 1;
+            } break;
+          case BrCvt_Distance:
+          case BrCvt_BDict:
+            /* */{
+              bool const to_record = (next.state==BrCvt_Distance);
+              uint32 extra = 0;
+              // TODO: use `to_record`
+              api_error ae{};
+              unsigned const cmd = state.try_ring.encode(next.first, extra, ae);
+              if (ae != api_error::Success)
+                return api_error::Sanitize;
+              try_bit_count += extra;
+              state.dist_histogram[cmd] += 1;
+            } break;
           default:
             return api_error::Sanitize;
           }
         }
+        literal_lengths[ctxt_i] = literal_counter;
+        /* TODO apply histograms to the trees */
+        /* TODO count the bits*histogram for each tree leaf */
       }
-      /* TODO the rest */
+      /* TODO compare to the uncompress byte count */
       return api_error::Success;
     }
 
@@ -2155,6 +2306,7 @@ namespace text_complex {
               state.state = BrCvt_Uncompress;
               state.backward = state.buffer.str().size();
               state.count = 0;
+              //TODO: state.fwd.accum += state.backward;
               assert(state.backward);
               break;
             }
@@ -2578,7 +2730,7 @@ namespace text_complex {
     brcvt_state::brcvt_state(uint32 block_size, uint32 n, size_t chain_length)
       : buffer(std::min<uint32>(block_size,16777200u), n, chain_length, false),
         literals(288u), distances(32u), sequence(19u),
-        wbits(15u), values(286u),
+        wbits(15u), values(704u),
         ring(false,4,0), try_ring(false,4,0),
         lit_histogram{{256u}, {256u}, {256u}, {256u}}, dist_histogram(68u), ins_histogram(704u),
         bits(0u), bit_length(0u), state(0u), bit_index(0u),
@@ -2608,7 +2760,7 @@ namespace text_complex {
         }
       }
       fixlist_preset(wbits, prefix_preset::BrotliWBits);
-      inscopy_preset(values, insert_copy_preset::Deflate);
+      inscopy_preset(values, insert_copy_preset::BrotliIC);
       inscopy_codesort(values);
       inscopy_preset(blockcounts, insert_copy_preset::BrotliBlock);
       inscopy_codesort(blockcounts);
@@ -2709,6 +2861,9 @@ namespace text_complex {
         case BrCvt_GaspVectorI:
         case BrCvt_GaspVectorD:
         case BrCvt_DataInsertCopy:
+        case BrCvt_Literal:
+        case BrCvt_LiteralRestart:
+        case BrCvt_Distance:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -2841,6 +2996,9 @@ namespace text_complex {
         case BrCvt_GaspVectorI:
         case BrCvt_GaspVectorD:
         case BrCvt_DataInsertCopy:
+        case BrCvt_Literal:
+        case BrCvt_LiteralRestart:
+        case BrCvt_Distance:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
