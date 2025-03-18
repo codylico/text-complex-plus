@@ -166,6 +166,17 @@ namespace text_complex {
      */
     static api_error brcvt_check_compress(brcvt_state& state);
     /**
+     * @brief Apply a histogram to a prefix list.
+     * @param tree prefix list to replace and update
+     * @param histogram item frequencies
+     * @param[in,out] ae error code on failure; fast-quits if set
+     * @return the number of bits that would be used to encode the prefix list
+     *   @em and the stream that uses the new prefix list
+     */
+    static std::size_t brcvt_apply_histogram(
+      prefix_list& tree, prefix_histogram const& histogram,
+      api_error &ae) noexcept;
+    /**
      * @brief Encode a nonzero entry in a context map using run-length encoding.
      * @param[out] buffer storage of intermediate encoding
      * @param zeroes number of preceding zeroes
@@ -262,6 +273,7 @@ namespace text_complex {
         brcvt_BlockCountBits = 5,
         brcvt_NoSkip = std::numeric_limits<short>::max(),
         brcvt_RepeatBit = 128,
+        brcvt_TreetyOutflowMax = 4096,
         brcvt_ZeroBit = 64,
       };
 
@@ -2016,6 +2028,8 @@ namespace text_complex {
         }
       }
       for (std::size_t btype_j = 0; btype_j < btypes; ++btype_j) {
+        prefix_line const& line = state.literal_blocktype[btype_j];
+        state.literals_map.set_mode(btype_j, static_cast<context_map_mode>(line.value));
         for (unsigned ctxt_i = 0; ctxt_i < 64; ++ctxt_i)
           state.literals_map(btype_j, ctxt_i) = static_cast<unsigned char>(btype_j);
       }
@@ -2095,11 +2109,63 @@ namespace text_complex {
           }
         }
         literal_lengths[ctxt_i] = literal_counter;
-        /* TODO apply histograms to the trees */
-        /* TODO count the bits*histogram for each tree leaf */
+        /* apply histograms to the trees */
+        api_error ae {};
+        try_bit_count += brcvt_apply_histogram(
+          state.distance_forest[0], state.dist_histogram, ae);
+        try_bit_count += brcvt_apply_histogram(
+          state.insert_forest[0], state.ins_histogram, ae);
+        for (unsigned btype_j = 0; btype_j < btypes; ++btype_j) {
+          int const btype = static_cast<int>(state.literals_map.get_mode(btype_j));
+          try_bit_count += brcvt_apply_histogram(
+            state.literals_forest[btype_j],
+            state.lit_histogram[btype], ae);
+        }
       }
-      /* TODO compare to the uncompress byte count */
+      if (try_bit_count/8+1 > state.buffer.input_size())
+        return api_error::BlockOverflow;
       return api_error::Success;
+    }
+
+    std::size_t brcvt_apply_histogram(
+      prefix_list& tree, prefix_histogram const& histogram,
+      api_error &ae) noexcept
+    {
+      if (ae != api_error::Success)
+        return 0;
+      try {
+        if (tree.size() != histogram.size())
+          tree = prefix_list(histogram.size());
+      } catch (std::bad_alloc const&) {
+        ae = api_error::Memory;
+        return 0;
+      }
+      for (std::size_t i = 0; i < histogram.size(); ++i) {
+        tree[i].value = static_cast<unsigned>(i);
+      }
+      fixlist_gen_lengths(tree, histogram, 15, ae);
+      if (ae != api_error::Success)
+        return 0;
+      fixlist_gen_codes(tree, ae);
+      if (ae != api_error::Success)
+        return 0;
+      std::size_t bit_count = 0;
+      for (std::size_t i = 0; i < histogram.size(); ++i) {
+        bit_count += tree[i].len * static_cast<std::size_t>(histogram[i]);
+      }
+      unsigned const alphabits = util_bitwidth(static_cast<unsigned>(histogram.size()-1));
+      brcvt_state::treety_box attempt = {};
+      for (unsigned i = 0; i < brcvt_TreetyOutflowMax; ++i) {
+        unsigned sink = 0;
+        api_error const res = brcvt_outflow19(attempt, tree, sink, alphabits);
+        if (res == api_error::EndOfFile)
+          break;
+        else if (res != api_error::Success) {
+          ae = res;
+          return 0;
+        } else bit_count += 1;
+      }
+      return bit_count;
     }
 
     api_error brcvt_encode_map(block_string& buffer, std::size_t zeroes,
