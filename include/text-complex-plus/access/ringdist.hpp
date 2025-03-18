@@ -164,12 +164,6 @@ namespace text_complex {
        */
       unsigned int get_postfix() const noexcept;
       /** @} */
-
-    private: /** @name rule-of-six *//** @{ */
-      void duplicate(distance_ring const& ) noexcept;
-      void transfer(distance_ring&& ) noexcept;
-      void transfer(distance_ring const& ) = delete;
-      /** @} */
     };
     //END   distance ring
 

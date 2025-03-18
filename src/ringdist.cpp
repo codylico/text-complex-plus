@@ -78,67 +78,16 @@ namespace text_complex {
       return;
     }
 
-    distance_ring::~distance_ring(void) {
-      return;
-    }
+    distance_ring::~distance_ring(void) = default;
 
-    distance_ring::distance_ring(distance_ring const& other) noexcept
-      : i(0),
-        special_size(0u),
-        sum_direct(0u), direct_one(1u),
-        postfix(0u),
-        bit_adjust(1u), postmask(0u)
-    {
-      duplicate(other);
-      return;
-    }
+    distance_ring::distance_ring(distance_ring const& other) noexcept = default;
 
     distance_ring& distance_ring::operator=
-        (distance_ring const& other) noexcept
-    {
-      duplicate(other);
-      return *this;
-    }
+        (distance_ring const& other) noexcept = default;
 
-    distance_ring::distance_ring(distance_ring&& other) noexcept
-      : i(0),
-        special_size(0u),
-        sum_direct(0u), direct_one(1u),
-        postfix(0u),
-        bit_adjust(1u), postmask(0u)
-    {
-      transfer(static_cast<distance_ring&&>(other));
-      return;
-    }
+    distance_ring::distance_ring(distance_ring&& other) noexcept = default;
 
-    distance_ring& distance_ring::operator=(distance_ring&& other) noexcept {
-      transfer(static_cast<distance_ring&&>(other));
-      return *this;
-    }
-
-    void distance_ring::duplicate(distance_ring const& other) noexcept{
-      std::memmove(ring, other.ring, sizeof(ring));
-      i = other.i;
-      special_size = other.special_size;
-      sum_direct = other.sum_direct;
-      direct_one = other.direct_one;
-      postfix = other.postfix;
-      bit_adjust = other.bit_adjust;
-      postmask = other.postmask;
-      return;
-    }
-
-    void distance_ring::transfer(distance_ring&& other) noexcept {
-      std::memmove(ring, other.ring, sizeof(ring));
-      i = other.i;
-      special_size = other.special_size;
-      sum_direct = other.sum_direct;
-      direct_one = other.direct_one;
-      postfix = other.postfix;
-      bit_adjust = other.bit_adjust;
-      postmask = other.postmask;
-      return;
-    }
+    distance_ring& distance_ring::operator=(distance_ring&& other) noexcept = default;
     //END   distance_ring / rule-of-six
 
     //BEGIN distance_ring / allocation
