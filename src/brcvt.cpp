@@ -1103,9 +1103,10 @@ namespace text_complex {
             state.bit_length = 1;
             brcvt_reset19(state.treety);
             if (state.state == BrCvt_GaspVectorD) {
-              state.alphabits = (16 + state.ring.get_direct()
+              state.treety.count = (16 + state.ring.get_direct()
                 + (48 << state.ring.get_postfix()));
-            } else state.alphabits = ((state.state == BrCvt_GaspVectorL) ? 256 : 704);
+            } else state.treety.count = ((state.state == BrCvt_GaspVectorL) ? 256 : 704);
+            state.alphabits = util_bitwidth(state.treety.count-1);
           }
           if (state.bit_length > 0) {
             brcvt_state::treety_box& treety = state.treety;
@@ -1434,6 +1435,16 @@ namespace text_complex {
       return row.insert_first;
     }
 
+    void brcvt_zerofill(brcvt_state::treety_box& treety, prefix_list& prefixes) {
+      unsigned i;
+      for (unsigned i = treety.index; i < treety.count; ++i) {
+        prefix_line& line = prefixes[i];
+        line.len = 0;
+        line.value = i;
+      }
+      return;
+    }
+
     api_error brcvt_inflow19(brcvt_state::treety_box& treety,
       prefix_list& prefixes, unsigned x, unsigned alphabits)
     {
@@ -1580,6 +1591,9 @@ namespace text_complex {
           api_error const res = brcvt_post19(treety, prefixes, treety.bits);
           if (res != api_error::Success)
             return res;
+          treety.state = BrCvt_TSymbols;
+          treety.bit_length = 0;
+          treety.bits = 0;
         }
         if (treety.nonzero != 1)
           break;
@@ -1699,6 +1713,7 @@ namespace text_complex {
       } else return api_error::Sanitize;
       if (treety.index >= treety.count || treety.len_check >= 32768) {
         api_error ae = api_error::Success;
+        brcvt_zerofill(treety, prefixes);
         treety.state = BrCvt_TDone;
         fixlist_valuesort(prefixes, ae);
         if (ae != api_error::Success)
