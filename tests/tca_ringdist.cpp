@@ -12,7 +12,7 @@
 #include <cstring>
 
 
-struct test_ringdist_params {
+struct test_ringdist_fixture {
   bool special_tf;
   unsigned int direct_count;
   unsigned int postfix_size;
@@ -115,8 +115,8 @@ MunitPlusResult test_ringdist_cycle
 void* test_ringdist_1951_setup
     (const MunitPlusParameter params[], void* user_data)
 {
-  std::unique_ptr<struct test_ringdist_params> out;
-  out.reset(new (std::nothrow) struct test_ringdist_params);
+  std::unique_ptr<struct test_ringdist_fixture> out;
+  out.reset(new (std::nothrow) struct test_ringdist_fixture);
   if (out) {
     out->special_tf = false;
     out->direct_count = 4u;
@@ -132,8 +132,8 @@ void* test_ringdist_1951_setup
 void* test_ringdist_7932_setup
     (const MunitPlusParameter params[], void* user_data)
 {
-  std::unique_ptr<struct test_ringdist_params> out;
-  out.reset(new (std::nothrow) struct test_ringdist_params);
+  std::unique_ptr<struct test_ringdist_fixture> out;
+  out.reset(new (std::nothrow) struct test_ringdist_fixture);
   if (out) {
     out->special_tf = true;
     /* inspect params */{
@@ -173,8 +173,8 @@ void* test_ringdist_7932_setup
 }
 
 void test_ringdist_teardown(void* fixture) {
-  struct test_ringdist_params *fixt =
-    static_cast<struct test_ringdist_params*>(fixture);
+  struct test_ringdist_fixture *fixt =
+    static_cast<struct test_ringdist_fixture*>(fixture);
   if (fixt) {
     delete fixt;
   }
@@ -184,8 +184,8 @@ void test_ringdist_teardown(void* fixture) {
 MunitPlusResult test_ringdist_1951_bit_count
   (const MunitPlusParameter params[], void* data)
 {
-  struct test_ringdist_params *const fixt =
-    static_cast<struct test_ringdist_params*>(data);
+  struct test_ringdist_fixture *const fixt =
+    static_cast<struct test_ringdist_fixture*>(data);
   text_complex::access::distance_ring* const p =
     (fixt) ? fixt->rd.get() : nullptr;
   if (p == nullptr)
@@ -206,8 +206,8 @@ MunitPlusResult test_ringdist_1951_bit_count
 MunitPlusResult test_ringdist_7932_bit_count
   (const MunitPlusParameter params[], void* data)
 {
-  struct test_ringdist_params *const fixt =
-    static_cast<struct test_ringdist_params*>(data);
+  struct test_ringdist_fixture *const fixt =
+    static_cast<struct test_ringdist_fixture*>(data);
   text_complex::access::distance_ring* const p =
     (fixt) ? fixt->rd.get() : nullptr;
   if (p == nullptr)
@@ -242,8 +242,8 @@ MunitPlusResult test_ringdist_7932_bit_count
 MunitPlusResult test_ringdist_1951_decode
   (const MunitPlusParameter params[], void* data)
 {
-  struct test_ringdist_params *const fixt =
-    static_cast<struct test_ringdist_params*>(data);
+  struct test_ringdist_fixture *const fixt =
+    static_cast<struct test_ringdist_fixture*>(data);
   text_complex::access::distance_ring* const p =
     (fixt) ? fixt->rd.get() : nullptr;
   if (p == nullptr)
@@ -298,8 +298,8 @@ MunitPlusResult test_ringdist_1951_decode
 MunitPlusResult test_ringdist_7932_decode
   (const MunitPlusParameter params[], void* data)
 {
-  struct test_ringdist_params *const fixt =
-    static_cast<struct test_ringdist_params*>(data);
+  struct test_ringdist_fixture *const fixt =
+    static_cast<struct test_ringdist_fixture*>(data);
   text_complex::access::distance_ring* const p =
     (fixt) ? fixt->rd.get() : nullptr;
   if (p == nullptr)
@@ -311,8 +311,8 @@ MunitPlusResult test_ringdist_7932_decode
 MunitPlusResult test_ringdist_encode
   (const MunitPlusParameter params[], void* data)
 {
-  struct test_ringdist_params *const fixt =
-    static_cast<struct test_ringdist_params*>(data);
+  struct test_ringdist_fixture *const fixt =
+    static_cast<struct test_ringdist_fixture*>(data);
   text_complex::access::distance_ring* const p =
     (fixt) ? fixt->rd.get() : nullptr;
   if (p == nullptr)
