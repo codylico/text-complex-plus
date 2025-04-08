@@ -18,10 +18,11 @@ namespace text_complex {
      * @param ring the buffer
      * @param i index
      * @param v the value to record
+     * @param norecord result value strictly above which to prevent recording
      */
     static
     void ringdist_record
-      (uint32* ring, unsigned short& i, uint32 v);
+      (uint32* ring, unsigned short& i, uint32 v, uint32 norecord);
     /**
      * @brief Compute the number of bits in a number.
      * @param n this number
@@ -41,7 +42,9 @@ namespace text_complex {
       (uint32* ring, unsigned int i, unsigned int nlast);
 
     //BEGIN distance_ring / static
-    void ringdist_record(uint32* ring, unsigned short& i, uint32 v) {
+    void ringdist_record(uint32* ring, unsigned short& i, uint32 v, uint32 norecord) {
+      if (v > norecord)
+        return;
       ring[i] = v;
       i = (i+1u)%4u;
       return;
@@ -140,7 +143,7 @@ namespace text_complex {
     }
 
     uint32 distance_ring::decode
-      (unsigned int dcode, uint32 extra, api_error& ae) noexcept
+      (unsigned int dcode, uint32 extra, uint32 norecord, api_error& ae) noexcept
     {
       if (dcode < this->special_size) {
         uint32 out;
@@ -221,13 +224,13 @@ namespace text_complex {
           } break;
         }
         if (dcode != 0u) {
-          ringdist_record(ring, i, out);
+          ringdist_record(ring, i, out, norecord);
         }
         ae = api_error::Success;
         return out;
       } else if (dcode < this->sum_direct) {
         uint32 const out = (dcode - this->special_size) + 1u;
-        ringdist_record(ring, i, out);
+        ringdist_record(ring, i, out, norecord);
         ae = api_error::Success;
         return out;
       } else {
@@ -239,7 +242,7 @@ namespace text_complex {
         uint32 const out =
           ((offset + extra)<<this->postfix) + low + this->direct_one;
         /* record the new flat distance */{
-          ringdist_record(ring, i, out);
+          ringdist_record(ring, i, out, norecord);
         }
         ae = api_error::Success;
         return out;
@@ -247,7 +250,7 @@ namespace text_complex {
     }
 
     unsigned int distance_ring::encode
-      (uint32 back_dist, uint32& extra, api_error& ae) noexcept
+      (uint32 back_dist, uint32& extra, uint32 norecord, api_error& ae) noexcept
     {
       if (back_dist == 0u) {
         /* zero not allowed */
@@ -267,7 +270,7 @@ namespace text_complex {
               (this->i+3u)%4u/* == (i minus 1) mod 4 */;
             extra = 0u;
             if (last != j) {
-              ringdist_record(this->ring, this->i, back_dist);
+              ringdist_record(this->ring, this->i, back_dist, norecord);
             }
             return (last+4u-j)%4u/* == (last minus j) mod 4 */;
           }
@@ -279,7 +282,7 @@ namespace text_complex {
             ((last < 0xFFffFFfd) ? last+3u : 0xFFffFFff);
           if (back_dist >= last_min && back_dist < last) {
             extra = 0u;
-            ringdist_record(this->ring, this->i, back_dist);
+            ringdist_record(this->ring, this->i, back_dist, norecord);
             switch (last-back_dist) {
             case 1u: return 4u;
             case 2u: return 6u;
@@ -287,7 +290,7 @@ namespace text_complex {
             }
           } else if (back_dist > last && back_dist <= last_max) {
             extra = 0u;
-            ringdist_record(this->ring, this->i, back_dist);
+            ringdist_record(this->ring, this->i, back_dist, norecord);
             switch (back_dist-last) {
             case 1u: return 5u;
             case 2u: return 7u;
@@ -302,7 +305,7 @@ namespace text_complex {
             ((second < 0xFFffFFfd) ? second+3u : 0xFFffFFff);
           if (back_dist >= second_min && back_dist < second) {
             extra = 0u;
-            ringdist_record(this->ring, this->i, back_dist);
+            ringdist_record(this->ring, this->i, back_dist, norecord);
             switch (second-back_dist) {
             case 1u: return 10u;
             case 2u: return 12u;
@@ -310,7 +313,7 @@ namespace text_complex {
             }
           } else if (back_dist > second && back_dist <= second_max) {
             extra = 0u;
-            ringdist_record(this->ring, this->i, back_dist);
+            ringdist_record(this->ring, this->i, back_dist, norecord);
             switch (back_dist-second) {
             case 1u: return 11u;
             case 2u: return 13u;
@@ -322,7 +325,7 @@ namespace text_complex {
       /* check direct distances */
       if (back_dist < this->direct_one) {
         extra = 0u;
-        ringdist_record(this->ring, this->i, back_dist);
+        ringdist_record(this->ring, this->i, back_dist, norecord);
         return (back_dist-1u)+(this->special_size);
       } else {
         constexpr uint32 One32 = 1u;
@@ -336,7 +339,7 @@ namespace text_complex {
             (((ndistbits-1u)<<(this->bit_adjust)) | midcode_x | lowcode)
           + this->sum_direct;
         /* record the new flat distance */{
-          ringdist_record(this->ring, this->i, back_dist);
+          ringdist_record(this->ring, this->i, back_dist, norecord);
         }
         extra = out_extra;
         return dcode;

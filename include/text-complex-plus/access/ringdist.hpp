@@ -110,6 +110,7 @@ namespace text_complex {
        * @brief Convert a distance code to a flat backward distance.
        * @param dcode distance code to convert
        * @param extra any extra bits required by the code
+       * @param norecord result value strictly above which to prevent recording
        * @param[out] ae @em error-code api_error::Success on success,
        *   nonzero otherwise
        * @return a flat distance, or zero on conversion error
@@ -117,23 +118,25 @@ namespace text_complex {
        *   as necessary.
        */
       uint32 decode
-        (unsigned int dcode, uint32 extra, api_error& ae) noexcept;
+        (unsigned int dcode, uint32 extra, uint32 norecord, api_error& ae) noexcept;
 
       /**
        * @brief Convert a distance code to a flat backward distance.
        * @param dcode distance code to convert
        * @param extra any extra bits required by the code
+       * @param norecord result value strictly above which to prevent recording
        * @return a flat distance
        * @throw api_exception on code length error
        * @note On successful conversion, the distance ring buffer is advanced
        *   as necessary.
        */
-      uint32 decode(unsigned int dcode, uint32 extra);
+      uint32 decode(unsigned int dcode, uint32 extra, uint32 norecord);
 
       /**
        * @brief Convert a flat backward distance to a distance code.
        * @param back_dist backward distance to convert
        * @param[out] extra any extra bits required by the code
+       * @param norecord result value strictly above which to prevent recording
        * @param[out] ae @em error-code api_error::Success on success,
        *   nonzero otherwise
        * @return a distance code, or
@@ -142,18 +145,19 @@ namespace text_complex {
        *   as necessary.
        */
       unsigned int encode
-        (uint32 back_dist, uint32& extra, api_error& ae) noexcept;
+        (uint32 back_dist, uint32& extra, uint32 norecord, api_error& ae) noexcept;
 
       /**
        * @brief Convert a flat backward distance to a distance code.
        * @param back_dist backward distance to convert
        * @param[out] extra any extra bits required by the code
+       * @param norecord result value strictly above which to prevent recording
        * @return a distance code
        * @throw api_exception on code length error
        * @note On successful conversion, the distance ring buffer is advanced
        *   as necessary.
        */
-      unsigned int encode(uint32 back_dist, uint32& extra);
+      unsigned int encode(uint32 back_dist, uint32& extra, uint32 norecord);
 
       /**
        * @return the direct parameter from construction

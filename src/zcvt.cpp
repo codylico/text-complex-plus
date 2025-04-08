@@ -248,7 +248,7 @@ namespace text_complex {
                 state.backward = alpha;
               } else {
                 state.state = 12;
-                state.backward = state.ring.decode(alpha, 0u, ae);
+                state.backward = state.ring.decode(alpha, 0u, 0, ae);
                 if (ae < api_error::Success)
                   break;
                 else state.backward -= 1u;
@@ -283,7 +283,7 @@ namespace text_complex {
             state.bit_length += 1u;
           }
           if (state.bit_length >= state.extra_length) {
-            state.backward = state.ring.decode(state.backward, state.bits, ae);
+            state.backward = state.ring.decode(state.backward, state.bits, 0, ae);
             if (ae < api_error::Success)
               break;
             else state.backward -= 1u;
@@ -701,7 +701,7 @@ namespace text_complex {
                     /* encode distance */if (ae == api_error::Success) {
                       uint32 extra;
                       unsigned int const dist_code =
-                        state.try_ring.encode(distance, extra, ae);
+                        state.try_ring.encode(distance, extra, 0, ae);
                       if (ae == api_error::Success) {
                         bit_count += extra;
                         state.dist_histogram[dist_code] += 1u;

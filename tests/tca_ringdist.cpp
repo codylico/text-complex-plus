@@ -285,7 +285,7 @@ MunitPlusResult test_ringdist_1951_decode
   /* inspect */{
 #if !(defined TextComplexAccessP_NO_EXCEPT)
     munit_plus_assert_uint32(
-        p->decode(decomposed_code,decomposed_extra),
+        p->decode(decomposed_code,decomposed_extra,0),
           ==,back_dist
       );
 #else
@@ -333,11 +333,11 @@ MunitPlusResult test_ringdist_encode
       text_complex::access::uint32 decomposed_extra;
       unsigned int decomposed_code;
 #if !(defined TextComplexAccessP_NO_EXCEPT)
-      decomposed_code = p->encode(back_dist, decomposed_extra);
+      decomposed_code = p->encode(back_dist, decomposed_extra, 0);
       munit_plus_assert_uint(decomposed_code,!=,
         std::numeric_limits<unsigned int>::max());
       munit_plus_assert_uint32(
-          q.decode(decomposed_code,decomposed_extra),
+          q.decode(decomposed_code,decomposed_extra, 0),
             ==,back_dist
         );
 #else
@@ -368,12 +368,12 @@ MunitPlusResult test_ringdist_reconfigure
     return MUNIT_PLUS_SKIP;
   static_cast<void>(params);
   text_complex::access::uint32 decomposed_extra = 0;
-  unsigned int decomposed_code = p->encode(back_dist, decomposed_extra);
+  unsigned int decomposed_code = p->encode(back_dist, decomposed_extra, 32768u);
   munit_plus_assert(decomposed_code != UINT_MAX);
   text_complex::access::api_error res;
   p->reconfigure(1, testfont_rand_uint_range(0,120), fixt->postfix_size, res);
   munit_plus_assert(res == text_complex::access::api_error::Success);
-  decomposed_code = p->encode(back_dist, decomposed_extra);
+  decomposed_code = p->encode(back_dist, decomposed_extra, 32768u);
   munit_plus_assert(decomposed_code == 0);
   return MUNIT_PLUS_OK;
 }

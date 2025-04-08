@@ -13,19 +13,19 @@ namespace text_complex {
   namespace access {
 #if  (!(defined TextComplexAccessP_NO_EXCEPT))
     inline
-    uint32 distance_ring::decode(unsigned int dcode, uint32 extra) {
+    uint32 distance_ring::decode(unsigned int dcode, uint32 extra, uint32 norecord) {
       api_error ae;
-      uint32 const out = decode(dcode, extra, ae);
+      uint32 const out = decode(dcode, extra, norecord, ae);
       if (ae < api_error::Success) {
         throw api_exception(ae);
       } else return out;
     }
 
     inline
-    unsigned int distance_ring::encode(uint32 back_dist, uint32& extra) {
+    unsigned int distance_ring::encode(uint32 back_dist, uint32& extra, uint32 norecord) {
       api_error ae;
       unsigned int a_extra;
-      unsigned int const out = encode(back_dist, a_extra, ae);
+      unsigned int const out = encode(back_dist, a_extra, norecord, ae);
       if (ae < api_error::Success) {
         throw api_exception(ae);
       } else {
