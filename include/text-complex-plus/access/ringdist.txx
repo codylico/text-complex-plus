@@ -33,6 +33,15 @@ namespace text_complex {
         return out;
       }
     }
+
+    inline
+    void distance_ring::reconfigure(bool special, unsigned int direct, unsigned int postfix) {
+      api_error ae;
+      reconfigure(special, direct, postfix, ae);
+      if (ae < api_error::Success)
+        throw api_exception(ae);
+      return;
+    }
 #endif //TextComplexAccessP_NO_EXCEPT
   };
 };

@@ -163,6 +163,28 @@ namespace text_complex {
        * @return the postfix parameter from construction
        */
       unsigned int get_postfix() const noexcept;
+
+      /**
+       * @ingroup ringdist-methods
+       * @brief Configure an existing distance ring without resetting its
+       *   history.
+       * @param special_tf nonzero to support Brotli distance codes
+       * @param direct number of direct codes (0..120)
+       * @param postfix postfix bit count (0..3)
+       * @param[out] ae Success on success, nonzero otherwise
+       */
+      void reconfigure(bool special, unsigned int direct, unsigned int postfix,
+        api_error &ae) noexcept;
+      /**
+       * @ingroup ringdist-methods
+       * @brief Configure an existing distance ring without resetting its
+       *   history.
+       * @param special_tf nonzero to support Brotli distance codes
+       * @param direct number of direct codes (0..120)
+       * @param postfix postfix bit count (0..3)
+       * @param[out] ae Success on success, nonzero otherwise
+       */
+      void reconfigure(bool special, unsigned int direct, unsigned int postfix);
       /** @} */
     };
     //END   distance ring

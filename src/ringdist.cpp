@@ -349,6 +349,24 @@ namespace text_complex {
     unsigned int distance_ring::get_postfix() const noexcept {
       return postfix;
     }
+
+    void distance_ring::reconfigure(bool special, unsigned int direct, unsigned int postfix,
+      api_error &ae) noexcept
+    {
+      unsigned const special_addend = special?16u:0u;
+      if (direct > 120 || postfix > 3) {
+        ae = api_error::Param;
+        return;
+      }
+      special_size = special_addend;
+      sum_direct = direct+special_addend;
+      direct_one = direct+1u;
+      postfix = postfix;
+      bit_adjust = postfix+1u;
+      postmask = (1u<<postfix)-1u;
+      ae = api_error::Success;
+      return;
+    }
     //END   distance_ring / public
   };
 };

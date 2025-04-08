@@ -44,6 +44,8 @@ static MunitPlusResult test_ringdist_7932_decode
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_ringdist_encode
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_ringdist_reconfigure
+    (const MunitPlusParameter params[], void* data);
 static void* test_ringdist_1951_setup
     (const MunitPlusParameter params[], void* user_data);
 static void* test_ringdist_7932_setup
@@ -79,6 +81,9 @@ static MunitPlusTest tests_ringdist[] = {
       test_ringdist_1951_setup,test_ringdist_teardown,
       MUNIT_PLUS_TEST_OPTION_SINGLE_ITERATION,nullptr},
   {(char*)"7932/encode", test_ringdist_encode,
+      test_ringdist_7932_setup,test_ringdist_teardown,
+      MUNIT_PLUS_TEST_OPTION_NONE,test_ringdist_params},
+  {(char*)"7932/reconfigure", test_ringdist_reconfigure,
       test_ringdist_7932_setup,test_ringdist_teardown,
       MUNIT_PLUS_TEST_OPTION_NONE,test_ringdist_params},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
@@ -351,6 +356,28 @@ MunitPlusResult test_ringdist_encode
   }
   return MUNIT_PLUS_OK;
 }
+
+
+MunitPlusResult test_ringdist_reconfigure
+  (const MunitPlusParameter params[], void* data)
+{
+  test_ringdist_fixture *const fixt = static_cast<test_ringdist_fixture*>(data);
+  text_complex::access::distance_ring* const p = (fixt ? fixt->rd.get() : nullptr);
+  unsigned int back_dist = testfont_rand_uint_range(1u,32768u);
+  if (p == NULL)
+    return MUNIT_PLUS_SKIP;
+  static_cast<void>(params);
+  text_complex::access::uint32 decomposed_extra = 0;
+  unsigned int decomposed_code = p->encode(back_dist, decomposed_extra);
+  munit_plus_assert(decomposed_code != UINT_MAX);
+  text_complex::access::api_error res;
+  p->reconfigure(1, testfont_rand_uint_range(0,120), fixt->postfix_size, res);
+  munit_plus_assert(res == text_complex::access::api_error::Success);
+  decomposed_code = p->encode(back_dist, decomposed_extra);
+  munit_plus_assert(decomposed_code == 0);
+  return MUNIT_PLUS_OK;
+}
+
 
 
 int main(int argc, char **argv) {
