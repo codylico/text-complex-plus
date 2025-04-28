@@ -96,8 +96,9 @@ namespace text_complex {
       static void operator delete[](void* p, std::size_t sz) noexcept;
       /** @} */
 
-    public: /** @name methods *//** @{ */
+    public:
       /**
+       * @ingroup ringdist-methods
        * @brief Compute the number of extra bits for a distance code.
        * @param dcode distance code to check
        * @return a bit count
@@ -107,6 +108,7 @@ namespace text_complex {
       unsigned int bit_count(unsigned int dcode) const noexcept;
       
       /**
+       * @ingroup ringdist-methods
        * @brief Convert a distance code to a flat backward distance.
        * @param dcode distance code to convert
        * @param extra any extra bits required by the code
@@ -121,6 +123,7 @@ namespace text_complex {
         (unsigned int dcode, uint32 extra, uint32 norecord, api_error& ae) noexcept;
 
       /**
+       * @ingroup ringdist-methods
        * @brief Convert a distance code to a flat backward distance.
        * @param dcode distance code to convert
        * @param extra any extra bits required by the code
@@ -133,6 +136,7 @@ namespace text_complex {
       uint32 decode(unsigned int dcode, uint32 extra, uint32 norecord);
 
       /**
+       * @ingroup ringdist-methods
        * @brief Convert a flat backward distance to a distance code.
        * @param back_dist backward distance to convert
        * @param[out] extra any extra bits required by the code
@@ -148,6 +152,7 @@ namespace text_complex {
         (uint32 back_dist, uint32& extra, uint32 norecord, api_error& ae) noexcept;
 
       /**
+       * @ingroup ringdist-methods
        * @brief Convert a flat backward distance to a distance code.
        * @param back_dist backward distance to convert
        * @param[out] extra any extra bits required by the code
@@ -160,10 +165,12 @@ namespace text_complex {
       unsigned int encode(uint32 back_dist, uint32& extra, uint32 norecord);
 
       /**
+       * @ingroup ringdist-methods
        * @return the direct parameter from construction
        */
       unsigned int get_direct() const noexcept;
       /**
+       * @ingroup ringdist-methods
        * @return the postfix parameter from construction
        */
       unsigned int get_postfix() const noexcept;
