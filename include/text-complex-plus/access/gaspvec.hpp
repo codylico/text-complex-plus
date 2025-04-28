@@ -7,6 +7,7 @@
 
 #include "api.hpp"
 #include "util.hpp"
+#include "fixlist.hpp"
 
 namespace text_complex {
   namespace access {
@@ -16,8 +17,13 @@ namespace text_complex {
      * @brief Vector of prefix trees.
      */
     class TCMPLX_AP_API gasp_vector final {
+    public:
+      struct root {
+        prefix_list tree;
+        unsigned short noskip = static_cast<unsigned short>(-1);
+      };
     private:
-      prefix_list* p;
+      root* p;
       size_t n;
 
     public:
@@ -30,17 +36,17 @@ namespace text_complex {
        * @ingroup container-compat
        * @brief Data type stored in the list.
        */
-      typedef prefix_list value_type;
+      typedef root value_type;
       /**
        * @ingroup container-compat
        * @brief Data type used for mutable iteration.
        */
-      typedef prefix_list* iterator;
+      typedef root* iterator;
       /**
        * @ingroup container-compat
        * @brief Data type used for const iteration.
        */
-      typedef prefix_list const* const_iterator;
+      typedef root const* const_iterator;
 
     public:
       /**
@@ -110,27 +116,27 @@ namespace text_complex {
        * @brief `begin` method for range-based `for`.
        * @return a pointer to the first line, or `nullptr` for empty tables
        */
-      prefix_list* begin() noexcept;
+      iterator begin() noexcept;
       /**
        * @ingroup range-based
        * @brief `begin` method for range-based `for`.
        * @return a pointer to the first line, or `nullptr` for empty tables
        */
-      prefix_list const* begin() const noexcept;
+      const_iterator begin() const noexcept;
       /**
        * @ingroup range-based
        * @brief `end` method for range-based `for`.
        * @return a pointer to one-past the last line,
        *   or `nullptr` for empty tables
        */
-      prefix_list* end() noexcept;
+      iterator end() noexcept;
       /**
        * @ingroup range-based
        * @brief `end` method for range-based `for`.
        * @return a pointer to one-past the last line,
        *   or `nullptr` for empty tables
        */
-      prefix_list const* end() const noexcept;
+      const_iterator end() const noexcept;
 
     public:
       /**
@@ -145,14 +151,14 @@ namespace text_complex {
        * @param i array index
        * @return a reference to the line at the given index
        */
-      prefix_list& operator[](size_t i) noexcept;
+      root& operator[](size_t i) noexcept;
       /**
        * @ingroup array-compat
        * @brief Array index operator.
        * @param i array index
        * @return a reference to the line at the given index
        */
-      prefix_list const& operator[](size_t i) const noexcept;
+      root const& operator[](size_t i) const noexcept;
       /**
        * @ingroup array-compat
        * @brief Write to a prefix list.
@@ -160,7 +166,7 @@ namespace text_complex {
        * @return a reference to an offset line
        * @throw std::out_of_range on bad index
        */
-      prefix_list& at(size_t i);
+      root& at(size_t i);
       /**
        * @ingroup array-compat
        * @brief Read from a prefix list.
@@ -168,7 +174,7 @@ namespace text_complex {
        * @return a pointer to a prefix line on success, NULL otherwise
        * @throw std::out_of_range on bad index
        */
-      prefix_list const& at(size_t i) const;
+      root const& at(size_t i) const;
 
     private: /** @name rule-of-six *//** @{ */
       void copy(gasp_vector const& );
@@ -214,14 +220,14 @@ namespace text_complex {
   namespace access {
 #if  (!(defined TextComplexAccessP_NO_EXCEPT))
     inline
-    prefix_list& gasp_vector::at(size_t i) {
+    gasp_vector::root& gasp_vector::at(size_t i) {
       if (i >= size())
         throw api_exception(api_error::OutOfRange);
       return operator[](i);
     }
 
     inline
-    prefix_list const& gasp_vector::at(size_t i) const {
+    gasp_vector::root const& gasp_vector::at(size_t i) const {
       if (i >= size())
         throw api_exception(api_error::OutOfRange);
       return operator[](i);

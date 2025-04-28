@@ -45,7 +45,7 @@ namespace text_complex {
     }
 
     gasp_vector& gasp_vector::operator=(gasp_vector&& other) noexcept {
-      prefix_list* const new_p = util_exchange(other.p, nullptr);
+      root* const new_p = util_exchange(other.p, nullptr);
       std::size_t const new_n = util_exchange(other.n, 0u);
       if (this->p) {
         delete[] this->p;
@@ -67,11 +67,11 @@ namespace text_complex {
     }
 
     void gasp_vector::resize(size_t n) {
-      prefix_list *ptr = nullptr;
+      root *ptr = nullptr;
       if (n >= util_size_limit<prefix_list>()) {
         throw std::bad_alloc();
       }
-      ptr = n ? new prefix_list[n] : nullptr;
+      ptr = n ? new root[n] : nullptr;
       if (this->p) {
         delete[] this->p;
       }
@@ -119,19 +119,19 @@ namespace text_complex {
 #pragma endregion
 
 #pragma region("gasp_vector / range-based")
-    prefix_list* gasp_vector::begin(void) noexcept {
+    gasp_vector::iterator gasp_vector::begin(void) noexcept {
       return this->p;
     }
 
-    prefix_list const* gasp_vector::begin(void) const noexcept {
+    gasp_vector::const_iterator gasp_vector::begin(void) const noexcept {
       return this->p;
     }
 
-    prefix_list* gasp_vector::end() noexcept {
+    gasp_vector::iterator gasp_vector::end() noexcept {
       return this->p+this->n;
     }
 
-    prefix_list const* gasp_vector::end() const noexcept {
+    gasp_vector::const_iterator gasp_vector::end() const noexcept {
       return this->p+this->n;
     }
 #pragma endregion
@@ -141,11 +141,11 @@ namespace text_complex {
       return this->n;
     }
 
-    prefix_list& gasp_vector::operator[](size_t i) noexcept {
+    gasp_vector::root& gasp_vector::operator[](size_t i) noexcept {
       return this->p[i];
     }
 
-    prefix_list const& gasp_vector::operator[](size_t i) const noexcept {
+    gasp_vector::root const& gasp_vector::operator[](size_t i) const noexcept {
       return this->p[i];
     }
 #pragma endregion
