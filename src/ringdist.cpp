@@ -76,7 +76,7 @@ namespace text_complex {
     {
       if (d > 120 || p > 3)
         throw api_exception(api_error::Param);
-      constexpr uint32 base_ring[4] = { 4u, 11u, 15u, 16u };
+      constexpr uint32 base_ring[4] = { 16u, 15u, 11u, 4u };
       std::memcpy(ring, base_ring, 4*sizeof(uint32));
       return;
     }
