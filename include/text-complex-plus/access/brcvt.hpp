@@ -65,12 +65,25 @@ namespace text_complex {
         std::size_t i;
         uint32 literal_i;
         uint32 literal_total;
+        /**
+         * @note Used as temporary storage of distance code during
+         *   inflow of Distance and DataDistanceExtra.
+         */
         uint32 pos;
+        /**
+         * @note Used as temporary storage of copy length during
+         *   inflow of Literal and LiteralRestart.
+         */
         uint32 stop;
         uint32 accum;
         unsigned short command_span;
         unsigned char ostate;
+        /**
+         * @note Used as temporary storage of zero distance flag.
+         */
         unsigned char ctxt_i;
+        unsigned char bstore[38];
+        unsigned char literal_ctxt[2];
       };
       /**
        * @brief ...
@@ -216,6 +229,8 @@ namespace text_complex {
       unsigned short distance_skip;
       /** @brief Context map prefix tree skip code. */
       unsigned short context_skip;
+      /** @brief Token forwarding. */
+      forward_box fwd;
       /**
        * @brief Built-in tree type for block type outflow.
        * @todo Test for removal.

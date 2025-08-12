@@ -204,6 +204,55 @@ namespace text_complex {
      * @return a pointer to a skip code if available
      */
     static unsigned short& brcvt_active_skip(brcvt_state& ps) noexcept;
+    /**
+     * @brief Process skip frameworks.
+     * @param ps state to update
+     * @param[out] to start of output buffer
+     * @param[out] to_end end of output buffer
+     * @param[in,out] to_next write position of output buffer
+     * @return error code or success code
+     */
+    static api_error brcvt_handle_inskip(brcvt_state& ps,
+      unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept;
+    /**
+     * @brief Bring in the next insert command.
+     * @param ps state to update
+     * @param insert insert code
+     * @return success code or error code
+     */
+    static api_error brcvt_inflow_insert(brcvt_state& ps, unsigned insert) noexcept;
+    /**
+     * @brief Apply a literal byte to output.
+     * @param ps state to update
+     * @param ch byte value to apply
+     * @param[out] to start of output buffer
+     * @param[out] to_end end of output buffer
+     * @param[in,out] to_next write position of output buffer
+     * @return error code or success code
+     */
+    static api_error brcvt_inflow_literal(brcvt_state& ps, unsigned ch,
+      unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept;
+    /**
+     * @brief Bring in the next distance command.
+     * @param ps state to update
+     * @param distance distance code to apply
+     * @return success code or error code
+     */
+    static api_error brcvt_inflow_distance(brcvt_state& ps, unsigned distance) noexcept;
+    /**
+     * @brief Bring in the extra bits of the distance command.
+     * @param ps state to update
+     * @return success code or error code
+     */
+    static api_error brcvt_inflow_distextra(brcvt_state& ps) noexcept;
+    /**
+     * @brief Try to find a value by bit string.
+     * @param ps state to update with the new bit for the string
+     * @param tree prefix tree to check
+     * @param x next bit in the string to check
+     * @return a value on success, `UINT_MAX` otherwise
+     */
+    static unsigned brcvt_inflow_lookup(brcvt_state& ps, prefix_list const& tree, unsigned x) noexcept;
 
     namespace {
       enum brcvt_istate {
@@ -248,10 +297,17 @@ namespace text_complex {
         BrCvt_GaspVectorI = 45,
         BrCvt_GaspVectorD = 46,
         BrCvt_DataInsertCopy = 47,
+        BrCvt_DoCopy = 48,
+        BrCvt_DataInsertExtra = 49,
+        BrCvt_DataCopyExtra = 50,
+
         BrCvt_Literal = 56,
         BrCvt_Distance = 57,
         BrCvt_LiteralRestart = 58,
         BrCvt_BDict = 59,
+        BrCvt_InsertRestart = 60,
+        BrCvt_DistanceRestart = 61,
+        BrCvt_DataDistanceExtra = 62,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -266,6 +322,11 @@ namespace text_complex {
         BrCvt_TZeroes = 17,
         BrCvt_TNineteen = 19,
       };
+      /** @brief Output parser state. */
+      enum brcvt_ostate {
+        BrCvt_DataCopy = 175,
+      };
+
       enum brcvt_const : unsigned int {
         brcvt_MetaHeaderLen = 6,
         brcvt_CLenExtent = sizeof(brcvt_clen)/sizeof(brcvt_clen[0]),
@@ -320,6 +381,192 @@ namespace text_complex {
       case BrCvt_GaspVectorL:
       default: return state.literal_skip;
       }
+    }
+
+
+
+    api_error brcvt_inflow_insert(brcvt_state& ps, unsigned insert) noexcept {
+      if (insert >= ps.values.size())
+        return api_error::Sanitize;
+      insert_copy_row const& row = ps.values[insert];
+      ps.blocktypeI_remaining -= 1;
+      ps.state = ((ps.blocktypeL_remaining || (row.insert_first==0))
+        ? BrCvt_Literal : BrCvt_LiteralRestart);
+      ps.extra_length = row.copy_bits;
+      if (row.copy_bits)
+        ps.state = BrCvt_DataCopyExtra;
+      if (row.insert_bits) {
+        ps.extra_length = (ps.extra_length<<5) | row.insert_bits;
+        ps.state = BrCvt_DataInsertExtra;
+      }
+      ps.bits = 0;
+      ps.bit_length = 0;
+      ps.count = 0;
+      ps.fwd.literal_i = 0;
+      ps.fwd.literal_total = row.insert_first;
+      ps.fwd.stop = row.copy_first;
+      ps.fwd.ctxt_i = row.zero_distance_tf;
+      return api_error::Success;
+    }
+
+    api_error brcvt_inflow_literal(brcvt_state& ps, unsigned ch,
+      unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept
+    {
+      auto const ch_byte = static_cast<unsigned char>(ch);
+      *to_next = static_cast<unsigned char>(ch);
+      ps.fwd.accum += 1;
+      api_error ae = {};
+      ps.buffer.bypass(&ch_byte, 1, ae);
+      if (ae != api_error::Success)
+        return ae;
+      ++to_next;
+      ps.fwd.literal_ctxt[0] = ps.fwd.literal_ctxt[1];
+      ps.fwd.literal_ctxt[1] = static_cast<unsigned char>(ch);
+      return api_error::Success;
+    }
+
+    api_error brcvt_inflow_distextra(brcvt_state& ps) noexcept {
+      size_t const window = (size_t)((1ul<<ps.wbits_select)-16u);
+      size_t const cutoff = (ps.fwd.accum > window ? window : ps.fwd.accum);
+      ps.state = BrCvt_DoCopy;
+      api_error ae = {};
+      ps.fwd.pos = ps.ring.decode(ps.fwd.pos, ps.bits, static_cast<uint32>(cutoff), ae);
+      if (ae != api_error::Success)
+        return ae;
+      if (ps.fwd.pos <= cutoff)
+        return api_error::Partial;
+      ps.state = BrCvt_BDict;
+      /* RFC-7932 Section 8: */
+      unsigned size = (unsigned)ps.fwd.literal_total;
+      unsigned const word_id = ps.fwd.pos - (cutoff + 1);
+      unsigned const word_count = bdict_word_count(size);
+      unsigned index;
+      unsigned transform;
+      if (word_count == 0)
+        return api_error::Sanitize;
+      index = word_id % word_count;
+      transform = word_id / word_count;
+      bdict_word text = bdict_get_word(size, index);
+      if (!text.size())
+        return api_error::Sanitize;
+        ae = {};
+      bdict_transform(text, transform, ae);
+      std::memcpy(ps.fwd.bstore, &text[0], size);
+      if (ae != api_error::Success)
+        return api_error::Sanitize;
+      ps.fwd.literal_total = size;
+      return api_error::Partial;
+    }
+
+
+
+    api_error brcvt_inflow_distance(brcvt_state& ps, unsigned distance) noexcept {
+      ps.fwd.pos = distance;
+      ps.extra_length = ps.ring.bit_count(distance);
+      ps.bit_length = 0;
+      ps.bits = 0;
+      ps.count = 0;
+      if (ps.extra_length > 0) {
+        ps.state = BrCvt_DataDistanceExtra;
+        return api_error::Success;
+      }
+      return brcvt_inflow_distextra(ps);
+    }
+
+    unsigned brcvt_inflow_lookup(brcvt_state& ps,
+      prefix_list const& tree, unsigned x) noexcept
+    {
+      size_t line_index = 0;
+      if (ps.bit_length >= 15) {
+        ps.state = BrCvt_BadToken;
+        return std::numeric_limits<unsigned>::max();
+      }
+      ps.bits = (ps.bits<<1)|x;
+      ps.bit_length += 1;
+      line_index = fixlist_codebsearch(tree, ps.bit_length, ps.bits);
+      if (line_index >= tree.size())
+        return std::numeric_limits<unsigned>::max();
+      return static_cast<unsigned>(tree[line_index].value);
+    }
+
+
+    api_error brcvt_handle_inskip(brcvt_state& ps,
+      unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept
+    {
+      int skip = 1;
+      long int repeat;
+      brcvt_state::forward_box& fwd = ps.fwd;
+      for (repeat = 0; repeat < 134217728L && skip; ++repeat) {
+        switch (ps.state) {
+        case BrCvt_DataInsertCopy:
+          if (ps.insert_skip != brcvt_NoSkip) {
+            api_error const res = brcvt_inflow_insert(ps, ps.insert_skip);
+            if (res != api_error::Success)
+              return res;
+            continue;
+          } else return api_error::Success;
+        case BrCvt_Literal:
+          if (ps.fwd.literal_i >= ps.fwd.literal_total) {
+            ps.state = (ps.blocktypeD_remaining
+              ? BrCvt_Distance : BrCvt_DistanceRestart);
+            ps.fwd.literal_i = 0;
+            ps.fwd.literal_total = ps.fwd.stop;
+            ps.fwd.stop = 0;
+            ps.bit_length = 0;
+            ps.bits = 0;
+            continue;
+          } else if (ps.literal_skip != brcvt_NoSkip) {
+            brcvt_inflow_literal(ps, ps.literal_skip, to, to_end, to_next);
+            continue;
+          } else return api_error::Success;
+        case BrCvt_Distance:
+          if (ps.fwd.ctxt_i) {
+            api_error const res = brcvt_inflow_distance(ps, 0);
+            ps.fwd.ctxt_i = 0;
+            if (res == api_error::Success)
+              return res;
+            continue;
+          } else if (ps.distance_skip != brcvt_NoSkip) {
+            api_error const res = brcvt_inflow_distance(ps, ps.distance_skip);
+            ps.blocktypeD_remaining -= 1;
+            if (res == api_error::Success)
+              return res;
+            continue;
+          } else return api_error::Success;
+        case BrCvt_DoCopy:
+          for (; fwd.literal_i < fwd.literal_total; ++fwd.literal_i) {
+            unsigned char ch_byte = 0;
+            if (to_next >= to_end)
+              return api_error::Partial;
+            api_error ae = {};
+            ch_byte = ps.buffer.peek(ps.fwd.pos-1u, ae);
+            if (ae != api_error::Success)
+              return ae;
+            brcvt_inflow_literal(ps, ch_byte, to, to_end, to_next);
+          }
+          ps.state = (ps.blocktypeI_remaining ? BrCvt_DataInsertCopy
+            : BrCvt_InsertRestart);
+          break;
+        case BrCvt_BDict:
+          if (fwd.literal_total > sizeof(fwd.bstore))
+            return api_error::Sanitize;
+          for (; fwd.literal_i < fwd.literal_total; ++fwd.literal_i) {
+            if (to_next >= to_end)
+              return api_error::Partial;
+            brcvt_inflow_literal(ps, fwd.bstore[fwd.literal_i], to, to_end, to_next);
+          }
+          ps.state = (ps.blocktypeI_remaining ? BrCvt_DataInsertCopy
+            : BrCvt_InsertRestart);
+          break;
+        case BrCvt_DataInsertExtra:
+        case BrCvt_DataCopyExtra:
+        case BrCvt_DataDistanceExtra:
+          return api_error::Success;
+        default:
+          return api_error::Sanitize;
+        }
+      }
+      return api_error::Success;
     }
 
 
@@ -546,6 +793,9 @@ namespace text_complex {
         case BrCvt_LastCheck:
           if (state.bit_length == 0) {
             state.h_end = (x!=0);
+            /* prevent wraparound */
+            if (state.fwd.accum >= 16777216)
+              state.fwd.accum = 16777216;
             state.bit_length = x?4:3;
             state.count = 0;
             state.bits = 0;
@@ -1111,25 +1361,112 @@ namespace text_complex {
           if (state.bit_length > 0) {
             brcvt_state::treety_box& treety = state.treety;
             gasp_vector& forest = brcvt_active_forest(state);
-            prefix_list& tree = forest[state.index];
+            gasp_vector::root& tree_spot = forest[state.index];
+            prefix_list& tree = tree_spot.tree;
             api_error const res = brcvt_inflow19(treety, tree, x, state.alphabits);
             if (res == api_error::EndOfFile) {
+              tree_spot.noskip = brcvt_resolve_skip(tree);
               if (state.index == 0)
-                brcvt_active_skip(state) = brcvt_resolve_skip(tree);
+                brcvt_active_skip(state) = tree_spot.noskip;
               state.bit_length = 0;
               state.index += 1;
+              state.bits = 0;
               if (state.index >= forest.size()) {
                 state.state += 1;
                 state.index = 0;
+                uint32 const old_accum = state.fwd.accum;
+                state.fwd = {};
+                state.fwd.accum = old_accum;
                 if (state.state != BrCvt_DataInsertCopy || state.insert_skip == brcvt_NoSkip)
                   break;
-                /* TODO handle an insert skip */
+                ae = brcvt_handle_inskip(state, to, to_end, to_next);
               }
             } else if (res != api_error::Success)
               ae = res;
           } break;
         case BrCvt_DataInsertCopy:
-          /* TODO this state */
+          {
+            unsigned const line = brcvt_inflow_lookup(state,
+              state.insert_forest[state.blocktypeI_index].tree, x);
+            if (line >= 704)
+              break;
+            brcvt_inflow_insert(state, line);
+            ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          } break;
+        case BrCvt_DataInsertExtra:
+          if (state.count < (state.extra_length&31)) {
+            state.bits |= (static_cast<uint32>(x)<<state.count);
+            state.count++;
+          }
+          if (state.count >= (state.extra_length&31)) {
+            state.fwd.literal_total += state.bits;
+            state.extra_length >>= 5;
+            state.bits = 0;
+            state.count = 0;
+            if (state.extra_length > 0)
+              state.state = BrCvt_DataCopyExtra;
+            else {
+              state.state = (state.blocktypeL_remaining
+                ? BrCvt_Literal : BrCvt_LiteralRestart);
+              ae = brcvt_handle_inskip(state, to, to_end, to_next);
+            }
+          } break;
+        case BrCvt_DataCopyExtra:
+          if (state.count < state.extra_length) {
+            state.bits |= (static_cast<uint32>(x)<<state.count);
+            state.count++;
+          }
+          if (state.count >= state.extra_length) {
+            state.fwd.stop += state.bits;
+            state.bits = 0;
+            state.state = (state.blocktypeL_remaining
+              ? BrCvt_Literal : BrCvt_LiteralRestart);
+            ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          } break;
+        case BrCvt_Literal:
+          {
+            context_map_mode const mode = state.literals_map.get_mode(state.blocktypeL_index);
+            std::size_t const column = ctxtmap_literal_context(mode, state.fwd.literal_ctxt[1],
+              state.fwd.literal_ctxt[0]);
+            int const index = state.literals_map(state.blocktypeL_index, column);
+            unsigned const line = brcvt_inflow_lookup(state,
+              state.literals_forest[index].tree, x);
+            if (line >= 256)
+              break;
+            brcvt_inflow_literal(state, line, to, to_end, to_next);
+            state.fwd.literal_i ++;
+            state.bit_length = 0;
+            state.bits = 0;
+            ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          } break;
+        case BrCvt_Distance:
+          {
+            std::size_t const column = ctxtmap_distance_context(state.fwd.literal_total);
+            int const index = state.distance_map(state.blocktypeD_index, column);
+            unsigned const line = brcvt_inflow_lookup(state,
+              state.distance_forest[index].tree, x);
+            if (line >= 520)
+              break;
+            api_error const res = brcvt_inflow_distance(state, line);
+            if (res == api_error::Partial)
+              ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          } break;
+        case BrCvt_DataDistanceExtra:
+          if (state.count < state.extra_length) {
+            state.bits |= (static_cast<uint32>(x)<<state.count);
+            state.count++;
+          }
+          if (state.count >= state.extra_length) {
+            brcvt_inflow_distextra(state);
+            state.extra_length = 0;
+            state.bit_length = 0;
+            state.bits = 0;
+            state.count = 0;
+            ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          } break;
+        case BrCvt_DoCopy:
+        case BrCvt_BDict:
+          ae = brcvt_handle_inskip(state, to, to_end, to_next);
           break;
         case 5000019: /* generate code trees */
           {
@@ -2830,7 +3167,7 @@ namespace text_complex {
         blocktypeI_skip(brcvt_NoSkip), blockcountI_skip(brcvt_NoSkip),
         blocktypeD_skip(brcvt_NoSkip), blockcountD_skip(brcvt_NoSkip),
         literal_skip(brcvt_NoSkip), insert_skip(brcvt_NoSkip), distance_skip(brcvt_NoSkip),
-        context_skip(brcvt_NoSkip)
+        context_skip(brcvt_NoSkip), fwd{}
     {
       if (n > 16777200u)
         n = 16777200u;
@@ -2942,10 +3279,17 @@ namespace text_complex {
         case BrCvt_GaspVectorL:
         case BrCvt_GaspVectorI:
         case BrCvt_GaspVectorD:
-        case BrCvt_DataInsertCopy:
         case BrCvt_Literal:
+        case BrCvt_DataInsertCopy:
+        case BrCvt_DataInsertExtra:
+        case BrCvt_DataCopyExtra:
         case BrCvt_LiteralRestart:
         case BrCvt_Distance:
+        case BrCvt_DistanceRestart:
+        case BrCvt_InsertRestart:
+        case BrCvt_DataDistanceExtra:
+        case BrCvt_DoCopy:
+        case BrCvt_BDict:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
@@ -3078,9 +3422,11 @@ namespace text_complex {
         case BrCvt_GaspVectorI:
         case BrCvt_GaspVectorD:
         case BrCvt_DataInsertCopy:
+        case BrCvt_DataInsertExtra:
+        case BrCvt_DataCopyExtra:
         case BrCvt_Literal:
-        case BrCvt_LiteralRestart:
         case BrCvt_Distance:
+        case BrCvt_LiteralRestart:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
