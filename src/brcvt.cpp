@@ -451,10 +451,10 @@ namespace text_complex {
         return api_error::Sanitize;
         ae = {};
       bdict_transform(text, transform, ae);
-      std::memcpy(ps.fwd.bstore, &text[0], size);
+      std::memcpy(ps.fwd.bstore, &text[0], text.size());
       if (ae != api_error::Success)
         return api_error::Sanitize;
-      ps.fwd.literal_total = size;
+      ps.fwd.literal_total = text.size();
       return api_error::Partial;
     }
 
