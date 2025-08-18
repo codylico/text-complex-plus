@@ -77,6 +77,15 @@ namespace text_complex {
     static uint32 brcvt_config_count
       (brcvt_state& state, unsigned long value, unsigned char next_state);
     /**
+     * @brief Accumulate the extra bits of a block count onto a bytes-remaining counter.
+     * @param state Brotli conversion state for bit collection
+     * @param[in,out] sum block count to adjust
+     * @param x next bit
+     * @param next_state target state on completion
+     */
+    static void brcvt_accum_remain(brcvt_state& state,
+      uint32& sum, unsigned x, unsigned next_state) noexcept;
+    /**
      * @brief Make a code length sequence.
      * @param x the mini-state for tree transmission
      * @param literals primary tree to encode
@@ -1051,13 +1060,7 @@ namespace text_complex {
               break;
             state.blocktypeI_remaining = brcvt_config_count(state, line_value, state.state + 1);
           } else if (state.bit_length < state.extra_length) {
-            state.bits |= (x<< state.bit_length++);
-            if (state.bit_length >= state.extra_length) {
-              state.blocktypeI_remaining += state.bits;
-              state.bits = 0;
-              state.bit_length = 0;
-              state.state += 1;
-            }
+            brcvt_accum_remain(state, state.blocktypeI_remaining, x, state.state + 1);
           } else ae = api_error::Sanitize;
           break;
         case BrCvt_BlockTypesD:
@@ -1763,6 +1766,18 @@ namespace text_complex {
       if (!state.extra_length)
         state.state = next_state;
       return row.insert_first;
+    }
+
+    void brcvt_accum_remain(brcvt_state& state,
+      uint32& sum, unsigned x, unsigned next_state) noexcept
+    {
+      state.bits |= (x<< state.bit_length++);
+      if (state.bit_length < state.extra_length)
+        return;
+      sum += state.bits;
+      state.bits = 0;
+      state.bit_length = 0;
+      state.state = static_cast<unsigned char>(next_state);
     }
 
     void brcvt_zerofill(brcvt_state::treety_box& treety, prefix_list& prefixes) {
