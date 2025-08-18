@@ -214,6 +214,12 @@ namespace text_complex {
      */
     static unsigned short& brcvt_active_skip(brcvt_state& ps) noexcept;
     /**
+     * @brief Query the guaranteed next state.
+     * @param state current transcoder state
+     * @return next state on success, `BadToken` otherwise
+     */
+    static unsigned char brcvt_next_state(unsigned char state) noexcept;
+    /**
      * @brief Process skip frameworks.
      * @param ps state to update
      * @param[out] to start of output buffer
@@ -262,6 +268,15 @@ namespace text_complex {
      * @return a value on success, `UINT_MAX` otherwise
      */
     static unsigned brcvt_inflow_lookup(brcvt_state& ps, prefix_list const& tree, unsigned x) noexcept;
+    /**
+     * @brief Apply a block switch command.
+     * @param current type of now-ending block
+     * @param max_value maximum block type index (i.e. `size - 1`)
+     * @param cmd switch command to apply
+     * @return result block type
+     */
+    static unsigned char brcvt_switch_blocktype(unsigned char current,
+        unsigned char max_value, unsigned cmd) noexcept;
 
     namespace {
       enum brcvt_istate {
@@ -317,6 +332,7 @@ namespace text_complex {
         BrCvt_InsertRestart = 60,
         BrCvt_DistanceRestart = 61,
         BrCvt_DataDistanceExtra = 62,
+        BrCvt_InsertRecount = 63,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -389,6 +405,14 @@ namespace text_complex {
       case BrCvt_GaspVectorD: return state.distance_skip;
       case BrCvt_GaspVectorL:
       default: return state.literal_skip;
+      }
+    }
+
+    unsigned char brcvt_next_state(unsigned char state) noexcept {
+      switch (state) {
+      case BrCvt_BlockStartI: return BrCvt_BlockTypesD;
+      case BrCvt_InsertRecount: return BrCvt_DataInsertCopy;
+      default: return BrCvt_BadToken;
       }
     }
 
@@ -482,6 +506,16 @@ namespace text_complex {
       return brcvt_inflow_distextra(ps);
     }
 
+    unsigned char brcvt_switch_blocktype(unsigned char current,
+        unsigned char max_value, unsigned cmd) noexcept
+    {
+      switch (cmd) {
+        case 0: return current;
+        case 1: return current >= max_value ? 0 : current+1;
+        default: return cmd - 2;
+      }
+    }
+
     unsigned brcvt_inflow_lookup(brcvt_state& ps,
       prefix_list const& tree, unsigned x) noexcept
     {
@@ -570,6 +604,9 @@ namespace text_complex {
         case BrCvt_DataInsertExtra:
         case BrCvt_DataCopyExtra:
         case BrCvt_DataDistanceExtra:
+          return api_error::Success;
+        case BrCvt_InsertRestart:
+          ps.bit_length = 0;
           return api_error::Success;
         default:
           return api_error::Sanitize;
@@ -1054,13 +1091,14 @@ namespace text_complex {
               ae = res;
           } break;
         case BrCvt_BlockStartI:
+        case BrCvt_InsertRecount:
           if (state.extra_length == 0) {
             unsigned const line_value = brcvt_inflow_lookup(state, state.insert_blockcount, x);
             if (line_value >= 26)
               break;
-            state.blocktypeI_remaining = brcvt_config_count(state, line_value, state.state + 1);
+            state.blocktypeI_remaining = brcvt_config_count(state, line_value, brcvt_next_state(state.state));
           } else if (state.bit_length < state.extra_length) {
-            brcvt_accum_remain(state, state.blocktypeI_remaining, x, state.state + 1);
+            brcvt_accum_remain(state, state.blocktypeI_remaining, x, brcvt_next_state(state.state));
           } else ae = api_error::Sanitize;
           break;
         case BrCvt_BlockTypesD:
@@ -1464,6 +1502,19 @@ namespace text_complex {
         case BrCvt_BDict:
           ae = brcvt_handle_inskip(state, to, to_end, to_next);
           break;
+        case BrCvt_InsertRestart:
+          if (state.bit_length == 0)
+            state.bits = 0;
+          {
+            unsigned const line = brcvt_inflow_lookup(state, state.insert_blocktype, x);
+            if (line > state.blocktypeI_max+2)
+              break;
+            state.blocktypeI_index = brcvt_switch_blocktype(state.blocktypeI_index, state.blocktypeI_max, line);
+            state.state = BrCvt_InsertRecount;
+            state.bit_length = 0;
+            state.extra_length = 0;
+            ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          } break;
         case 5000019: /* generate code trees */
           {
             fixlist_gen_codes(state.literals, ae);
@@ -3298,6 +3349,7 @@ namespace text_complex {
         case BrCvt_DataDistanceExtra:
         case BrCvt_DoCopy:
         case BrCvt_BDict:
+        case BrCvt_InsertRecount:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
