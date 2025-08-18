@@ -1046,17 +1046,10 @@ namespace text_complex {
           } break;
         case BrCvt_BlockStartI:
           if (state.extra_length == 0) {
-            size_t code_index = ~0;
-            state.bits = (state.bits<<1) | x;
-            state.bit_length += 1;
-            code_index = fixlist_codebsearch(state.insert_blockcount, state.bit_length, state.bits);
-            if (code_index >= 26) {
-              if (state.bit_length >= 15)
-                ae = api_error::Sanitize;
+            unsigned const line_value = brcvt_inflow_lookup(state, state.insert_blockcount, x);
+            if (line_value >= 26)
               break;
-            }
-            prefix_line const& line = state.insert_blockcount[code_index];
-            state.blocktypeI_remaining = brcvt_config_count(state, line.value, state.state + 1);
+            state.blocktypeI_remaining = brcvt_config_count(state, line_value, state.state + 1);
           } else if (state.bit_length < state.extra_length) {
             state.bits |= (x<< state.bit_length++);
             if (state.bit_length >= state.extra_length) {
