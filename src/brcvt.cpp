@@ -622,6 +622,7 @@ namespace text_complex {
             return api_error::Success;
           ps.blocktypeD_index = brcvt_switch_blocktype(ps.blocktypeD_index, ps.blocktypeD_max, ps.blocktypeD_skip);
           ps.state = BrCvt_DistanceRecount;
+          ps.bits = 0;
           ps.extra_length = 0;
           break;
         default:
@@ -1517,6 +1518,21 @@ namespace text_complex {
             state.blocktypeI_index = brcvt_switch_blocktype(state.blocktypeI_index, state.blocktypeI_max, line);
             state.state = BrCvt_InsertRecount;
             state.bit_length = 0;
+            state.bits = 0;
+            state.extra_length = 0;
+            ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          } break;
+        case BrCvt_DistanceRestart:
+          if (state.bit_length == 0)
+            state.bits = 0;
+          {
+            unsigned const line = brcvt_inflow_lookup(state, state.distance_blocktype, x);
+            if (line > state.blocktypeI_max+2)
+              break;
+            state.blocktypeD_index = brcvt_switch_blocktype(state.blocktypeD_index, state.blocktypeD_max, line);
+            state.state = BrCvt_DistanceRecount;
+            state.bit_length = 0;
+            state.bits = 0;
             state.extra_length = 0;
             ae = brcvt_handle_inskip(state, to, to_end, to_next);
           } break;
