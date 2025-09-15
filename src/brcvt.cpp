@@ -333,6 +333,7 @@ namespace text_complex {
         BrCvt_DistanceRestart = 61,
         BrCvt_DataDistanceExtra = 62,
         BrCvt_InsertRecount = 63,
+        BrCvt_DistanceRecount = 64,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -412,6 +413,8 @@ namespace text_complex {
       switch (state) {
       case BrCvt_BlockStartI: return BrCvt_BlockTypesD;
       case BrCvt_InsertRecount: return BrCvt_DataInsertCopy;
+      case BrCvt_BlockStartD: return BrCvt_NPostfix;
+      case BrCvt_DistanceRecount: return BrCvt_Distance;
       default: return BrCvt_BadToken;
       }
     }
@@ -607,7 +610,20 @@ namespace text_complex {
           return api_error::Success;
         case BrCvt_InsertRestart:
           ps.bit_length = 0;
-          return api_error::Success;
+          if (ps.blocktypeI_skip == brcvt_NoSkip)
+            return api_error::Success;
+          ps.blocktypeI_index = brcvt_switch_blocktype(ps.blocktypeI_index, ps.blocktypeI_max, ps.blocktypeI_skip);
+          ps.state = BrCvt_InsertRecount;
+          ps.extra_length = 0;
+          break;
+        case BrCvt_DistanceRestart:
+          ps.bit_length = 0;
+          if (ps.blocktypeD_skip == brcvt_NoSkip)
+            return api_error::Success;
+          ps.blocktypeD_index = brcvt_switch_blocktype(ps.blocktypeD_index, ps.blocktypeD_max, ps.blocktypeD_skip);
+          ps.state = BrCvt_DistanceRecount;
+          ps.extra_length = 0;
+          break;
         default:
           return api_error::Sanitize;
         }
@@ -1166,26 +1182,14 @@ namespace text_complex {
               ae = res;
           } break;
         case BrCvt_BlockStartD:
+        case BrCvt_DistanceRecount:
           if (state.extra_length == 0) {
-            size_t code_index = ~0;
-            state.bits = (state.bits<<1) | x;
-            state.bit_length += 1;
-            code_index = fixlist_codebsearch(state.distance_blockcount, state.bit_length, state.bits);
-            if (code_index >= 26) {
-              if (state.bit_length >= 15)
-                ae = api_error::Sanitize;
+            unsigned const line_value = brcvt_inflow_lookup(state, state.distance_blockcount, x);
+            if (line_value >= 26)
               break;
-            }
-            prefix_line const& line = state.distance_blockcount[code_index];
-            state.blocktypeD_remaining = brcvt_config_count(state, line.value, state.state + 1);
+            state.blocktypeD_remaining = brcvt_config_count(state, line_value, brcvt_next_state(state.state));
           } else if (state.bit_length < state.extra_length) {
-            state.bits |= (x<< state.bit_length++);
-            if (state.bit_length >= state.extra_length) {
-              state.blocktypeD_remaining += state.bits;
-              state.bits = 0;
-              state.bit_length = 0;
-              state.state += 1;
-            }
+            brcvt_accum_remain(state, state.blocktypeD_remaining, x, brcvt_next_state(state.state));
           } else ae = api_error::Sanitize;
           break;
         case BrCvt_NPostfix:
