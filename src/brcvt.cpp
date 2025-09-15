@@ -1486,6 +1486,7 @@ namespace text_complex {
             if (line >= 520)
               break;
             api_error const res = brcvt_inflow_distance(state, line);
+            state.blocktypeD_remaining -= 1;
             if (res == api_error::Partial)
               ae = brcvt_handle_inskip(state, to, to_end, to_next);
           } break;
@@ -1818,6 +1819,7 @@ namespace text_complex {
       state.extra_length = row.insert_bits;
       state.bits = 0;
       state.bit_length = 0;
+      state.count = 0;
       if (!state.extra_length)
         state.state = next_state;
       return row.insert_first;
@@ -3354,6 +3356,7 @@ namespace text_complex {
         case BrCvt_DoCopy:
         case BrCvt_BDict:
         case BrCvt_InsertRecount:
+        case BrCvt_DistanceRecount:
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
