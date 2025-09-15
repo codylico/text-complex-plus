@@ -604,6 +604,20 @@ namespace text_complex {
           ps.state = (ps.blocktypeI_remaining ? BrCvt_DataInsertCopy
             : BrCvt_InsertRestart);
           break;
+        case BrCvt_InsertRecount:
+          if (ps.extra_length == 0 && ps.blockcountI_skip != brcvt_NoSkip) {
+            ps.blocktypeI_remaining = brcvt_config_count(ps, ps.blockcountI_skip, BrCvt_DataInsertCopy);
+            if (ps.extra_length == 0)
+              continue;
+          }
+          return api_error::Success;
+        case BrCvt_DistanceRecount:
+          if (ps.extra_length == 0 && ps.blockcountD_skip != brcvt_NoSkip) {
+            ps.blocktypeD_remaining = brcvt_config_count(ps, ps.blockcountD_skip, BrCvt_Distance);
+            if (ps.extra_length == 0)
+              continue;
+          }
+          return api_error::Success;
         case BrCvt_DataInsertExtra:
         case BrCvt_DataCopyExtra:
         case BrCvt_DataDistanceExtra:
@@ -1527,7 +1541,7 @@ namespace text_complex {
             state.bits = 0;
           {
             unsigned const line = brcvt_inflow_lookup(state, state.distance_blocktype, x);
-            if (line > state.blocktypeI_max+2)
+            if (line > state.blocktypeD_max+2)
               break;
             state.blocktypeD_index = brcvt_switch_blocktype(state.blocktypeD_index, state.blocktypeD_max, line);
             state.state = BrCvt_DistanceRecount;
