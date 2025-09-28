@@ -44,6 +44,99 @@ namespace text_complex {
     static
     unsigned char brcvt_clen[] =
       {1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    namespace {
+      enum brcvt_istate {
+        BrCvt_WBits = 0,
+        BrCvt_MetaStart = 1,
+        BrCvt_MetaLength = 2,
+        BrCvt_MetaText = 3,
+        BrCvt_LastCheck = 4,
+        BrCvt_Nibbles = 5,
+        BrCvt_InputLength = 6,
+        BrCvt_Done = 7,
+        BrCvt_CompressCheck = 8,
+        BrCvt_Uncompress = 9,
+        BrCvt_BadToken = 10,
+        BrCvt_BlockTypesL = 16,
+        BrCvt_BlockTypesLAlpha = 17,
+        BrCvt_BlockCountLAlpha = 18,
+        BrCvt_BlockStartL = 19,
+        BrCvt_BlockTypesI = 20,
+        BrCvt_BlockTypesIAlpha = 21,
+        BrCvt_BlockCountIAlpha = 22,
+        BrCvt_BlockStartI = 23,
+        BrCvt_BlockTypesD = 24,
+        BrCvt_BlockTypesDAlpha = 25,
+        BrCvt_BlockCountDAlpha = 26,
+        BrCvt_BlockStartD = 27,
+        BrCvt_NPostfix = 28,
+        BrCvt_ContextTypesL = 29,
+        BrCvt_TreeCountL = 30,
+        BrCvt_ContextRunMaxL = 31,
+        BrCvt_ContextPrefixL = 32,
+        BrCvt_ContextValuesL = 33,
+        BrCvt_ContextRepeatL = 34,
+        BrCvt_ContextInvertL = 35,
+        BrCvt_TreeCountD = 38,
+        BrCvt_ContextRunMaxD = 39,
+        BrCvt_ContextPrefixD = 40,
+        BrCvt_ContextValuesD = 41,
+        BrCvt_ContextRepeatD = 42,
+        BrCvt_ContextInvertD = 43,
+        BrCvt_GaspVectorL = 44,
+        BrCvt_GaspVectorI = 45,
+        BrCvt_GaspVectorD = 46,
+        BrCvt_DataInsertCopy = 47,
+        BrCvt_DoCopy = 48,
+        BrCvt_DataInsertExtra = 49,
+        BrCvt_DataCopyExtra = 50,
+
+        BrCvt_Literal = 56,
+        BrCvt_Distance = 57,
+        BrCvt_LiteralRestart = 58,
+        BrCvt_BDict = 59,
+        BrCvt_InsertRestart = 60,
+        BrCvt_DistanceRestart = 61,
+        BrCvt_DataDistanceExtra = 62,
+        BrCvt_InsertRecount = 63,
+        BrCvt_DistanceRecount = 64,
+      };
+      /** @brief Treety machine states. */
+      enum brcvt_tstate {
+        BrCvt_TComplex = 0,
+        BrCvt_TSimpleCount = 1,
+        BrCvt_TSimpleAlpha = 2,
+        BrCvt_TDone = 3,
+        BrCvt_TSimpleFour = 4,
+        BrCvt_TSymbols = 5,
+        BrCvt_TRepeatStop = 14,
+        BrCvt_TRepeat = 16,
+        BrCvt_TZeroes = 17,
+        BrCvt_TNineteen = 19,
+      };
+      /** @brief Output parser state. */
+      enum brcvt_ostate {
+        BrCvt_DataCopy = 175,
+      };
+
+      enum brcvt_const : unsigned int {
+        brcvt_MetaHeaderLen = 6,
+        brcvt_CLenExtent = sizeof(brcvt_clen)/sizeof(brcvt_clen[0]),
+        brcvt_Margin = 16,
+        brcvt_BlockCountBits = 5,
+        brcvt_NoSkip = std::numeric_limits<short>::max(),
+        brcvt_RepeatBit = 128,
+        brcvt_TreetyOutflowMax = 4096,
+        brcvt_ZeroBit = 64,
+      };
+
+      struct brcvt_token {
+        uint32 first;
+        unsigned short second;
+        unsigned char state;
+      };
+    }
+
     static
     uint32 brcvt_cinfo(uint32 window_size);
     static
@@ -277,99 +370,21 @@ namespace text_complex {
      */
     static unsigned char brcvt_switch_blocktype(unsigned char current,
         unsigned char max_value, unsigned cmd) noexcept;
+    /**
+     * @brief Handle restarting a prefix forest mid-block.
+     * @param state state structure to update
+     * @param fix prefix tree for determining next block type
+     * @param[in,out] blocktype_index block type to update
+     * @param blocktype_max maximum block type for the current meta-block
+     * @param next new machine state to enter on success
+     * @param x current input bit
+     * @param label label for diagnostics
+     * @return whether a state transition occurred
+     */
+    static bool brcvt_inflow_restart(brcvt_state& state, prefix_list const& fix,
+      unsigned char& blocktype_index, unsigned char blocktype_max,
+      brcvt_istate next, unsigned x) noexcept;
 
-    namespace {
-      enum brcvt_istate {
-        BrCvt_WBits = 0,
-        BrCvt_MetaStart = 1,
-        BrCvt_MetaLength = 2,
-        BrCvt_MetaText = 3,
-        BrCvt_LastCheck = 4,
-        BrCvt_Nibbles = 5,
-        BrCvt_InputLength = 6,
-        BrCvt_Done = 7,
-        BrCvt_CompressCheck = 8,
-        BrCvt_Uncompress = 9,
-        BrCvt_BadToken = 10,
-        BrCvt_BlockTypesL = 16,
-        BrCvt_BlockTypesLAlpha = 17,
-        BrCvt_BlockCountLAlpha = 18,
-        BrCvt_BlockStartL = 19,
-        BrCvt_BlockTypesI = 20,
-        BrCvt_BlockTypesIAlpha = 21,
-        BrCvt_BlockCountIAlpha = 22,
-        BrCvt_BlockStartI = 23,
-        BrCvt_BlockTypesD = 24,
-        BrCvt_BlockTypesDAlpha = 25,
-        BrCvt_BlockCountDAlpha = 26,
-        BrCvt_BlockStartD = 27,
-        BrCvt_NPostfix = 28,
-        BrCvt_ContextTypesL = 29,
-        BrCvt_TreeCountL = 30,
-        BrCvt_ContextRunMaxL = 31,
-        BrCvt_ContextPrefixL = 32,
-        BrCvt_ContextValuesL = 33,
-        BrCvt_ContextRepeatL = 34,
-        BrCvt_ContextInvertL = 35,
-        BrCvt_TreeCountD = 38,
-        BrCvt_ContextRunMaxD = 39,
-        BrCvt_ContextPrefixD = 40,
-        BrCvt_ContextValuesD = 41,
-        BrCvt_ContextRepeatD = 42,
-        BrCvt_ContextInvertD = 43,
-        BrCvt_GaspVectorL = 44,
-        BrCvt_GaspVectorI = 45,
-        BrCvt_GaspVectorD = 46,
-        BrCvt_DataInsertCopy = 47,
-        BrCvt_DoCopy = 48,
-        BrCvt_DataInsertExtra = 49,
-        BrCvt_DataCopyExtra = 50,
-
-        BrCvt_Literal = 56,
-        BrCvt_Distance = 57,
-        BrCvt_LiteralRestart = 58,
-        BrCvt_BDict = 59,
-        BrCvt_InsertRestart = 60,
-        BrCvt_DistanceRestart = 61,
-        BrCvt_DataDistanceExtra = 62,
-        BrCvt_InsertRecount = 63,
-        BrCvt_DistanceRecount = 64,
-      };
-      /** @brief Treety machine states. */
-      enum brcvt_tstate {
-        BrCvt_TComplex = 0,
-        BrCvt_TSimpleCount = 1,
-        BrCvt_TSimpleAlpha = 2,
-        BrCvt_TDone = 3,
-        BrCvt_TSimpleFour = 4,
-        BrCvt_TSymbols = 5,
-        BrCvt_TRepeatStop = 14,
-        BrCvt_TRepeat = 16,
-        BrCvt_TZeroes = 17,
-        BrCvt_TNineteen = 19,
-      };
-      /** @brief Output parser state. */
-      enum brcvt_ostate {
-        BrCvt_DataCopy = 175,
-      };
-
-      enum brcvt_const : unsigned int {
-        brcvt_MetaHeaderLen = 6,
-        brcvt_CLenExtent = sizeof(brcvt_clen)/sizeof(brcvt_clen[0]),
-        brcvt_Margin = 16,
-        brcvt_BlockCountBits = 5,
-        brcvt_NoSkip = std::numeric_limits<short>::max(),
-        brcvt_RepeatBit = 128,
-        brcvt_TreetyOutflowMax = 4096,
-        brcvt_ZeroBit = 64,
-      };
-
-      struct brcvt_token {
-        uint32 first;
-        unsigned short second;
-        unsigned char state;
-      };
-    }
 
     //BEGIN brcvt / static
     void brcvt_next_block(brcvt_state& state) noexcept {
@@ -535,6 +550,22 @@ namespace text_complex {
       return static_cast<unsigned>(tree[line_index].value);
     }
 
+    static bool brcvt_inflow_restart(brcvt_state& state, prefix_list const& fix,
+      unsigned char& blocktype_index, unsigned char blocktype_max,
+      brcvt_istate next, unsigned x) noexcept
+    {
+      if (state.bit_length == 0)
+        state.bits = 0;
+      unsigned const line = brcvt_inflow_lookup(state, fix, x);
+      if (line > blocktype_max+2)
+        return false;
+      blocktype_index = brcvt_switch_blocktype(blocktype_index, blocktype_max, line);
+      state.state = next;
+      state.bit_length = 0;
+      state.bits = 0;
+      state.extra_length = 0;
+      return true;
+    }
 
     api_error brcvt_handle_inskip(brcvt_state& ps,
       unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept
@@ -1523,33 +1554,21 @@ namespace text_complex {
           ae = brcvt_handle_inskip(state, to, to_end, to_next);
           break;
         case BrCvt_InsertRestart:
-          if (state.bit_length == 0)
-            state.bits = 0;
+          if (!brcvt_inflow_restart(state, state.insert_blocktype,
+            state.blocktypeI_index, state.blocktypeI_max, BrCvt_InsertRecount, x))
           {
-            unsigned const line = brcvt_inflow_lookup(state, state.insert_blocktype, x);
-            if (line > state.blocktypeI_max+2)
-              break;
-            state.blocktypeI_index = brcvt_switch_blocktype(state.blocktypeI_index, state.blocktypeI_max, line);
-            state.state = BrCvt_InsertRecount;
-            state.bit_length = 0;
-            state.bits = 0;
-            state.extra_length = 0;
-            ae = brcvt_handle_inskip(state, to, to_end, to_next);
-          } break;
+            break;
+          }
+          ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          break;
         case BrCvt_DistanceRestart:
-          if (state.bit_length == 0)
-            state.bits = 0;
+          if (!brcvt_inflow_restart(state, state.distance_blocktype,
+            state.blocktypeD_index, state.blocktypeD_max, BrCvt_DistanceRecount, x))
           {
-            unsigned const line = brcvt_inflow_lookup(state, state.distance_blocktype, x);
-            if (line > state.blocktypeD_max+2)
-              break;
-            state.blocktypeD_index = brcvt_switch_blocktype(state.blocktypeD_index, state.blocktypeD_max, line);
-            state.state = BrCvt_DistanceRecount;
-            state.bit_length = 0;
-            state.bits = 0;
-            state.extra_length = 0;
-            ae = brcvt_handle_inskip(state, to, to_end, to_next);
-          } break;
+            break;
+          }
+          ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          break;
         case 5000019: /* generate code trees */
           {
             fixlist_gen_codes(state.literals, ae);
