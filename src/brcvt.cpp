@@ -100,6 +100,7 @@ namespace text_complex {
         BrCvt_DataDistanceExtra = 62,
         BrCvt_InsertRecount = 63,
         BrCvt_DistanceRecount = 64,
+        BrCvt_LiteralRecount = 65,
       };
       /** @brief Treety machine states. */
       enum brcvt_tstate {
@@ -430,6 +431,8 @@ namespace text_complex {
       case BrCvt_InsertRecount: return BrCvt_DataInsertCopy;
       case BrCvt_BlockStartD: return BrCvt_NPostfix;
       case BrCvt_DistanceRecount: return BrCvt_Distance;
+      case BrCvt_BlockStartL: return BrCvt_BlockTypesI;
+      case BrCvt_LiteralRecount: return BrCvt_Literal;
       default: return BrCvt_BadToken;
       }
     }
@@ -649,6 +652,13 @@ namespace text_complex {
               continue;
           }
           return api_error::Success;
+        case BrCvt_LiteralRecount:
+          if (ps.extra_length == 0 && ps.blockcountL_skip != brcvt_NoSkip) {
+            ps.blocktypeL_remaining = brcvt_config_count(ps, ps.blockcountL_skip, BrCvt_Literal);
+            if (ps.extra_length == 0)
+              continue;
+          }
+          return api_error::Success;
         case BrCvt_DataInsertExtra:
         case BrCvt_DataCopyExtra:
         case BrCvt_DataDistanceExtra:
@@ -667,6 +677,15 @@ namespace text_complex {
             return api_error::Success;
           ps.blocktypeD_index = brcvt_switch_blocktype(ps.blocktypeD_index, ps.blocktypeD_max, ps.blocktypeD_skip);
           ps.state = BrCvt_DistanceRecount;
+          ps.bits = 0;
+          ps.extra_length = 0;
+          break;
+        case BrCvt_LiteralRestart:
+          ps.bit_length = 0;
+          if (ps.blocktypeL_skip == brcvt_NoSkip)
+            return api_error::Success;
+          ps.blocktypeL_index = brcvt_switch_blocktype(ps.blocktypeL_index, ps.blocktypeL_max, ps.blocktypeL_skip);
+          ps.state = BrCvt_LiteralRecount;
           ps.bits = 0;
           ps.extra_length = 0;
           break;
@@ -1067,26 +1086,14 @@ namespace text_complex {
               ae = res;
           } break;
         case BrCvt_BlockStartL:
+        case BrCvt_LiteralRecount:
           if (state.extra_length == 0) {
-            size_t code_index = ~0;
-            state.bits = (state.bits<<1) | x;
-            state.bit_length += 1;
-            code_index = fixlist_codebsearch(state.literal_blockcount, state.bit_length, state.bits);
-            if (code_index >= 26) {
-              if (state.bit_length >= 15)
-                ae = api_error::Sanitize;
+            unsigned const line_value = brcvt_inflow_lookup(state, state.literal_blockcount, x);
+            if (line_value >= 26)
               break;
-            }
-            prefix_line const& line = state.literal_blockcount[code_index];
-            state.blocktypeL_remaining = brcvt_config_count(state, line.value, state.state + 1);
+            state.blocktypeL_remaining = brcvt_config_count(state, line_value, brcvt_next_state(state.state));
           } else if (state.bit_length < state.extra_length) {
-            state.bits |= (x<< state.bit_length++);
-            if (state.bit_length >= state.extra_length) {
-              state.blocktypeL_remaining += state.bits;
-              state.bits = 0;
-              state.bit_length = 0;
-              state.state += 1;
-            }
+            brcvt_accum_remain(state, state.blocktypeL_remaining, x, brcvt_next_state(state.state));
           } else ae = api_error::Sanitize;
           break;
         case BrCvt_BlockTypesI:
@@ -1562,6 +1569,14 @@ namespace text_complex {
           ae = brcvt_handle_inskip(state, to, to_end, to_next);
           break;
         case BrCvt_DistanceRestart:
+          if (!brcvt_inflow_restart(state, state.distance_blocktype,
+            state.blocktypeD_index, state.blocktypeD_max, BrCvt_DistanceRecount, x))
+          {
+            break;
+          }
+          ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          break;
+        case BrCvt_LiteralRestart:
           if (!brcvt_inflow_restart(state, state.distance_blocktype,
             state.blocktypeD_index, state.blocktypeD_max, BrCvt_DistanceRecount, x))
           {
