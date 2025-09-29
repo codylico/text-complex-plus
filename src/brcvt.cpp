@@ -2102,6 +2102,10 @@ namespace text_complex {
         fixlist_gen_codes(prefixes, ae2);
         if (ae2 != api_error::Success)
           return ae2;
+        api_error ae3 = api_error::Success;
+        fixlist_codesort(prefixes, ae3);
+        if (ae3 != api_error::Success)
+          return ae3;
         return api_error::EndOfFile;
     }
 
