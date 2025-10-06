@@ -44,6 +44,20 @@ namespace text_complex {
     static
     unsigned char brcvt_clen[] =
       {1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    /**
+    * @brief Initial block type history.
+    * @see RFC 7932, section 6, paragraph 2
+    * @verbatim
+    A block type symbol 0 means that the new block type is the
+    same as the type of the previous block from the same block category,
+    i.e., the block type that preceded the current type. ...
+    The previous and current block types are initialized
+    to 1 and 0, respectively, at the end of the meta-block header.
+    @endverbatim
+    */
+    static
+    constexpr brcvt_state::block_box brcvt_btype_zero = {0,1};
+
     namespace {
       enum brcvt_istate {
         BrCvt_WBits = 0,
@@ -369,7 +383,7 @@ namespace text_complex {
      * @param cmd switch command to apply
      * @return result block type
      */
-    static unsigned char brcvt_switch_blocktype(unsigned char current,
+    static brcvt_state::block_box brcvt_switch_blocktype(brcvt_state::block_box current,
         unsigned char max_value, unsigned cmd) noexcept;
     /**
      * @brief Handle restarting a prefix forest mid-block.
@@ -383,7 +397,7 @@ namespace text_complex {
      * @return whether a state transition occurred
      */
     static bool brcvt_inflow_restart(brcvt_state& state, prefix_list const& fix,
-      unsigned char& blocktype_index, unsigned char blocktype_max,
+      brcvt_state::block_box& blocktype_index, unsigned char blocktype_max,
       brcvt_istate next, unsigned x) noexcept;
 
 
@@ -527,13 +541,13 @@ namespace text_complex {
       return brcvt_inflow_distextra(ps);
     }
 
-    unsigned char brcvt_switch_blocktype(unsigned char current,
+    brcvt_state::block_box brcvt_switch_blocktype(brcvt_state::block_box box,
         unsigned char max_value, unsigned cmd) noexcept
     {
       switch (cmd) {
-        case 0: return current;
-        case 1: return current >= max_value ? 0 : current+1;
-        default: return cmd - 2;
+        case 0: return {box.previous,box.current};
+        case 1: return {static_cast<unsigned char>(box.current >= max_value ? 0 : box.current+1), box.current};
+        default: return brcvt_state::block_box{static_cast<unsigned char>(cmd - 2), box.current};
       }
     }
 
@@ -554,7 +568,7 @@ namespace text_complex {
     }
 
     static bool brcvt_inflow_restart(brcvt_state& state, prefix_list const& fix,
-      unsigned char& blocktype_index, unsigned char blocktype_max,
+      brcvt_state::block_box& blocktype_index, unsigned char blocktype_max,
       brcvt_istate next, unsigned x) noexcept
     {
       if (state.bit_length == 0)
@@ -1033,7 +1047,7 @@ namespace text_complex {
           }
           if (state.count >= state.bit_length) {
             brcvt_reset19(state.treety);
-            state.blocktypeL_index = 0;
+            state.blocktypeL_index = brcvt_btype_zero;
             if (state.count == 1) {
               state.treety.count = 1;
               fixlist_preset(state.literal_blocktype, prefix_preset::BrotliSimple1);
@@ -1077,7 +1091,7 @@ namespace text_complex {
               state.bits = 0;
               state.count = 0;
               state.extra_length = 0;
-              state.blocktypeL_index = 0;
+              state.blocktypeL_index = brcvt_btype_zero;
               state.blocktypeL_remaining = 0;
               fixlist_codesort(state.literal_blockcount, ae);
               if (state.blockcountL_skip != brcvt_NoSkip)
@@ -1108,7 +1122,7 @@ namespace text_complex {
           }
           if (state.count >= state.bit_length) {
             brcvt_reset19(state.treety);
-            state.blocktypeI_index = 0;
+            state.blocktypeI_index = brcvt_btype_zero;
             if (state.count == 1) {
               state.treety.count = 1;
               fixlist_preset(state.insert_blocktype, prefix_preset::BrotliSimple1);
@@ -1151,7 +1165,7 @@ namespace text_complex {
               state.bits = 0;
               state.count = 0;
               state.extra_length = 0;
-              state.blocktypeI_index = 0;
+              state.blocktypeI_index = brcvt_btype_zero;
               state.blocktypeI_remaining = 0;
               fixlist_codesort(state.insert_blockcount, ae);
               if (state.blockcountI_skip != brcvt_NoSkip)
@@ -1182,7 +1196,7 @@ namespace text_complex {
           }
           if (state.count >= state.bit_length) {
             brcvt_reset19(state.treety);
-            state.blocktypeD_index = 0;
+            state.blocktypeD_index = brcvt_btype_zero;
             if (state.count == 1) {
               state.treety.count = 1;
               fixlist_preset(state.distance_blocktype, prefix_preset::BrotliSimple1);
@@ -1226,7 +1240,7 @@ namespace text_complex {
               state.bits = 0;
               state.count = 0;
               state.extra_length = 0;
-              state.blocktypeD_index = 0;
+              state.blocktypeD_index = brcvt_btype_zero;
               state.blocktypeD_remaining = 0;
               fixlist_codesort(state.distance_blockcount, ae);
               if (state.blockcountD_skip != brcvt_NoSkip)
@@ -1478,7 +1492,7 @@ namespace text_complex {
         case BrCvt_DataInsertCopy:
           {
             unsigned const line = brcvt_inflow_lookup(state,
-              state.insert_forest[state.blocktypeI_index].tree, x);
+              state.insert_forest[state.blocktypeI_index.current].tree, x);
             if (line >= 704)
               break;
             brcvt_inflow_insert(state, line);
@@ -1516,10 +1530,10 @@ namespace text_complex {
           } break;
         case BrCvt_Literal:
           {
-            context_map_mode const mode = state.literals_map.get_mode(state.blocktypeL_index);
+            context_map_mode const mode = state.literals_map.get_mode(state.blocktypeL_index.current);
             std::size_t const column = ctxtmap_literal_context(mode, state.fwd.literal_ctxt[1],
               state.fwd.literal_ctxt[0]);
-            int const index = state.literals_map(state.blocktypeL_index, column);
+            int const index = state.literals_map(state.blocktypeL_index.current, column);
             unsigned const line = brcvt_inflow_lookup(state,
               state.literals_forest[index].tree, x);
             if (line >= 256)
@@ -1533,7 +1547,7 @@ namespace text_complex {
         case BrCvt_Distance:
           {
             std::size_t const column = ctxtmap_distance_context(state.fwd.literal_total);
-            int const index = state.distance_map(state.blocktypeD_index, column);
+            int const index = state.distance_map(state.blocktypeD_index.current, column);
             unsigned const line = brcvt_inflow_lookup(state,
               state.distance_forest[index].tree, x);
             if (line >= 520)
@@ -3290,9 +3304,9 @@ namespace text_complex {
         wbits_select(0u), emptymeta(false), write_scratch(0), checksum(0u),
         bit_cap(0u), meta_index(0), metatext(nullptr), max_len_meta(1024),
         treety{}, guesses{},
-        blocktypeL_index(0), blocktypeL_max(0),
-        blocktypeI_index(0), blocktypeI_max(0),
-        blocktypeD_index(0), blocktypeD_max(0),
+        blocktypeL_index(brcvt_btype_zero), blocktypeL_max(0),
+        blocktypeI_index(brcvt_btype_zero), blocktypeI_max(0),
+        blocktypeD_index(brcvt_btype_zero), blocktypeD_max(0),
         rlemax(0),
         guess_lengths{},
         blocktypeL_remaining(0),blocktypeI_remaining(0),

@@ -86,6 +86,13 @@ namespace text_complex {
         unsigned char literal_ctxt[2];
       };
       /**
+       * @brief Block type history tracker.
+       */
+      struct block_box {
+        unsigned char current;
+        unsigned char previous;
+      };
+      /**
        * @brief ...
        * @note Using a buffer with a slide ring extent greater than 32768
        *   can cause output sanity check to fail.
@@ -186,15 +193,15 @@ namespace text_complex {
       /** @brief Context mode offset for outflow. */
       unsigned char guess_offset;
       /** @brief Current literal block type. */
-      unsigned char blocktypeL_index;
+      block_box blocktypeL_index;
       /** @brief Maximum literal block type. */
       unsigned char blocktypeL_max;
       /** @brief Current insert-and-copy block type. */
-      unsigned char blocktypeI_index;
+      block_box blocktypeI_index;
       /** @brief Maximum insert-and-copy block type. */
       unsigned char blocktypeI_max;
       /** @brief Current distance block type. */
-      unsigned char blocktypeD_index;
+      block_box blocktypeD_index;
       /** @brief Maximum distance block type. */
       unsigned char blocktypeD_max;
       /** @brief Field for context map transcoding. */
