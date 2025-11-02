@@ -12,7 +12,7 @@ int do_in(std::istream& in, std::ostream& out) {
   unsigned char outbuf[256];
   int ec = EXIT_SUCCESS;
   namespace tca = text_complex::access;
-  tca::brcvt_state state(1, 32768, 1);
+  tca::brcvt_state state(1, 16777200u, 1);
   bool done = false;
   while (ec == EXIT_SUCCESS && !done) {
     if (in.eof())
