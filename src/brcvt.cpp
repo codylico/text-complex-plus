@@ -610,6 +610,8 @@ namespace text_complex {
             ps.bits = 0;
             continue;
           } else if (ps.literal_skip != brcvt_NoSkip) {
+            if (to_next >= to_end)
+              return api_error::Partial;
             brcvt_inflow_literal(ps, ps.literal_skip, to, to_end, to_next);
             continue;
           } else return api_error::Success;
@@ -1529,7 +1531,9 @@ namespace text_complex {
             ae = brcvt_handle_inskip(state, to, to_end, to_next);
           } break;
         case BrCvt_Literal:
-          {
+          if (to_next >= to_end)
+            ae = api_error::Partial;
+          else {
             context_map_mode const mode = state.literals_map.get_mode(state.blocktypeL_index.current);
             std::size_t const column = ctxtmap_literal_context(mode, state.fwd.literal_ctxt[1],
               state.fwd.literal_ctxt[0]);
