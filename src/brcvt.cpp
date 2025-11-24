@@ -994,6 +994,7 @@ namespace text_complex {
           if (state.count >= state.bit_length) {
             if (!(state.backward>>(state.count-8)))
               ae = api_error::Sanitize;
+            state.metablock_pos = 0;
             state.count = 0;
             state.state = BrCvt_MetaText;
           }
@@ -3447,7 +3448,7 @@ namespace text_complex {
           ae = brcvt_in_bits(state, (*p), to, to_end, to_out);
           break;
         case BrCvt_MetaText:
-          if (state.count == 0) {
+          if (state.metablock_pos == 0) {
             /* allocate */
             size_t const use_backward = (state.backward >= state.max_len_meta)
               ? state.max_len_meta : state.backward;
@@ -3458,12 +3459,12 @@ namespace text_complex {
             state.metatext = state.metadata[state.meta_index].data();
             state.index = state.metadata[state.meta_index].size();
           }
-          if (state.count < state.backward) {
-            if (state.count < state.index)
-              state.metatext[state.count] = (*p);
-            state.count += 1;
+          if (state.metablock_pos < state.backward) {
+            if (state.metablock_pos < state.index)
+              state.metatext[state.metablock_pos] = (*p);
+            state.metablock_pos += 1;
           }
-          if (state.count >= state.backward) {
+          if (state.metablock_pos >= state.backward) {
             state.metatext = nullptr;
             state.state = (state.h_end
               ? BrCvt_Done : BrCvt_LastCheck);
