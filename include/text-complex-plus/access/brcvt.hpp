@@ -161,6 +161,8 @@ namespace text_complex {
       unsigned char bit_index;
       /** @brief Backward distance value. */
       uint32 backward;
+      /** @brief Byte count for the current meta block. */
+      uint32 metablock_pos;
       /** @brief Byte count for the active state. */
       uint32 count;
       /** @brief Byte index for the active state. */

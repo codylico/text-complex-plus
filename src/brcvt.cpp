@@ -1019,6 +1019,7 @@ namespace text_complex {
           if (state.count >= state.bit_length) {
             state.bit_length = 0;
             state.count = 0;
+            state.metablock_pos = 0;
             if (state.bit_length > 16 && (state.backward>>(state.bit_length-4))==0)
               ae = api_error::Sanitize;
             state.backward += 1;
@@ -3304,7 +3305,7 @@ namespace text_complex {
         ring(false,4,0), try_ring(false,4,0),
         lit_histogram{{256u}, {256u}, {256u}, {256u}}, dist_histogram(68u), ins_histogram(704u),
         bits(0u), bit_length(0u), state(0u), bit_index(0u),
-        backward(0u), count(0u),
+        backward(0u), metablock_pos(0u), count(0u),
         wbits_select(0u), emptymeta(false), write_scratch(0), checksum(0u),
         bit_cap(0u), meta_index(0), metatext(nullptr), max_len_meta(1024),
         treety{}, guesses{},
