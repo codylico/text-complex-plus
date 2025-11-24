@@ -338,6 +338,20 @@ namespace text_complex {
     static api_error brcvt_handle_inskip(brcvt_state& ps,
       unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept;
     /**
+     * @brief Determine if a meta block should end.
+     * @param state inflow conversion state
+     * @param term_ok whether the stream is at a good place to stop
+     * @return true on end or error, false otherwise
+     * @note On success, the converter state is updated.
+     */
+    static bool brcvt_metaterm(brcvt_state& state, bool term_ok) noexcept;
+    /**
+     * @brief Generate a status code depending on the "last block" bit.
+     * @param ps conversion state
+     * @return EOF if nonzero, Success otherwise
+     */
+    static api_error brcvt_meta_endcode(brcvt_state const& state) noexcept;
+    /**
      * @brief Bring in the next insert command.
      * @param ps state to update
      * @param insert insert code
@@ -487,6 +501,7 @@ namespace text_complex {
       ps.buffer.bypass(&ch_byte, 1, ae);
       if (ae != api_error::Success)
         return ae;
+      ps.metablock_pos += 1;
       ++to_next;
       ps.fwd.literal_ctxt[0] = ps.fwd.literal_ctxt[1];
       ps.fwd.literal_ctxt[1] = static_cast<unsigned char>(ch);
@@ -584,6 +599,25 @@ namespace text_complex {
       return true;
     }
 
+    static bool brcvt_metaterm(brcvt_state& state, bool term_ok) noexcept {
+      if (state.metablock_pos < state.backward)
+        return false;
+      else if (state.metablock_pos > state.backward || !term_ok) {
+        state.state = BrCvt_BadToken;
+        return true;
+      }
+      state.state = (state.h_end ? BrCvt_Done : BrCvt_LastCheck);
+      state.bit_length = 0;
+      state.bits = 0;
+      return true;
+    }
+
+    static api_error brcvt_meta_endcode(brcvt_state const& state) noexcept {
+      if (state.state == BrCvt_BadToken)
+        return api_error::Sanitize;
+      return state.h_end ? api_error::EndOfFile : api_error::Success;
+    }
+
     api_error brcvt_handle_inskip(brcvt_state& ps,
       unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept
     {
@@ -601,6 +635,8 @@ namespace text_complex {
           } else return api_error::Success;
         case BrCvt_Literal:
           if (ps.fwd.literal_i >= ps.fwd.literal_total) {
+            if (brcvt_metaterm(ps, true))
+              return brcvt_meta_endcode(ps);
             ps.state = (ps.blocktypeD_remaining
               ? BrCvt_Distance : BrCvt_DistanceRestart);
             ps.fwd.literal_i = 0;
@@ -640,6 +676,8 @@ namespace text_complex {
               return ae;
             brcvt_inflow_literal(ps, ch_byte, to, to_end, to_next);
           }
+          if (brcvt_metaterm(ps, true))
+            return brcvt_meta_endcode(ps);
           ps.state = (ps.blocktypeI_remaining ? BrCvt_DataInsertCopy
             : BrCvt_InsertRestart);
           break;
