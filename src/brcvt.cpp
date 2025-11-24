@@ -3472,14 +3472,14 @@ namespace text_complex {
           }
           break;
         case BrCvt_Uncompress:
-          if (state.count < state.backward) {
+          if (state.metablock_pos < state.backward) {
             if (!state.buffer.bypass(p, 1))
               ae = api_error::Memory;
             (*to_out) = (*p);
             to_out += 1;
-            state.count += 1;
+            state.metablock_pos += 1;
           }
-          if (state.count >= state.backward) {
+          if (state.metablock_pos >= state.backward) {
             state.metatext = nullptr;
             state.state = (state.h_end
               ? BrCvt_Done : BrCvt_LastCheck);
