@@ -1604,6 +1604,9 @@ namespace text_complex {
           }
           ae = brcvt_handle_inskip(state, to, to_end, to_next);
           break;
+        default:
+          ae = api_error::Sanitize;
+          break;
         }
         if (ae > api_error::Success)
           /* halt the read position here: */break;
@@ -3218,8 +3221,11 @@ namespace text_complex {
             if (state.h_end)
               ae = api_error::EndOfFile;
           } break;
-        case 7:
+        case BrCvt_Done:
           ae = api_error::EndOfFile;
+          break;
+        default:
+          ae = api_error::Sanitize;
           break;
         }
         if (ae > api_error::Success)
