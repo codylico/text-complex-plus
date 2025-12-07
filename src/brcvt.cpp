@@ -763,7 +763,7 @@ namespace text_complex {
       }
       if (fwd.i >= size)
         return brcvt_token{};
-      else if (fwd.pos >= fwd.stop && fwd.i < size) {
+      else if (fwd.ostate == BrCvt_Literal && fwd.pos >= fwd.stop && fwd.i < size) {
         fwd.ctxt_i += 1;
         for (; fwd.ctxt_i < guesses.count; ++fwd.ctxt_i) {
           fwd.stop = static_cast<uint32>(fwd.ctxt_i+1 < guesses.count
@@ -783,7 +783,7 @@ namespace text_complex {
           uint32 literals = 0;
           uint32 first_literals = 0;
           out.state = BrCvt_DataInsertCopy;
-          /* compose insert length */
+          /* compose insert length, collapsing adjacent insertions together */
           for (next_i = fwd.i; next_i < size; ++next_i) {
             unsigned short next_span = 0;
             unsigned char const ch = data[next_i];
@@ -798,6 +798,7 @@ namespace text_complex {
               next_i += 1;
               next_span = (next_span << 8) + data[next_i] + 64u;
             }
+            /* skip over empty spans (or quit at end of command sequence) */
             if (next_span == 0 && first_literals == 0) {
               fwd.i = next_i+1;
               if (fwd.i >= size) {
@@ -848,7 +849,7 @@ namespace text_complex {
         if (fwd.i >= size)
           fwd.ostate = BrCvt_Done;
         else if (fwd.literal_i >= fwd.literal_total) {
-          /* check for copy count */
+          /* end of insertion sequence, so check for copy count */
           unsigned char const ch = data[fwd.i];
           unsigned short next_span = (ch & 63u);
           if (ch & 64u) {
@@ -861,6 +862,7 @@ namespace text_complex {
           fwd.pos += next_span;
           fwd.command_span = next_span;
         } else if (fwd.literal_i >= fwd.command_span) {
+          /* more insertion commands follow; read in the next non-empty insertion command */
           assert(fwd.command_span <= fwd.literal_total);
           fwd.literal_total -= fwd.command_span;
           fwd.literal_i = 0;
@@ -868,9 +870,10 @@ namespace text_complex {
             unsigned short next_span = 0;
             unsigned char const ch = data[next_i];
             if (ch & 128u) {
+              /* inconsistency detected, so give up. */
               return brcvt_token{BrCvt_BadToken};
             } else if ((ch & 63u) == 0u)
-              continue;
+              /* insertion is empty, so */continue;
             next_span = (ch & 63u);
             if (ch & 64u) {
               assert(next_i < size-1u);
@@ -2255,6 +2258,18 @@ namespace text_complex {
       return ae;
     }
 
+
+    template <typename t>
+    unsigned brcvt_shift4(t mode, unsigned offset) noexcept {
+      /* todo: documentation */
+      return (static_cast<unsigned>(mode)+4u-offset)%4u;
+    }
+    template <typename t = unsigned>
+    t brcvt_unshift4(unsigned long mode, unsigned offset) noexcept {
+      /* todo: documentation */
+      return static_cast<t>((mode+offset)%4u);
+    }
+
     api_error brcvt_check_compress(brcvt_state& state) {
       int guess_nonzero = 0;
       size_t accum = 0;
@@ -2279,11 +2294,11 @@ namespace text_complex {
       for (unsigned ctxt_i = 0; ctxt_i < state.guesses.count; ++ctxt_i) {
         context_map_mode const mode = state.guesses.modes[ctxt_i];
         assert(mode < context_map_mode::ModeMax);
-        ctxt_histogram[(static_cast<unsigned>(mode)+4u-state.guess_offset)%4u] += 1;
+        ctxt_histogram[brcvt_shift4(mode, state.guess_offset)] += 1;
       }
       for (unsigned ctxt_i = 0; ctxt_i < 4u; ++ctxt_i) {
         prefix_line& line = state.literal_blocktype[ctxt_i];
-        line.value = ctxt_i;
+        line.value = ctxt_i+2;
         if (ctxt_histogram[ctxt_i] > 0)
           guess_nonzero += 1;
       }
@@ -2306,7 +2321,8 @@ namespace text_complex {
       }
       for (std::size_t btype_j = 0; btype_j < btypes; ++btype_j) {
         prefix_line const& line = state.literal_blocktype[btype_j];
-        state.literals_map.set_mode(btype_j, static_cast<context_map_mode>(line.value));
+        state.literals_map.set_mode(btype_j,
+          brcvt_unshift4<context_map_mode>(line.value, state.guess_offset));
         for (unsigned ctxt_i = 0; ctxt_i < 64; ++ctxt_i)
           state.literals_map(btype_j, ctxt_i) = static_cast<unsigned char>(btype_j);
       }
@@ -2332,7 +2348,7 @@ namespace text_complex {
         uint32 literal_counter = 0;
         uint32 next_copy = 0;
         brcvt_state::forward_box try_fwd = {};
-        //TODO: try_fwd.accum = ps->fwd.accum;
+        try_fwd.accum = state.fwd.accum;
         std::fill(state.ins_histogram.begin(), state.ins_histogram.end(), 0);
         std::fill(state.dist_histogram.begin(), state.dist_histogram.end(), 0);
         for (prefix_histogram& gram : state.lit_histogram)
@@ -2367,6 +2383,7 @@ namespace text_complex {
               prefix_histogram& hist = state.lit_histogram[
                 static_cast<unsigned>(state.guesses.modes[ctxt_i])];
               hist[next.first&255u] += 1;
+              literal_counter += 1;
             } break;
           case BrCvt_Distance:
           case BrCvt_BDict:
