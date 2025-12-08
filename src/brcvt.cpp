@@ -2837,7 +2837,7 @@ namespace text_complex {
               ae = api_error::Sanitize;
               break;
             }
-            state.bits = postfix|(direct>>postfix);
+            state.bits = postfix|((direct>>postfix)<<2);
           }
           if (state.bit_length < 6) {
             x = (state.bits>>state.bit_length)&1u;
@@ -2850,10 +2850,10 @@ namespace text_complex {
           } break;
         case BrCvt_ContextTypesL:
           if (state.bit_length == 0) {
-            size_t const contexts = state.literal_blocktype.size();
+            size_t const contexts = state.literals_map.contexts();
             for (size_t i = 0; i < contexts; ++i) {
-              prefix_line const& line = state.literal_blocktype[i];
-              state.bits |= ((line.value&3u)<<state.bit_length);
+              auto const mode = static_cast<unsigned>(state.literals_map.get_mode(i));
+              state.bits |= ((mode&3u)<<state.bit_length);
               state.bit_length += 2;
             }
           }
