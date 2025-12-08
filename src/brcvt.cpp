@@ -413,6 +413,17 @@ namespace text_complex {
     static bool brcvt_inflow_restart(brcvt_state& state, prefix_list const& fix,
       brcvt_state::block_box& blocktype_index, unsigned char blocktype_max,
       brcvt_istate next, unsigned x) noexcept;
+    /**
+     * @brief Load a prefix bit string onto an output state.
+     * @param[in,out] state Brotli conversion state to update
+     * @param fix prefix tree to search
+     * @param value value for which to search
+     * @param[out] ae set to ErrSanitize on failure
+     * @return whether the function succeeded
+     */
+    static bool brcvt_outflow_lookup(brcvt_state& state,
+      prefix_list const& fix, unsigned long value, api_error& ae) noexcept;
+
 
 
     //BEGIN brcvt / static
@@ -596,6 +607,20 @@ namespace text_complex {
       state.bit_length = 0;
       state.bits = 0;
       state.extra_length = 0;
+      return true;
+    }
+
+    static bool brcvt_outflow_lookup(brcvt_state& state,
+      prefix_list const& fix, unsigned long value, api_error& ae) noexcept
+    {
+      std::size_t const line_index = fixlist_valuebsearch(fix, value);
+      if (line_index >= fix.size()) {
+        ae = api_error::Sanitize;
+        return false;
+      }
+      auto const& line = fix[line_index];
+      state.bits = line.code;
+      state.bit_cap = line.len;
       return true;
     }
 
@@ -2777,17 +2802,10 @@ namespace text_complex {
               break;
             }
             insert_copy_row const& row = state.blockcounts[code_index];
-            std::size_t const value_index =
-              fixlist_valuebsearch(state.literal_blockcount, row.code);
-            if (value_index >= state.literal_blockcount.size()) {
-              ae = api_error::Sanitize;
+            if (!brcvt_outflow_lookup(state, state.literal_blockcount, row.code, ae))
               break;
-            }
-            prefix_line const& line = state.literal_blockcount[value_index];
             state.count = (state.guess_lengths[0] - row.insert_first);
             state.extra_length = row.insert_bits;
-            state.bits = line.code;
-            state.bit_cap = line.len;
           }
           if (state.bit_length < state.bit_cap) {
             x = (state.bits >> (state.bit_cap - state.bit_length - 1u))&1u;
