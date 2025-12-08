@@ -2416,6 +2416,7 @@ namespace text_complex {
             state.literals_forest[btype_j].tree,
             state.lit_histogram[btype], ae);
         }
+        std::copy(literal_lengths.begin()+1, literal_lengths.end(), state.guess_lengths);
       }
       if (try_bit_count/8+1 > state.buffer.input_size())
         return api_error::BlockOverflow;
@@ -2722,70 +2723,25 @@ namespace text_complex {
           } break;
         case BrCvt_BlockCountLAlpha:
           if (state.bit_length == 0) {
-            state.bit_length += 1;
+            state.bit_length = 1;
             prefix_histogram histogram;
             ae = util_move_make(histogram, 26);
             if (ae != api_error::Success)
               break;
             std::fill(histogram.begin(), histogram.end(), 0);
-            block_string const& data = state.buffer.str();
-            size_t const output_len = data.size();
-            size_t i;
-            size_t guess_i = 0;
             size_t total = 0;
-            size_t literals = 0;
-            size_t coverage = 0;
-            // Reparse the text.
-            for (std::size_t i = 0; i < output_len; ++i) {
-              int const copy = (data[i]&128u);
-              unsigned len = data[i]&63u;
-              if (data[i] & 64u && i+1 < output_len) {
-                i += 1;
-                len = (len<<8) | data[i];
-              }
-              if (copy && i+i < output_len) {
-                unsigned extend = 0;
-                i += 1;
-                if (data[i] < 128)
-                  extend = 3;
-                else if (data[i] < 192)
-                  extend = 2;
-                else extend = 4;
-                if (extend >= output_len - i)
-                  break;
-                i += (extend-1);
-              } else if (len > output_len - i) {
-                ae = api_error::Sanitize;
-                break;
-              } else i += len;
-              for (; guess_i < state.guesses.count; ++guess_i) {
-                size_t const limit = (guess_i >= state.guesses.count-1)
-                  ? state.guesses.total_bytes : state.guesses.offsets[guess_i+1];
-                size_t const remaining = total - limit;
-                if (len < remaining) {
-                  literals += len;
-                  break;
-                }
-                len -= remaining;
-                literals += remaining;
-                state.guess_lengths[guess_i] = literals;
-                literals = 0;
-              }
-              total += len;
-            }
-            if (ae != api_error::Success)
-              break;
-            assert(total == output_len);
             // Populate histogram.
             inscopy_lengthsort(state.blockcounts);
-            for (std::size_t i = 0; i < state.guesses.count; ++i) {
-              size_t const v = inscopy_encode(state.blockcounts, state.guess_lengths[i], 0, 0);
+            for (std::size_t j = 0; j < state.guesses.count; ++j) {
+              size_t const v = inscopy_encode(state.blockcounts, state.guess_lengths[j], 0, 0);
               if (v >= 26) {
                 ae = api_error::Sanitize;
                 break;
               }
               histogram[v] += 1;
+              total += state.guess_lengths[j];
             }
+            assert(total < state.buffer.input_data().size());
             if (ae != api_error::Success)
               break;
             ae = util_move_make(state.literal_blockcount, 26);
@@ -2793,7 +2749,6 @@ namespace text_complex {
               break;
             for (unsigned i = 0; i < 26; ++i) {
               state.literal_blockcount[i].value = i;
-              coverage += (histogram[i] != 0);
             }
             fixlist_gen_lengths(state.literal_blockcount, histogram, 15, ae);
             if (ae != api_error::Success)
@@ -2802,7 +2757,7 @@ namespace text_complex {
             if (ae != api_error::Success)
               break;
           }
-          /* render tree to output */
+          // render tree to output
           {
             api_error const res = brcvt_outflow19(state.treety, state.literal_blockcount, x, 5);
             if (res == api_error::EndOfFile) {
@@ -2816,7 +2771,7 @@ namespace text_complex {
         case BrCvt_BlockStartL:
           if (state.bit_length == 0) {
             std::size_t const code_index =
-              inscopy_encode(state.blockcounts, state.guess_lengths[0], 0,0);
+              inscopy_encode(state.blockcounts, state.guess_lengths[0], 0);
             if (code_index >= state.blockcounts.size()) {
               ae = api_error::Sanitize;
               break;
