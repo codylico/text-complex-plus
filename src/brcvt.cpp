@@ -2972,29 +2972,24 @@ namespace text_complex {
               state.count = static_cast<uint32>(state.context_encode.size());
               brcvt_reset19(state.treety);
               state.state += 1;
+              state.bit_cap = 0;
               fixlist_valuesort(state.context_tree, ae);
             } else if (res != api_error::Success)
               ae = res;
           } break;
         case BrCvt_ContextValuesL:
-          if (state.bit_length == 0) {
+          if (state.bit_cap == 0) {
             unsigned char const code = state.context_encode[state.index];
             unsigned int const extra = (code&brcvt_ZeroBit)
               ? code & (brcvt_ZeroBit-1u) : 0;
             unsigned int const value = extra ? extra : (code?code+state.rlemax:0);
-            std::size_t const line_index = fixlist_valuebsearch(state.context_tree, value);
-            if (line_index >= state.context_tree.size()) {
-              ae = api_error::Sanitize;
+            if (!brcvt_outflow_lookup(state, state.context_tree, value, ae))
               break;
-            }
-            prefix_line const& line = state.context_tree[line_index];
-            state.bits = line.code;
-            state.bit_length = static_cast<unsigned char>(line.len);
             state.extra_length = extra;
           }
-          if (state.bit_length > 0)
-            x = (state.bits>>(--state.bit_length))&1u;
-          if (state.bit_length == 0) {
+          if (state.bit_cap > 0)
+            x = (state.bits>>(--state.bit_cap))&1u;
+          if (state.bit_cap == 0) {
             state.index += 1;
             state.bits = 0;
             if (state.index >= state.count)
