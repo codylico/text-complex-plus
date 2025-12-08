@@ -2910,9 +2910,7 @@ namespace text_complex {
             }
             if (zeroes > 0 && ae == api_error::Success)
               ae = brcvt_encode_map(state.context_encode, zeroes, 0, rlemax);
-#ifndef NDEBUG
             ctxtmap_revert_movetofront(map);
-#endif //NDEBUG
             if (ae != api_error::Success)
               break;
             state.rlemax = static_cast<unsigned char>(rlemax);
@@ -2930,7 +2928,7 @@ namespace text_complex {
             state.count += 1;
           }
           if (state.count >= state.bit_length) {
-            std::size_t const btypes = state.literal_blocktype.size();
+            std::size_t const btypes = state.literals_map.contexts();
             constexpr unsigned HistogramSize = 10;
             prefix_histogram histogram(HistogramSize);
             unsigned int const rlemax = state.rlemax;
