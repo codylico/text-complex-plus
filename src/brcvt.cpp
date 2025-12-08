@@ -3022,9 +3022,40 @@ namespace text_complex {
         case BrCvt_TreeCountD: // hard-code single distance tree
           x = 0;
           state.state = BrCvt_GaspVectorL;
+          state.count = 0;
           break;
         case BrCvt_GaspVectorL:
-          /* TODO this state */
+          if (state.bit_length == 0) {
+            /* prepare the next tree */
+            unsigned int treety_count = 0;
+            brcvt_reset19(state.treety);
+            if (state.state == BrCvt_GaspVectorD) {
+              treety_count = (16 + state.ring.get_direct()
+                + (48 << state.ring.get_postfix()));
+            } else treety_count = ((state.state == BrCvt_GaspVectorL) ? 256 : 704);
+            state.alphabits = util_bitwidth(treety_count-1);
+          }
+          /* Render the prefix tree. */
+          {
+            gasp_vector& forest = brcvt_active_forest(state);
+            prefix_list& tree = forest[state.count].tree;
+            api_error const res = brcvt_outflow19(state.treety, tree, x, state.alphabits);
+            if (res == api_error::EndOfFile) {
+              state.bit_length = 0;
+              state.count += 1;
+              if (state.count >= forest.size()) {
+                uint32 const accum = state.fwd.accum;
+                state.fwd = {};
+                state.fwd.accum = accum;
+                state.state += 1;
+                state.count = 0;
+              }
+              brcvt_reset19(state.treety);
+              state.bit_cap = 0;
+              fixlist_valuesort(tree, ae);
+            } else if (res != api_error::Success)
+              ae = res;
+          }
           break;
         case BrCvt_ContextRunMaxD:
         case BrCvt_ContextPrefixD:
