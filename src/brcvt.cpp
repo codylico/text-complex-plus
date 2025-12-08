@@ -143,6 +143,7 @@ namespace text_complex {
         brcvt_RepeatBit = 128,
         brcvt_TreetyOutflowMax = 4096,
         brcvt_ZeroBit = 64,
+        brcvt_DistHistoSize = 68u,
       };
 
       struct brcvt_token {
@@ -420,9 +421,25 @@ namespace text_complex {
      * @param value value for which to search
      * @param[out] ae set to ErrSanitize on failure
      * @return whether the function succeeded
+     * @todo Account for skip values.
      */
     static bool brcvt_outflow_lookup(brcvt_state& state,
       prefix_list const& fix, unsigned long value, api_error& ae) noexcept;
+    /**
+     * @brief Generate a nonzero token to emit to output.
+     * @param fwd token forwarding structure
+     * @param guesses literal block switch tracker
+     * @param data output data in block buffer format
+     * @param size length of output data in bytes
+     * @param wbits_select window size bits indirectly selected by user
+     * @param skip set to NoSkip to disable LiteralRestart tokens, other value
+     *   to enable
+     * @return a token
+     */
+    static brcvt_token brcvt_next_token
+      (brcvt_state::forward_box& fwd, context_span const& guesses,
+        unsigned char const* data, std::size_t size, unsigned char wbits_select,
+        unsigned short skip) noexcept;
 
 
 
@@ -780,7 +797,8 @@ namespace text_complex {
 
     static brcvt_token brcvt_next_token
       (brcvt_state::forward_box& fwd, context_span const& guesses,
-        unsigned char const* data, std::size_t size, unsigned char wbits_select)
+        unsigned char const* data, std::size_t size, unsigned char wbits_select,
+        unsigned short skip) noexcept
     {
       brcvt_token out = {};
       if (fwd.ostate == 0) {
@@ -790,7 +808,9 @@ namespace text_complex {
       }
       if (fwd.i >= size)
         return brcvt_token{};
-      else if (fwd.ostate == BrCvt_Literal && fwd.pos >= fwd.stop && fwd.i < size) {
+      else if (fwd.ostate == BrCvt_Literal && fwd.pos >= fwd.stop
+          && fwd.i < size && skip == brcvt_NoSkip)
+      {
         fwd.ctxt_i += 1;
         for (; fwd.ctxt_i < guesses.count; ++fwd.ctxt_i) {
           fwd.stop = static_cast<uint32>(fwd.ctxt_i+1 < guesses.count
@@ -2297,6 +2317,87 @@ namespace text_complex {
       return static_cast<t>((mode+offset)%4u);
     }
 
+
+
+
+    api_error brcvt_apply_token(brcvt_state& state, brcvt_token next) noexcept {
+      api_error ae = {};
+      state.extra_length = 0;
+      state.bit_length = 0;
+      switch (next.state) {
+      case BrCvt_DataInsertCopy:
+        {
+          size_t const icv = inscopy_encode(state.values, next.first,
+            next.second ? next.second : 2, 0);
+          if (icv >= state.values.size())
+            return api_error::Sanitize;
+          auto const& icv_row = state.values[icv];
+          if (!brcvt_outflow_lookup(state, state.insert_forest[0].tree, icv_row.code, ae))
+            return ae;
+          state.extra_length = icv_row.insert_bits;
+          state.bit_length = icv_row.copy_bits;
+          state.extra_bits[0] = (next.first - icv_row.insert_first);
+          state.extra_bits[1] = (next.second - icv_row.copy_first);
+        }
+        break;
+      case BrCvt_Literal:
+        /* all contexts for the current block type point to the same prefix tree,
+        so just fetch that tree
+        */
+        {
+          auto const mode = state.guesses.modes[state.fwd.ctxt_i];
+          unsigned const context = state.ctxt_mode_map[static_cast<unsigned>(mode)];
+          prefix_list const& fix = state.literals_forest[context].tree;
+          if (!brcvt_outflow_lookup(state, fix, next.first, ae))
+            return ae;
+        }
+        break;
+      case BrCvt_Distance:
+      case BrCvt_BDict:
+        {
+          int const to_record = (next.state==BrCvt_Distance);
+          uint32 extra = 0;
+          // TODO: use `to_record`
+          unsigned const cmd = state.ring.encode(next.first, extra,
+            to_record ? 0xFFffFFff : 0);
+          unsigned const sum_direct = state.ring.get_direct() + 16u;
+          if (cmd >= brcvt_DistHistoSize)
+            return api_error::Sanitize;
+          state.extra_length = 1 + ((cmd - sum_direct) >> (state.ring.get_postfix()+1));
+          if (state.extra_length > 0) {
+            state.extra_bits[0] = extra;
+          }
+          if (!brcvt_outflow_lookup(state, state.distance_forest[0].tree, cmd, ae))
+            return ae;
+        }
+        break;
+      case BrCvt_LiteralRestart:
+        {
+          auto const mode = state.guesses.modes[state.fwd.ctxt_i];
+          unsigned const context = state.ctxt_mode_map[static_cast<unsigned>(mode)];
+          uint32 const len = state.guess_lengths[state.fwd.ctxt_i];
+          size_t const icv = inscopy_encode(state.blockcounts, len, 0);
+          if (icv >= state.blockcounts.size())
+            return api_error::Sanitize;
+          auto const& icv_row = state.blockcounts[icv];
+          state.bit_length = icv_row.insert_bits;
+          state.extra_bits[1] = len - icv_row.insert_first;
+          if (!brcvt_outflow_lookup(state, state.literal_blockcount, icv_row.code, ae))
+            return ae;
+          state.extra_bits[0] = state.bits;
+          state.extra_length = state.bit_cap;
+          state.bit_cap = 0;
+          if (!brcvt_outflow_lookup(state, state.literal_blocktype, context, ae))
+            return ae;
+        }
+        break;
+      default:
+        return api_error::Sanitize;
+      }
+      return api_error::Success;
+    }
+
+
     api_error brcvt_check_compress(brcvt_state& state) {
       int guess_nonzero = 0;
       size_t accum = 0;
@@ -2375,6 +2476,10 @@ namespace text_complex {
         /* prepare the variable-size forest */
         if (state.literals_forest.size() != btypes)
           state.literals_forest = gasp_vector(btypes);
+        if (btypes <= 1)
+          state.blocktypeL_skip = 0;
+        else
+          state.blocktypeL_skip = brcvt_NoSkip;
       } catch (std::bad_alloc const& ) {
         return api_error::Memory;
       }
@@ -2395,7 +2500,7 @@ namespace text_complex {
         unsigned ctxt_i = 0;
         for (std::size_t i = 0; i < size; ++i) {
           brcvt_token next =
-            brcvt_next_token(try_fwd, state.guesses, data, size, state.wbits_select);
+            brcvt_next_token(try_fwd, state.guesses, data, size, state.wbits_select, state.blocktypeL_skip);
           if (try_fwd.i <= i)
             return api_error::Sanitize;
           i = try_fwd.i-1;
@@ -3120,7 +3225,7 @@ namespace text_complex {
         blocktypeI_skip(brcvt_NoSkip), blockcountI_skip(brcvt_NoSkip),
         blocktypeD_skip(brcvt_NoSkip), blockcountD_skip(brcvt_NoSkip),
         literal_skip(brcvt_NoSkip), insert_skip(brcvt_NoSkip), distance_skip(brcvt_NoSkip),
-        context_skip(brcvt_NoSkip), fwd{}, ctxt_mode_map{}
+        context_skip(brcvt_NoSkip), fwd{}, extra_bits{}, ctxt_mode_map{}
     {
       if (n > 16777200u)
         n = 16777200u;

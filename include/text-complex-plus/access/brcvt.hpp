@@ -240,6 +240,8 @@ namespace text_complex {
       unsigned short context_skip;
       /** @brief Token forwarding. */
       forward_box fwd;
+      /** @brief Extended pool of output bits. */
+      uint32 extra_bits[2];
       /** @brief Map from mode to outflow context index. */
       unsigned char ctxt_mode_map[4];
       /**
