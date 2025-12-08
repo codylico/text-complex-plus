@@ -2668,7 +2668,7 @@ namespace text_complex {
               state.state = BrCvt_Uncompress;
               state.backward = state.buffer.str().size();
               state.count = 0;
-              //TODO: state.fwd.accum += state.backward;
+              state.fwd.accum += state.backward;
               assert(state.backward);
               break;
             }
