@@ -2307,6 +2307,12 @@ namespace text_complex {
       }
       /* calculate the guesses */
       prefix_histogram ctxt_histogram(4);
+      /** @brief Map from outflow context index to mode. */
+      std::array<context_map_mode,4> ctxt_mode_revmap = {{
+        context_map_mode::ModeMax,context_map_mode::ModeMax,
+        context_map_mode::ModeMax,context_map_mode::ModeMax}};
+      unsigned char ctxt_mode_alloc = 0;
+      std::fill(std::begin(state.ctxt_mode_map), std::end(state.ctxt_mode_map), 255);
       std::fill(ctxt_histogram.begin(), ctxt_histogram.end(), 0);
       state.guesses = {};
       ctxtspan_subdivide(state.guesses,
@@ -2319,7 +2325,14 @@ namespace text_complex {
       for (unsigned ctxt_i = 0; ctxt_i < state.guesses.count; ++ctxt_i) {
         context_map_mode const mode = state.guesses.modes[ctxt_i];
         assert(mode < context_map_mode::ModeMax);
-        ctxt_histogram[brcvt_shift4(mode, state.guess_offset)] += 1;
+        if (state.ctxt_mode_map[static_cast<unsigned>(mode)] >= 4) {
+          /* allocate a spot */
+          assert(ctxt_mode_alloc < 4);
+          state.ctxt_mode_map[static_cast<unsigned>(mode)] = ctxt_mode_alloc;
+          ctxt_mode_revmap[ctxt_mode_alloc] = mode;
+          ctxt_mode_alloc += 1;
+        }
+        ctxt_histogram[state.ctxt_mode_map[static_cast<unsigned>(mode)]] += 1;
       }
       for (unsigned ctxt_i = 0; ctxt_i < 4u; ++ctxt_i) {
         prefix_line& line = state.literal_blocktype[ctxt_i];
@@ -2346,8 +2359,7 @@ namespace text_complex {
       }
       for (std::size_t btype_j = 0; btype_j < btypes; ++btype_j) {
         prefix_line const& line = state.literal_blocktype[btype_j];
-        state.literals_map.set_mode(btype_j,
-          brcvt_unshift4<context_map_mode>(line.value, state.guess_offset));
+        state.literals_map.set_mode(btype_j, ctxt_mode_revmap[line.value-2]);
         for (unsigned ctxt_i = 0; ctxt_i < 64; ++ctxt_i)
           state.literals_map(btype_j, ctxt_i) = static_cast<unsigned char>(btype_j);
       }
@@ -3106,7 +3118,7 @@ namespace text_complex {
         blocktypeI_skip(brcvt_NoSkip), blockcountI_skip(brcvt_NoSkip),
         blocktypeD_skip(brcvt_NoSkip), blockcountD_skip(brcvt_NoSkip),
         literal_skip(brcvt_NoSkip), insert_skip(brcvt_NoSkip), distance_skip(brcvt_NoSkip),
-        context_skip(brcvt_NoSkip), fwd{}
+        context_skip(brcvt_NoSkip), fwd{}, ctxt_mode_map{}
     {
       if (n > 16777200u)
         n = 16777200u;

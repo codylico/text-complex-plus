@@ -240,6 +240,8 @@ namespace text_complex {
       unsigned short context_skip;
       /** @brief Token forwarding. */
       forward_box fwd;
+      /** @brief Map from mode to outflow context index. */
+      unsigned char ctxt_mode_map[4];
       /**
        * @brief Built-in tree type for block type outflow.
        * @todo Test for removal.
