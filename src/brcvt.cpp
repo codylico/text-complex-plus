@@ -432,10 +432,12 @@ namespace text_complex {
         state.state = BrCvt_MetaStart;
       else if (state.emptymeta)
         state.state = BrCvt_MetaStart;
-      else if (!(state.h_end&1u))
+      else if (!(state.h_end&2u))
         state.state = BrCvt_Nibbles;
-      else
+      else {
         state.state = BrCvt_LastCheck;
+        state.h_end |= 1u;
+      }
     }
 
     bool brcvt_can_add_input(brcvt_state const& ps) noexcept {
