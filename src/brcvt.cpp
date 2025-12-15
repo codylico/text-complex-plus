@@ -292,7 +292,7 @@ namespace text_complex {
      *   @em and the stream that uses the new prefix list
      */
     static std::size_t brcvt_apply_histogram(
-      prefix_list& tree, prefix_histogram const& histogram,
+      gasp_vector::root& tree_info, prefix_histogram const& histogram,
       api_error &ae) noexcept;
     /**
      * @brief Encode a nonzero entry in a context map using run-length encoding.
@@ -2551,13 +2551,13 @@ namespace text_complex {
         /* apply histograms to the trees */
         api_error ae {};
         try_bit_count += brcvt_apply_histogram(
-          state.distance_forest[0].tree, state.dist_histogram, ae);
+          state.distance_forest[0], state.dist_histogram, ae);
         try_bit_count += brcvt_apply_histogram(
-          state.insert_forest[0].tree, state.ins_histogram, ae);
+          state.insert_forest[0], state.ins_histogram, ae);
         for (unsigned btype_j = 0; btype_j < btypes; ++btype_j) {
           int const btype = static_cast<int>(state.literals_map.get_mode(btype_j));
           try_bit_count += brcvt_apply_histogram(
-            state.literals_forest[btype_j].tree,
+            state.literals_forest[btype_j],
             state.lit_histogram[btype], ae);
         }
         std::copy(literal_lengths.begin()+1, literal_lengths.end(), state.guess_lengths);
@@ -2568,9 +2568,10 @@ namespace text_complex {
     }
 
     std::size_t brcvt_apply_histogram(
-      prefix_list& tree, prefix_histogram const& histogram,
+      gasp_vector::root& tree_info, prefix_histogram const& histogram,
       api_error &ae) noexcept
     {
+      prefix_list& tree = tree_info.tree;
       if (ae != api_error::Success)
         return 0;
       try {
