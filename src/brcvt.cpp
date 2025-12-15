@@ -2591,9 +2591,17 @@ namespace text_complex {
       if (ae != api_error::Success)
         return 0;
       std::size_t bit_count = 0;
+      unsigned short skip_value = brcvt_NoSkip;
+      unsigned skip_assigned = 0;
       for (std::size_t i = 0; i < histogram.size(); ++i) {
-        bit_count += tree[i].len * static_cast<std::size_t>(histogram[i]);
+        auto const& line = tree[i];
+        bit_count += line.len * static_cast<std::size_t>(histogram[i]);
+        if (line.len > 0) {
+          skip_assigned += 1;
+          skip_value = (skip_assigned == 1 ? static_cast<unsigned short>(i) : brcvt_NoSkip);
+        }
       }
+      tree_info.noskip = skip_value;
       unsigned const alphabits = util_bitwidth(static_cast<unsigned>(histogram.size()-1));
       brcvt_state::treety_box attempt = {};
       for (unsigned i = 0; i < brcvt_TreetyOutflowMax; ++i) {
