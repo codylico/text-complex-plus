@@ -3183,6 +3183,8 @@ namespace text_complex {
           state.count = 0;
           break;
         case BrCvt_GaspVectorL:
+        case BrCvt_GaspVectorI:
+        case BrCvt_GaspVectorD:
           if (state.bit_length == 0) {
             /* prepare the next tree */
             unsigned int treety_count = 0;
