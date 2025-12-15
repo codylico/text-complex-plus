@@ -2577,8 +2577,10 @@ namespace text_complex {
     static api_error brcvt_apply_token_checked(brcvt_state& state) noexcept {
       auto const& buffer = state.buffer.str();
       std::size_t const size = buffer.size();
-      if (state.fwd.i >= size)
-        return api_error::EndOfFile;
+      if (state.fwd.i >= size) {
+        brcvt_next_block(state);
+        return api_error::Success;
+      }
       for (std::size_t loop_i = 0; loop_i < size; ++loop_i) {
         std::size_t const old_fwd_index = state.fwd.i;
         brcvt_token const next =
@@ -2590,11 +2592,14 @@ namespace text_complex {
         api_error const ae = brcvt_apply_token(state, next);
         if (ae != api_error::Partial)
           return ae;
-        else if (state.fwd.i >= size)
-          return api_error::EndOfFile;
+        else if (state.fwd.i >= size) {
+          brcvt_next_block(state);
+          return api_error::Success;
+        }
       }
       /* Guaranteed progress means this line only reached by end of buffer. */
-      return api_error::EndOfFile;
+      brcvt_next_block(state);
+      return api_error::Success;
     }
 
     std::size_t brcvt_apply_histogram(
@@ -3209,6 +3214,11 @@ namespace text_complex {
                 state.fwd.accum = accum;
                 state.state += 1;
                 state.count = 0;
+                if (state.state == BrCvt_DataInsertCopy) {
+                  ae = brcvt_apply_token_checked(state);
+                  if (ae != api_error::Success)
+                    break;
+                }
               }
               brcvt_reset19(state.treety);
               state.bit_cap = 0;
@@ -3222,11 +3232,6 @@ namespace text_complex {
         case BrCvt_LiteralRestart:
         case BrCvt_Distance:
         case BrCvt_BDict:
-          if (state.bit_cap == 0) {
-            ae = brcvt_apply_token_checked(state);
-            if (ae != api_error::Success)
-              break;
-          }
           if (state.bit_cap > 0)
             x = (state.bits>>(--state.bit_cap))&1u;
           if (state.bit_cap == 0) {
@@ -3235,11 +3240,10 @@ namespace text_complex {
               state.state = BrCvt_DataInsertExtra;
             } else if (state.bit_length > 0) {
               state.state = BrCvt_DataCopyExtra;
-            } else if (state.fwd.i >= state.buffer.str().size()) {
-              /* end of block! */
-              brcvt_next_block(state);
+            } else {
+              /* otherwise process the next no-skip token */
+              ae = brcvt_apply_token_checked(state);
             }
-            /* otherwise process the next token */;
           } break;
         case BrCvt_DataInsertExtra:
         case BrCvt_DataDistanceExtra:
@@ -3248,12 +3252,9 @@ namespace text_complex {
           if (state.extra_length == 0) {
             if (state.bit_length > 0) {
               state.state = BrCvt_DataCopyExtra;
-            } else if (state.fwd.i >= state.buffer.str().size()) {
-              /* end of block! */
-              brcvt_next_block(state);
             } else {
-              /* otherwise process the next token */;
-              state.state = BrCvt_DataInsertCopy;
+              /* otherwise process the next no-skip token */
+              ae = brcvt_apply_token_checked(state);
             }
           }
           break;
@@ -3261,12 +3262,8 @@ namespace text_complex {
           if (state.bit_length > 0)
             x = (state.extra_bits[1]>>(--state.bit_length))&1u;
           if (state.bit_length == 0) {
-            if (state.fwd.i >= state.buffer.str().size()) {
-              brcvt_next_block(state);
-            } else {
-              /* otherwise process the next token */;
-              state.state = BrCvt_DataInsertCopy;
-            }
+            /* process the next no-skip token */
+            ae = brcvt_apply_token_checked(state);
           }
           break;
         case BrCvt_ContextRunMaxD:
