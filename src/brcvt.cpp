@@ -440,6 +440,13 @@ namespace text_complex {
       (brcvt_state::forward_box& fwd, context_span const& guesses,
         unsigned char const* data, std::size_t size, unsigned char wbits_select,
         unsigned short skip) noexcept;
+    /**
+     * @brief Acquire and apply the next token, skipping zero-bit tokens.
+     * @param state Brotli compressor state to update
+     * @return Success on success, EndOfFile at end of block buffer,
+     *   other negative code on failure
+     */
+    static api_error brcvt_apply_token_checked(brcvt_state& state) noexcept;
 
 
 
@@ -2567,6 +2574,29 @@ namespace text_complex {
       return api_error::Success;
     }
 
+    static api_error brcvt_apply_token_checked(brcvt_state& state) noexcept {
+      auto const& buffer = state.buffer.str();
+      std::size_t const size = buffer.size();
+      if (state.fwd.i >= size)
+        return api_error::EndOfFile;
+      for (std::size_t loop_i = 0; loop_i < size; ++loop_i) {
+        std::size_t const old_fwd_index = state.fwd.i;
+        brcvt_token const next =
+          brcvt_next_token(state.fwd, state.guesses, buffer.data(), size, state.wbits_select,
+            state.blocktypeL_skip);
+        if (state.fwd.i <= old_fwd_index)
+          return api_error::Sanitize;
+        state.state = next.state;
+        api_error const ae = brcvt_apply_token(state, next);
+        if (ae != api_error::Partial)
+          return ae;
+        else if (state.fwd.i >= size)
+          return api_error::EndOfFile;
+      }
+      /* Guaranteed progress means this line only reached by end of buffer. */
+      return api_error::EndOfFile;
+    }
+
     std::size_t brcvt_apply_histogram(
       gasp_vector::root& tree_info, prefix_histogram const& histogram,
       api_error &ae) noexcept
@@ -3183,6 +3213,58 @@ namespace text_complex {
               fixlist_valuesort(tree, ae);
             } else if (res != api_error::Success)
               ae = res;
+          }
+          break;
+        case BrCvt_DataInsertCopy:
+        case BrCvt_Literal:
+        case BrCvt_LiteralRestart:
+        case BrCvt_Distance:
+        case BrCvt_BDict:
+          if (state.bit_cap == 0) {
+            ae = brcvt_apply_token_checked(state);
+            if (ae != api_error::Success)
+              break;
+          }
+          if (state.bit_cap > 0)
+            x = (state.bits>>(--state.bit_cap))&1u;
+          if (state.bit_cap == 0) {
+            state.bits = 0;
+            if (state.extra_length > 0) {
+              state.state = BrCvt_DataInsertExtra;
+            } else if (state.bit_length > 0) {
+              state.state = BrCvt_DataCopyExtra;
+            } else if (state.fwd.i >= state.buffer.str().size()) {
+              /* end of block! */
+              brcvt_next_block(state);
+            }
+            /* otherwise process the next token */;
+          } break;
+        case BrCvt_DataInsertExtra:
+        case BrCvt_DataDistanceExtra:
+          if (state.extra_length > 0)
+            x = (state.extra_bits[0]>>(--state.extra_length))&1u;
+          if (state.extra_length == 0) {
+            if (state.bit_length > 0) {
+              state.state = BrCvt_DataCopyExtra;
+            } else if (state.fwd.i >= state.buffer.str().size()) {
+              /* end of block! */
+              brcvt_next_block(state);
+            } else {
+              /* otherwise process the next token */;
+              state.state = BrCvt_DataInsertCopy;
+            }
+          }
+          break;
+        case BrCvt_DataCopyExtra:
+          if (state.bit_length > 0)
+            x = (state.extra_bits[1]>>(--state.bit_length))&1u;
+          if (state.bit_length == 0) {
+            if (state.fwd.i >= state.buffer.str().size()) {
+              brcvt_next_block(state);
+            } else {
+              /* otherwise process the next token */;
+              state.state = BrCvt_DataInsertCopy;
+            }
           }
           break;
         case BrCvt_ContextRunMaxD:
