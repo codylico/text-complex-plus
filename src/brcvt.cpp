@@ -2331,6 +2331,7 @@ namespace text_complex {
       api_error ae = {};
       state.extra_length = 0;
       state.bit_length = 0;
+      state.bit_cap = 0;
       switch (next.state) {
       case BrCvt_DataInsertCopy:
         {
@@ -2401,7 +2402,18 @@ namespace text_complex {
       default:
         return api_error::Sanitize;
       }
-      return api_error::Success;
+      // Check for zero-length sequences.
+      if (state.bit_cap > 0)
+        return api_error::Success;
+      else if (state.extra_length > 0) {
+        state.state = BrCvt_DataInsertExtra;
+        return api_error::Success;
+      } else if (state.bit_length > 0) {
+        state.state = BrCvt_DataCopyExtra;
+        return api_error::Success;
+      }
+      // The whole token produces zero bits!
+      return api_error::Partial;
     }
 
 
