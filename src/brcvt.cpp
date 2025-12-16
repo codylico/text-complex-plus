@@ -2920,11 +2920,17 @@ namespace text_complex {
             size_t total = 0;
             // Populate histogram.
             inscopy_lengthsort(state.blockcounts);
+            unsigned short blockcountL_skip = brcvt_NoSkip;
+            unsigned blockcountL_population = 0;
             for (std::size_t j = 0; j < state.guesses.count; ++j) {
               size_t const v = inscopy_encode(state.blockcounts, state.guess_lengths[j], 0, 0);
               if (v >= 26) {
                 ae = api_error::Sanitize;
                 break;
+              }
+              if (histogram[v] == 0) {
+                blockcountL_population += 1;
+                blockcountL_skip = static_cast<unsigned short>(v);
               }
               histogram[v] += 1;
               total += state.guess_lengths[j];
@@ -2944,6 +2950,8 @@ namespace text_complex {
             fixlist_gen_codes(state.literal_blockcount, ae);
             if (ae != api_error::Success)
               break;
+            state.blockcountL_skip = (blockcountL_population == 1
+              ? blockcountL_skip : brcvt_NoSkip);
           }
           // render tree to output
           {
