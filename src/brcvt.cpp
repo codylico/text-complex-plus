@@ -1044,7 +1044,8 @@ namespace text_complex {
               ae = api_error::EndOfFile;
             }
           } else if (state.count >= state.bit_length-2) {
-            state.bits |= (x<<(state.count-2));
+            auto const reversal = state.bit_length-2;
+            state.bits |= (x<<(state.count-reversal));
           }
           if (state.count < state.bit_length)
             state.count += 1;
