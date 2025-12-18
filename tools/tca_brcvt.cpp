@@ -54,7 +54,7 @@ int do_out(std::istream& in, std::ostream& out) {
   int ec = EXIT_SUCCESS;
   bool done = false;
   namespace tca = text_complex::access;
-  tca::brcvt_state state(1, 32768, 1);
+  tca::brcvt_state state(sizeof(inbuf), 32768, 1);
   while (ec == EXIT_SUCCESS) {
     if (in.eof())
       break;
