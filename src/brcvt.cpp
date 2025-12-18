@@ -2059,6 +2059,10 @@ namespace text_complex {
             treety.bits = 1;
             treety.count = static_cast<unsigned short>(preset);
           } else {
+            api_error valuesort_ae{};
+            fixlist_valuesort(prefixes, valuesort_ae);
+            if (valuesort_ae != api_error::Success)
+              return valuesort_ae;
             constexpr uint32 lines = sizeof(brcvt_clen);
             int res = 0;
             prefix_histogram histogram;
