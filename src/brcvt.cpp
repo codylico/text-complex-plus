@@ -3040,7 +3040,7 @@ namespace text_complex {
           } break;
         case BrCvt_ContextTypesL:
           if (state.bit_length == 0) {
-            size_t const contexts = state.literals_map.contexts();
+            size_t const contexts = state.literals_map.block_types();
             for (size_t i = 0; i < contexts; ++i) {
               auto const mode = static_cast<unsigned>(state.literals_map.get_mode(i));
               state.bits |= ((mode&3u)<<state.bit_length);
@@ -3226,6 +3226,7 @@ namespace text_complex {
                 + (48 << state.ring.get_postfix()));
             } else treety_count = ((state.state == BrCvt_GaspVectorL) ? 256 : 704);
             state.alphabits = util_bitwidth(treety_count-1);
+            state.bit_length = 1;
           }
           /* Render the prefix tree. */
           {
