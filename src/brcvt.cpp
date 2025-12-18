@@ -2065,7 +2065,6 @@ namespace text_complex {
             if (util_move_make(histogram, lines) != api_error::Success)
               return api_error::Memory;
             std::fill(histogram.begin(), histogram.end(), 0);
-            uint32 nonzero = 0;
             if (brcvt_make_sequence(treety, prefixes) != api_error::Success)
               return api_error::Memory;
             for (uint32 i = 0; i < treety.sequence_list.size(); ++i) {
@@ -2094,6 +2093,7 @@ namespace text_complex {
             // Determine stopping point for emitting code lengths.
             treety.count = 0;
             treety.nonzero = 0;
+            uint32 nonzero_count = 0;
             for (uint32 i = 0; i < lines; ++i) {
               unsigned char clen = brcvt_clen[i];
               if (histogram[clen] == 0)
@@ -2101,11 +2101,11 @@ namespace text_complex {
               else if (!treety.nonzero)
                 treety.nonzero = clen;
               treety.count = i+1;
-              nonzero += 1;
+              nonzero_count += 1;
             }
-            if (nonzero < 2)
+            if (nonzero_count < 2)
               treety.count = static_cast<unsigned short>(lines);
-            else nonzero = 0;
+            else treety.nonzero = 0;
           }
         }
         x = (treety.bits>>treety.bit_length++)&1u;
@@ -2192,6 +2192,7 @@ namespace text_complex {
         x = (treety.bits>>treety.bit_length++)&1u;
         if (treety.bit_length >= treety.count) {
           treety.index += 1;
+          treety.bit_length = 0;
           if (treety.index >= treety.sequence_list.size()) {
             treety.state = BrCvt_TDone;
             return api_error::EndOfFile;
