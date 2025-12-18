@@ -2255,7 +2255,7 @@ namespace text_complex {
       unsigned int len = ~0u, len_count = 0u;
       size_t const lit_sz = literals.size();
       size_t i;
-      auto const* end = literals.begin();
+      auto const* end = literals.end();
       state.sequence_list.clear();
       for (prefix_line const& line : literals) {
         if (line.len > 0)
@@ -2288,7 +2288,6 @@ namespace text_complex {
       (block_string& s, unsigned int len, unsigned int count) noexcept
     {
       api_error ae = api_error::Success;
-      unsigned int i;
       if (count == 0u)
         return api_error::Success;
       else if (count < 4u) {
@@ -2297,7 +2296,7 @@ namespace text_complex {
       } else if (len == 0u) {
         unsigned const recount = count-3;
         int width = static_cast<int>(util_bitwidth(recount));
-        for (i = width-width%3; i >= 0 && ae == api_error::Success; i -= 3) {
+        for (int i = width-width%3; i >= 0 && ae == api_error::Success; i -= 3) {
           unsigned int const x = (recount>>i)&7u;
           ae = brcvt_post_two(s, 17, static_cast<unsigned char>(x));
         }
@@ -2422,6 +2421,12 @@ namespace text_complex {
       int guess_nonzero = 0;
       size_t accum = 0;
       std::size_t try_bit_count = 0;
+      /* try to compress the block */{
+        api_error ae{};
+        state.buffer.try_block(ae);
+        if (ae != api_error::Success)
+          return ae;
+      }
       /* prepare for encoding */{
         api_error ae{};
         inscopy_lengthsort(state.values, ae);
