@@ -2514,7 +2514,7 @@ namespace text_complex {
         unsigned char const* const data = state.buffer.str().data();
         std::size_t stop = (state.guesses.count > 1
             ? state.guesses.offsets[1] : state.guesses.total_bytes);
-        std::array<uint32, CtxtSpan_Size+1> literal_lengths;
+        std::array<uint32, CtxtSpan_Size> literal_lengths;
         uint32 literal_counter = 0;
         uint32 next_copy = 0;
         brcvt_state::forward_box try_fwd = {};
@@ -2586,7 +2586,7 @@ namespace text_complex {
             state.literals_forest[btype_j],
             state.lit_histogram[btype], ae);
         }
-        std::copy(literal_lengths.begin()+1, literal_lengths.end(), state.guess_lengths);
+        std::copy(literal_lengths.begin(), literal_lengths.end(), state.guess_lengths);
       }
       if (try_bit_count/8+1 > state.buffer.input_size())
         return api_error::BlockOverflow;
