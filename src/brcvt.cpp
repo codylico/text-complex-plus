@@ -2091,6 +2091,7 @@ namespace text_complex {
               return api_error::Memory;
             fixlist_gen_codes(treety.nineteen, ae);
             assert(ae == api_error::Success);
+            // Determine stopping point for emitting code lengths.
             treety.count = 0;
             treety.nonzero = 0;
             for (uint32 i = 0; i < lines; ++i) {
@@ -2151,7 +2152,8 @@ namespace text_complex {
         return api_error::EndOfFile;
       case BrCvt_TNineteen:
         if (treety.bit_length == 0) {
-          unsigned short const len = treety.nineteen[treety.index].len;
+          unsigned char clen = brcvt_clen[treety.index];
+          unsigned short const len = treety.nineteen[clen].len;
           switch (len) {
           case 0: treety.bit_length = 2; treety.bits = 0u; break;
           case 1: treety.bit_length = 4; treety.bits = 14u; break;
