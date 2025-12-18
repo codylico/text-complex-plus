@@ -872,6 +872,15 @@ namespace text_complex {
           fwd.accum += total;
           if (fwd.accum >= 16777200u)
             fwd.accum = 16777200u;
+          // Update the forwarder state for the later token.
+          fwd.i += (1 + ((data[fwd.i]&64u)!=0));
+          if (out.first == 0)
+            fwd.ostate = BrCvt_Distance;
+          else
+            fwd.ostate = BrCvt_Literal;
+          fwd.literal_i = 0;
+          fwd.command_span = (unsigned short)first_literals;
+          fwd.literal_total = total;
           if (next_i >= size)
             break;
           /* parse copy length */{
@@ -886,14 +895,6 @@ namespace text_complex {
             }
             out.second = next_span;
           }
-          fwd.i += (1 + ((data[fwd.i]&64u)!=0));
-          if (out.first == 0)
-            fwd.ostate = BrCvt_Distance;
-          else
-            fwd.ostate = BrCvt_Literal;
-          fwd.literal_i = 0;
-          fwd.command_span = (unsigned short)first_literals;
-          fwd.literal_total = total;
         } break;
       case BrCvt_Literal:
         out.state = BrCvt_Literal;
