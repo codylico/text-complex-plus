@@ -3251,6 +3251,7 @@ namespace text_complex {
             if (res == api_error::EndOfFile) {
               state.bit_length = 0;
               state.count += 1;
+              state.bit_cap = 0;
               if (state.count >= forest.size()) {
                 uint32 const accum = state.fwd.accum;
                 state.fwd = {};
@@ -3264,7 +3265,6 @@ namespace text_complex {
                 }
               }
               brcvt_reset19(state.treety);
-              state.bit_cap = 0;
               fixlist_valuesort(tree, ae);
             } else if (res != api_error::Success)
               ae = res;
