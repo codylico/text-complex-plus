@@ -2298,17 +2298,25 @@ namespace text_complex {
         for (unsigned i = 0; i < count && ae == api_error::Success; ++i)
           s.push_back(static_cast<unsigned char>(len), ae);
       } else if (len == 0u) {
-        unsigned const recount = count-3;
-        int width = static_cast<int>(util_bitwidth(recount));
-        for (int i = width-width%3; i >= 0 && ae == api_error::Success; i -= 3) {
+        unsigned const recount = count-2;
+        auto const width = static_cast<int>(util_bitwidth(recount));
+        constexpr unsigned const scaffold = 0111111u;
+        unsigned const rescaffold = scaffold & ~(~0u << width);
+        int const rewidth = (recount >= rescaffold ? width : width-3);
+        unsigned const reduced = recount - (scaffold & ~(~0u << rewidth));
+        for (int i = (rewidth-1)/3*3; i >= 0 && ae == api_error::Success; i -= 3) {
           unsigned int const x = (recount>>i)&7u;
           ae = brcvt_post_two(s, 17, static_cast<unsigned char>(x));
         }
       } else {
         s.push_back(static_cast<unsigned char>(len), ae);
-        unsigned const recount = count-3;
-        unsigned const width = util_bitwidth(recount);
-        for (int i = static_cast<int>(width&~1u); i >= 0 && ae == api_error::Success; i -= 2) {
+        unsigned const recount = count-3; /* account for leading literal */
+        auto const width = static_cast<int>(util_bitwidth(recount));
+        constexpr unsigned const scaffold = 0x5555u;
+        unsigned const rescaffold = scaffold & ~(~0u << width);
+        int const rewidth = (recount >= rescaffold ? width : width-2);
+        unsigned const reduced = recount - (scaffold & ~(~0u << rewidth));
+        for (int i = static_cast<int>((rewidth-1)&~1u); i >= 0 && ae == api_error::Success; i -= 2) {
           unsigned int const x = (recount>>i)&3u;
           ae = brcvt_post_two(s, 16, static_cast<unsigned char>(x));
         }
