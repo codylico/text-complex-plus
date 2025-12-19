@@ -2444,6 +2444,7 @@ namespace text_complex {
       int guess_nonzero = 0;
       size_t accum = 0;
       std::size_t try_bit_count = 0;
+      state.buffer.clear_output();
       /* try to compress the block */{
         api_error ae{};
         state.buffer.try_block(ae);
