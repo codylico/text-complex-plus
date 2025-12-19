@@ -2387,7 +2387,8 @@ namespace text_complex {
           unsigned const sum_direct = state.ring.get_direct() + 16u;
           if (cmd >= brcvt_DistHistoSize)
             return api_error::Sanitize;
-          state.extra_length = 1 + ((cmd - sum_direct) >> (state.ring.get_postfix()+1));
+          state.extra_length = (cmd < sum_direct) ? 0
+            : 1 + ((cmd - sum_direct) >> (state.ring.get_postfix()+1));
           if (state.extra_length > 0) {
             state.extra_bits[0] = extra;
           }
@@ -3341,7 +3342,7 @@ namespace text_complex {
       : buffer(std::min<uint32>(block_size,16777200u), n, chain_length, false),
         literals(288u), distances(32u), sequence(19u),
         wbits(15u), values(704u),
-        ring(false,4,0), try_ring(false,4,0),
+        ring(true,4,0), try_ring(true,4,0),
         lit_histogram{{256u}, {256u}, {256u}, {256u}}, dist_histogram(68u), ins_histogram(704u),
         bits(0u), bit_length(0u), state(0u), bit_index(0u),
         backward(0u), metablock_pos(0u), count(0u),
