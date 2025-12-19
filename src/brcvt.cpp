@@ -2619,6 +2619,7 @@ namespace text_complex {
       auto const& buffer = state.buffer.str();
       std::size_t const size = buffer.size();
       if (state.fwd.i >= size) {
+        state.buffer.clear_input();
         brcvt_next_block(state);
         return api_error::Success;
       }
@@ -2633,12 +2634,11 @@ namespace text_complex {
         api_error const ae = brcvt_apply_token(state, next);
         if (ae != api_error::Partial)
           return ae;
-        else if (state.fwd.i >= size) {
-          brcvt_next_block(state);
-          return api_error::Success;
-        }
+        else if (state.fwd.i >= size)
+          break;
       }
       /* Guaranteed progress means this line only reached by end of buffer. */
+      state.buffer.clear_input();
       brcvt_next_block(state);
       return api_error::Success;
     }
