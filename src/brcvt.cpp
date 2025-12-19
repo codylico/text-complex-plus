@@ -2312,7 +2312,7 @@ namespace text_complex {
         int const rewidth = (recount >= rescaffold ? width : width-3);
         unsigned const reduced = recount - (scaffold & ~(~0u << rewidth));
         for (int i = (rewidth-1)/3*3; i >= 0 && ae == api_error::Success; i -= 3) {
-          unsigned int const x = (recount>>i)&7u;
+          unsigned int const x = (reduced>>i)&7u;
           ae = brcvt_post_two(s, 17, static_cast<unsigned char>(x));
         }
       } else {
@@ -2324,7 +2324,7 @@ namespace text_complex {
         int const rewidth = (recount >= rescaffold ? width : width-2);
         unsigned const reduced = recount - (scaffold & ~(~0u << rewidth));
         for (int i = static_cast<int>((rewidth-1)&~1u); i >= 0 && ae == api_error::Success; i -= 2) {
-          unsigned int const x = (recount>>i)&3u;
+          unsigned int const x = (reduced>>i)&3u;
           ae = brcvt_post_two(s, 16, static_cast<unsigned char>(x));
         }
       }
