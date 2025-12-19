@@ -447,6 +447,12 @@ namespace text_complex {
      *   other negative code on failure
      */
     static api_error brcvt_apply_token_checked(brcvt_state& state) noexcept;
+    /**
+     * @brief Determine the state to handle the first extra bits.
+     * @param state output token state
+     * @return new output state
+     */
+    static brcvt_istate brcvt_outflow_extra(unsigned state) noexcept;
 
 
 
@@ -2423,7 +2429,7 @@ namespace text_complex {
       if (state.bit_cap > 0)
         return api_error::Success;
       else if (state.extra_length > 0) {
-        state.state = BrCvt_DataInsertExtra;
+        state.state = brcvt_outflow_extra(next.state);
         return api_error::Success;
       } else if (state.bit_length > 0) {
         state.state = BrCvt_DataCopyExtra;
@@ -2711,6 +2717,14 @@ namespace text_complex {
       for (int i = 0; i < len && ae == api_error::Success; ++i)
         buffer.push_back(code[i], ae);
       return ae;
+    }
+
+    static brcvt_istate brcvt_outflow_extra(unsigned state) noexcept {
+      switch (state) {
+        case BrCvt_LiteralRestart: return BrCvt_LiteralRecount;
+        case BrCvt_Distance: return BrCvt_DataDistanceExtra;
+        default: return BrCvt_DataInsertExtra;
+      }
     }
 
     api_error brcvt_out_bits
@@ -3281,7 +3295,7 @@ namespace text_complex {
           if (state.bit_cap == 0) {
             state.bits = 0;
             if (state.extra_length > 0) {
-              state.state = BrCvt_DataInsertExtra;
+              state.state = brcvt_outflow_extra(state.state);
             } else if (state.bit_length > 0) {
               state.state = BrCvt_DataCopyExtra;
             } else {
@@ -3291,6 +3305,21 @@ namespace text_complex {
           } break;
         case BrCvt_DataInsertExtra:
         case BrCvt_DataDistanceExtra:
+          if (state.extra_length > 0) {
+            x = state.extra_bits[0]&1u;
+            state.extra_bits[0] >>= 1u;
+            --state.extra_length;
+          }
+          if (state.extra_length == 0) {
+            if (state.bit_length > 0) {
+              state.state = BrCvt_DataCopyExtra;
+            } else {
+              /* otherwise process the next no-skip token */
+              ae = brcvt_apply_token_checked(state);
+            }
+          }
+          break;
+        case BrCvt_LiteralRecount:
           if (state.extra_length > 0)
             x = (state.extra_bits[0]>>(--state.extra_length))&1u;
           if (state.extra_length == 0) {
@@ -3303,8 +3332,11 @@ namespace text_complex {
           }
           break;
         case BrCvt_DataCopyExtra:
-          if (state.bit_length > 0)
-            x = (state.extra_bits[1]>>(--state.bit_length))&1u;
+          if (state.bit_length > 0) {
+            x = state.extra_bits[1]&1u;
+            state.extra_bits[1] >>= 1u;
+            --state.bit_length;
+          }
           if (state.bit_length == 0) {
             /* process the next no-skip token */
             ae = brcvt_apply_token_checked(state);
@@ -3615,7 +3647,9 @@ namespace text_complex {
         case BrCvt_DataCopyExtra:
         case BrCvt_Literal:
         case BrCvt_Distance:
+        case BrCvt_DataDistanceExtra:
         case BrCvt_LiteralRestart:
+        case BrCvt_LiteralRecount:
           ae = brcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         case BrCvt_MetaText:
