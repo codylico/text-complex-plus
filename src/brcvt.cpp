@@ -1376,14 +1376,11 @@ namespace text_complex {
           if (state.bit_length >= 6) {
             unsigned const postfix = state.bits&3;
             unsigned const direct = (state.bits>>2)<<postfix;
-            try {
-              distance_ring tryring(true,direct,postfix);
-              state.ring = tryring;
-              state.try_ring = std::move(tryring);
-            } catch (api_exception const& ae_ring) {
-              ae = ae_ring.to_error();
+            state.try_ring.reconfigure(true, direct,postfix, ae);
+            if (ae != api_error::Success)
               break;
-            }
+            state.ring.reconfigure(true, direct,postfix,ae);
+            assert(ae == api_error::Success);
             state.state = BrCvt_ContextTypesL;
             state.bit_length = 0;
             state.bits = 0;
