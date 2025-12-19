@@ -3544,6 +3544,10 @@ namespace text_complex {
           }
           break;
         case BrCvt_Uncompress:
+          if (to_out >= to_end) {
+            ae = api_error::Partial;
+            break;
+          }
           if (state.metablock_pos < state.backward) {
             if (!state.buffer.bypass(p, 1))
               ae = api_error::Memory;
