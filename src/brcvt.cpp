@@ -2529,7 +2529,10 @@ namespace text_complex {
       } catch (std::bad_alloc const& ) {
         return api_error::Memory;
       }
-      /* fill the histograms */{
+      /* synchronize the distance scratch space with actual output.
+      * (Uncompress blocks can introduce drift.) */
+      state.try_ring = state.ring;
+      /* fill the histograms and build prefix trees */{
         std::size_t const size = state.buffer.str().size();
         unsigned char const* const data = state.buffer.str().data();
         std::size_t stop = (state.guesses.count > 1
