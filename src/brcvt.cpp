@@ -2494,7 +2494,6 @@ namespace text_complex {
       prefix_preset blocktype_tree = fixlist_match_preset(state.literal_blocktype);
       if (blocktype_tree == prefix_preset::BrotliComplex)
         return api_error::Sanitize;
-      state.blocktype_simple = static_cast<unsigned char>(blocktype_tree);
       accum += 4;
       std::size_t const btypes = state.literal_blocktype.size();
       accum += (blocktype_tree >= prefix_preset::BrotliSimple3 ? 3 : 2) * btypes;
@@ -3379,7 +3378,7 @@ namespace text_complex {
         lit_histogram{{256u}, {256u}, {256u}, {256u}}, dist_histogram(68u), ins_histogram(704u),
         bits(0u), bit_length(0u), state(0u), bit_index(0u),
         backward(0u), metablock_pos(0u), count(0u),
-        wbits_select(0u), emptymeta(false), write_scratch(0), checksum(0u),
+        wbits_select(0u), emptymeta(false), write_scratch(0),
         bit_cap(0u), meta_index(0), metatext(nullptr), max_len_meta(1024),
         treety{}, guesses{},
         blocktypeL_index(brcvt_btype_zero), blocktypeL_max(0),
@@ -3585,17 +3584,8 @@ namespace text_complex {
       if (state.state >= 2u) {
         ae = api_error::Sanitize;
         return 0u;
-      } else {
-        size_t const n = state.buffer.bypass(buf, sz, ae);
-        if (state.state == 0u) {
-          /* output direction */
-          state.checksum = zutil_adler32(sz, buf, state.checksum);
-        } else {
-          /* input direction */
-          state.backward = zutil_adler32(sz, buf, state.backward);
-        }
-        return n;
       }
+      return state.buffer.bypass(buf, sz, ae);
     }
 
     api_error brcvt_out(brcvt_state& state,

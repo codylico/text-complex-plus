@@ -175,9 +175,6 @@ namespace text_complex {
       unsigned char alphabits;
       /** @brief Scratch space for last byte generated. */
       unsigned char write_scratch;
-      /** @brief Checksum value. */
-      [[deprecated]]
-      unsigned short checksum;
       /** @brief Output internal bit count. */
       uint32 bit_cap;
       /** @brief Nonzero metadata block storage. */
@@ -244,12 +241,6 @@ namespace text_complex {
       uint32 extra_bits[2];
       /** @brief Map from mode to outflow context index. */
       unsigned char ctxt_mode_map[4];
-      /**
-       * @brief Built-in tree type for block type outflow.
-       * @todo Test for removal.
-       */
-      [[deprecated("Unused field; ignore.")]]
-      unsigned char blocktype_simple;
 
     public: /** @name rule-of-zero*//** @{ */
       /**
