@@ -3683,11 +3683,6 @@ namespace text_complex {
         case BrCvt_Done:
           ae = api_error::EndOfFile;
           break;
-        case 13: /* hcounts */
-        case 14: /* code lengths code lengths */
-        case 15: /* literals and distances */
-          ae = brcvt_out_bits(state, from, from_end, p, *to_out);
-          break;
         default:
           ae = api_error::Sanitize;
           break;
