@@ -40,7 +40,7 @@ static MunitPlusTest tests_brcvt[] = {
   {(char*)"metadata_ptr", test_brcvt_metadata_ptr,
     test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
   {(char*)"metadata_cycle", test_brcvt_metadata_cycle,
-    test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_TODO,nullptr},
+    test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
   {(char*)"in/none", test_brcvt_zsrtostr_none,
     test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_TODO,NULL},
   {(char*)"flush", test_brcvt_flush,
@@ -139,7 +139,7 @@ MunitPlusResult test_brcvt_metadata_cycle
     tca::api_error res = tca::brcvt_out(*p,
       dummy, dummy+sizeof(dummy), dummy_p,
       buf, buf+sizeof(buf), buf_end);
-    munit_plus_assert(res == tca::api_error::Success);
+    munit_plus_assert(res == tca::api_error::Partial);
     munit_plus_assert(buf_end <= buf+sizeof(buf));
     res = tca::brcvt_unshift(*p, buf_end, buf+sizeof(buf), buf_end);
     munit_plus_assert(res >= tca::api_error::Success);
