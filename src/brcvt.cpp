@@ -3469,6 +3469,10 @@ namespace text_complex {
       unsigned char const* p;
       unsigned char* to_out = to;
       for (p = from; p < from_end && ae == api_error::Success; ++p) {
+        if (state.state == BrCvt_Done) {
+          ae = api_error::EndOfFile;
+          break;
+        }
         switch (state.state) {
         case BrCvt_WBits: /* WBITS */
         case BrCvt_LastCheck:
@@ -3571,8 +3575,8 @@ namespace text_complex {
           ae = api_error::Sanitize;
           break;
         }
-        if (ae > api_error::Success)
-          /* */break;
+        if (ae >= api_error::Partial)
+          /* halt the read position here: */break;
       }
       from_next = p;
       to_next = to_out;
@@ -3602,6 +3606,10 @@ namespace text_complex {
       for (to_out = to; to_out < to_end && ae == api_error::Success;
           ++to_out)
       {
+        if (state.state == BrCvt_Done) {
+          ae = api_error::EndOfFile;
+          break;
+        }
         switch (state.state) {
         case BrCvt_WBits: /* WBITS */
         case BrCvt_MetaStart:
@@ -3684,7 +3692,7 @@ namespace text_complex {
           ae = api_error::Sanitize;
           break;
         }
-        if (ae > api_error::Success)
+        if (ae >= api_error::Partial)
           break;
       }
       from_next = p;
