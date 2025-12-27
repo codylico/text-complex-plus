@@ -8,6 +8,7 @@
 #include "text-complex-plus/access/zutil.hpp"
 #include "munit-plus/munit.hpp"
 #include <memory>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -42,7 +43,7 @@ static MunitPlusTest tests_brcvt[] = {
   {(char*)"metadata_cycle", test_brcvt_metadata_cycle,
     test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
   {(char*)"in/none", test_brcvt_zsrtostr_none,
-    test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_TODO,NULL},
+    test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_NONE,NULL},
   {(char*)"flush", test_brcvt_flush,
     test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_TODO,NULL},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
@@ -170,37 +171,34 @@ MunitPlusResult test_brcvt_zsrtostr_none
   (const MunitPlusParameter params[], void* data)
 {
   tca::brcvt_state* const p = static_cast<tca::brcvt_state*>(data);
-  unsigned char buf[128+11] = {8u,29u,1u};
+  std::array<unsigned char, 128+5> buf = {{12u}};
   std::size_t const len = static_cast<size_t>(munit_plus_rand_int_range(0,128));
   if (p == NULL)
     return MUNIT_PLUS_SKIP;
   (void)params;
-  /* "compress" some data */{
-    uint32_t checksum;
-    unsigned char *const check_buffer = buf+7+len;
-    munit_plus_rand_memory(len, (buf+7));
-    checksum = tca::zutil_adler32(len, buf+7, 1);
-    buf[3] = (len>>8)&0xff;
-    buf[4] = (len)&0xff;
-    buf[5] = (~(len>>8))&0xff;
-    buf[6] = (~len)&0xff;
-    check_buffer[0] = (checksum>>24)&0xff;
-    check_buffer[1] = (checksum>>16)&0xff;
-    check_buffer[2] = (checksum>> 8)&0xff;
-    check_buffer[3] = (checksum    )&0xff;
+  /* "compress" some data */if (len == 0) {
+    buf[0] = 6;
+  } else {
+    size_t const r = len - 1;
+    unsigned char *const check_buffer = buf.data()+4+len;
+    munit_plus_rand_memory(len, &buf[4]);
+    buf[1] = static_cast<unsigned char>((r & 31u) << 3);
+    buf[2] = static_cast<unsigned char>(r >> 5);
+    buf[3] = static_cast<unsigned char>(8 + (r >> 13));
+    check_buffer[0] = 3;
   }
   /* extract some data */{
-    size_t const total = len+11;
-    unsigned char to_buf[128];
-    unsigned char* ret;
-    unsigned char const* src = buf;
+    size_t const total = len > 0 ? len+5 : 1;
+    std::array<unsigned char,128> to_buf = {};
+    unsigned char* ret = nullptr;
+    unsigned char const* src = buf.data();
     tca::api_error res;
-    res = tca::brcvt_in(*p, buf, buf+total, src,
-      to_buf, to_buf+sizeof(to_buf), ret);
-    munit_plus_assert(res == tca::api_error::Success);
-    munit_plus_assert(ret-to_buf == len);
-    munit_plus_assert(src-buf == total);
-    munit_plus_assert_memory_equal(len, to_buf, buf+7);
+    res = tca::brcvt_in(*p, buf.data(), buf.data()+total, src,
+      to_buf.data(), to_buf.data()+sizeof(to_buf), ret);
+    munit_plus_assert(res == tca::api_error::EndOfFile);
+    munit_plus_assert(ret-to_buf.data() == len);
+    munit_plus_assert(src-buf.data() == total);
+    munit_plus_assert_memory_equal(len, to_buf.data(), buf.data()+4);
   }
   return MUNIT_PLUS_OK;
 }
