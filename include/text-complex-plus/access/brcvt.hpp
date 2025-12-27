@@ -431,7 +431,9 @@ namespace text_complex {
      * @param to destination buffer
      * @param to_end pointer to end of destination buffer
      * @param[out] to_next location of next output byte
-     * @return api_error::Success on success, nonzero otherwise
+     * @return api_error::Success on success,
+     *   api_error::Partial if the next meta-block is ready or more output
+     *   data can be written, other nonzero otherwise
      * @note The conversion state referred to by `state` is updated based
      *   on the conversion result, whether successful or failed.
      *

@@ -45,7 +45,7 @@ static MunitPlusTest tests_brcvt[] = {
   {(char*)"in/none", test_brcvt_zsrtostr_none,
     test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_NONE,NULL},
   {(char*)"flush", test_brcvt_flush,
-    test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_TODO,NULL},
+    test_brcvt_setup,test_brcvt_teardown,MUNIT_PLUS_TEST_OPTION_NONE,NULL},
   {nullptr, nullptr, nullptr,nullptr,MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
 
@@ -223,22 +223,21 @@ MunitPlusResult test_brcvt_flush
   /* encode */
   {
     unsigned char const *text_p = text;
-    unsigned char* buf_end = buf;
     tca::api_error res = tca::brcvt_out(*p,
       text, text+flush_len, text_p,
       buf, buf+sizeof(buf), buf_end);
-    munit_plus_assert(res == tca::api_error::Success);
+    munit_plus_assert(res == tca::api_error::Partial);
     munit_plus_assert(buf_end <= buf+sizeof(buf));
     res = tca::brcvt_flush(*p, buf_end, buf+sizeof(buf), buf_end);
-    munit_plus_assert(res >= tca::api_error::Success);
+    munit_plus_assert(res >= tca::api_error::Partial);
     munit_plus_assert(buf_end <= buf+sizeof(buf));
     res = tca::brcvt_out(*p,
       text+flush_len, text+text_len, text_p,
       buf_end, buf+sizeof(buf), buf_end);
-    munit_plus_assert(res == tca::api_error::Success);
+    munit_plus_assert(res == tca::api_error::Partial);
     munit_plus_assert(buf_end <= buf+sizeof(buf));
     res = tca::brcvt_unshift(*p, buf_end, buf+sizeof(buf), buf_end);
-    munit_plus_assert(res >= tca::api_error::Success);
+    munit_plus_assert(res >= tca::api_error::EndOfFile);
     munit_plus_assert(buf_end <= buf+sizeof(buf));
   }
   /* decode */
