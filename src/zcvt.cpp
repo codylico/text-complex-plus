@@ -636,9 +636,9 @@ namespace text_complex {
             }
             if (ae == api_error::Success) {
               /* histogram */
-              block_string const& x = state.buffer.str();
-              uint32 const x_size = x.size();
-              uint32 const x_size_m1 = x_size-1u;
+              block_string const& buffer_str = state.buffer.str();
+              uint32 const buffer_size = buffer_str.size();
+              uint32 const buffer_m1 = buffer_size-1u;
               unsigned long int bit_count = 0u;
               /* prepare */{
                 state.try_ring = state.ring;
@@ -650,19 +650,19 @@ namespace text_complex {
                     state.seq_histogram.end(), 0u);
               }
               /* calculate histogram */{
-                uint32 x_i;
-                for (x_i = 0u; x_i < x_size; ++x_i) {
-                  unsigned char const byt = x[x_i];
+                uint32 buffer_pos;
+                for (buffer_pos = 0u; buffer_pos < buffer_size; ++buffer_pos) {
+                  unsigned char const byt = buffer_str[buffer_pos];
                   bool const insert_flag = ((byt&128u)==0u);
                   unsigned short len;
                   unsigned short j;
                   if (byt&64u) {
-                    if (x_i == x_size_m1) {
+                    if (buffer_pos == buffer_m1) {
                       ae = api_error::Sanitize;
                       break;
                     } else {
-                      len = ((byt&63u)<<8)|(x[x_i+1u]&255u);
-                      x_i += 1u;
+                      len = ((byt&63u)<<8)|(buffer_str[buffer_pos+1u]&255u);
+                      buffer_pos += 1u;
                     }
                   } else len = byt&63u;
                   if (len == 0u)
@@ -679,19 +679,19 @@ namespace text_complex {
                       state.lit_histogram[lit_index] += 1u;
                       bit_count += lit.copy_bits;
                     }
-                    /* distance */switch (x[x_i+1u] & 192u) {
+                    /* distance */switch (buffer_str[buffer_pos+1u] & 192u) {
                     case 128u:
-                      if (x_i+2u < x_size_m1) {
-                        distance = ((x[x_i+1u]&63u)<<8) | x[x_i+2u];
-                        x_i += 2u;
+                      if (buffer_pos+2u < buffer_m1) {
+                        distance = ((buffer_str[buffer_pos+1u]&63u)<<8) | buffer_str[buffer_pos+2u];
+                        buffer_pos += 2u;
                       } else ae = api_error::BlockOverflow;
                       break;
                     case 192u:
-                      if (x_i+4u < x_size_m1) {
-                        distance = ((static_cast<uint32>(x[x_i+1u]&63u)<<24)
-                          | (static_cast<uint32>(x[x_i+2u])<<16)
-                          | (x[x_i+3u]<<8) | x[x_i+4u]) + 16384u;
-                        x_i += 2u;
+                      if (buffer_pos+4u < buffer_m1) {
+                        distance = ((static_cast<uint32>(buffer_str[buffer_pos+1u]&63u)<<24)
+                          | (static_cast<uint32>(buffer_str[buffer_pos+2u])<<16)
+                          | (buffer_str[buffer_pos+3u]<<8) | buffer_str[buffer_pos+4u]) + 16384u;
+                        buffer_pos += 2u;
                       } else ae = api_error::BlockOverflow;
                       break;
                     default:
@@ -707,8 +707,8 @@ namespace text_complex {
                         state.dist_histogram[dist_code] += 1u;
                       } else break;
                     }
-                  } else for (j = 0u; j < len && x_i<x_size_m1; ++j, ++x_i) {
-                    state.lit_histogram[x[x_i+1u]] += 1u;
+                  } else for (j = 0u; j < len && buffer_pos<buffer_m1; ++j, ++buffer_pos) {
+                    state.lit_histogram[buffer_str[buffer_pos+1u]] += 1u;
                   }
                 }
                 if (ae != api_error::Success)
