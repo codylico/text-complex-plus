@@ -681,13 +681,13 @@ namespace text_complex {
                     }
                     /* distance */switch (buffer_str[buffer_pos+1u] & 192u) {
                     case 128u:
-                      if (buffer_pos+2u < buffer_m1) {
+                      if (buffer_pos+2u < buffer_size) {
                         distance = ((buffer_str[buffer_pos+1u]&63u)<<8) | buffer_str[buffer_pos+2u];
                         buffer_pos += 2u;
                       } else ae = api_error::BlockOverflow;
                       break;
                     case 192u:
-                      if (buffer_pos+4u < buffer_m1) {
+                      if (buffer_pos+4u < buffer_size) {
                         distance = ((static_cast<uint32>(buffer_str[buffer_pos+1u]&63u)<<24)
                           | (static_cast<uint32>(buffer_str[buffer_pos+2u])<<16)
                           | (buffer_str[buffer_pos+3u]<<8) | buffer_str[buffer_pos+4u]) + 16384u;
@@ -706,7 +706,7 @@ namespace text_complex {
                         bit_count += extra;
                         state.dist_histogram[dist_code] += 1u;
                       } else break;
-                    }
+                    } else break;
                   } else for (j = 0u; j < len && buffer_pos<buffer_m1; ++j, ++buffer_pos) {
                     state.lit_histogram[buffer_str[buffer_pos+1u]] += 1u;
                   }
