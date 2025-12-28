@@ -787,7 +787,7 @@ namespace text_complex {
                 }
               }
               if (ae == api_error::Success) {
-                state.bits = (state.h_end&1u) | (dynamic?6u:0u);
+                state.bits = (state.h_end&1u) | (dynamic?4u:0u);
                 state.buffer.clear_input();
               }
             } else break;
