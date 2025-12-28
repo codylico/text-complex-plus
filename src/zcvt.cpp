@@ -887,7 +887,7 @@ namespace text_complex {
                   prefix_line const& line = state.literals[alpha];
                   state.bit_cap = line.len;
                   state.bits = line.code;
-                  state.count = len-irow.copy_first;
+                  state.count = len - irow.copy_first;
                   state.extra_length = irow.copy_bits;
                 }
               }
