@@ -82,6 +82,10 @@ namespace text_complex {
      */
     static void zcvt_noconv_next(zcvt_state& state) noexcept;
 
+    static constexpr unsigned ZCvt_LitDynamicConst = 286u;
+    static constexpr unsigned ZCvt_DistDynamicConst = 30u;
+
+
     //BEGIN zcvt / static
     api_error zcvt_in_bits
       ( zcvt_state& state, unsigned char y,
@@ -504,8 +508,9 @@ namespace text_complex {
     api_error zcvt_make_sequence(zcvt_state& state) noexcept {
       unsigned int len = ~0u, len_count = 0u;
       state.sequence_list.clear();
-      for (prefix_line const& line : state.literals) {
-        unsigned int const n = line.len;
+      for (unsigned i = 0; i < ZCvt_LitDynamicConst; ++i) {
+        unsigned int const n = (i >= state.literals.size()) ? 0
+          : state.literals[i].len;
         if (len != n) {
           api_error const ae = zcvt_post_sequence
             (state.sequence_list, len, len_count);
@@ -515,8 +520,9 @@ namespace text_complex {
           len_count = 1u;
         } else len_count += 1u;
       }
-      for (prefix_line const& line : state.distances) {
-        unsigned int const n = line.len;
+      for (unsigned i = 0; i < ZCvt_DistDynamicConst; ++i) {
+        unsigned int const n = (i >= state.distances.size()) ? 0
+          : state.distances[i].len;
         if (len != n) {
           api_error const ae = zcvt_post_sequence
             (state.sequence_list, len, len_count);
@@ -940,7 +946,8 @@ namespace text_complex {
         case 13: /* hcounts */
           if (state.bit_length == 0u) {
             state.count = 19u;
-            state.bits = (((state.count-4u) << 10) | (31u<<5) | (31u));
+            state.bits = (((state.count-4u) << 10)
+              | ((ZCvt_DistDynamicConst-1)<<5) | (ZCvt_LitDynamicConst-257));
           }
           if (state.bit_length < 14u) {
             x = (state.bits>>state.bit_length)&1u;
