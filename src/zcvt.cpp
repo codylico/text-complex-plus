@@ -650,8 +650,7 @@ namespace text_complex {
                     state.seq_histogram.end(), 0u);
               }
               /* calculate histogram */{
-                uint32 buffer_pos;
-                for (buffer_pos = 0u; buffer_pos < buffer_size; ++buffer_pos) {
+                for (uint32 buffer_pos = 0u; buffer_pos < buffer_size; ++buffer_pos) {
                   unsigned char const byt = buffer_str[buffer_pos];
                   bool const insert_flag = ((byt&128u)==0u);
                   unsigned short len;
@@ -671,7 +670,7 @@ namespace text_complex {
                     size_t const lit_index =
                       inscopy_encode(state.values, 0u, len, false);
                     uint32 distance = 0u;
-                    if (lit_index > 288u) {
+                    if (lit_index >= 288u) {
                       ae = api_error::InsCopyMissing;
                       break;
                     } else {
