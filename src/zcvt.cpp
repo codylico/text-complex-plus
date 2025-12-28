@@ -1024,6 +1024,9 @@ namespace text_complex {
               state.state = 19u;
             } else state.state = 15u;
           } break;
+        default:
+          ae = api_error::Unknown;
+          break;
         }
         if (ae > api_error::Success) {
           if (ae == api_error::Partial)
