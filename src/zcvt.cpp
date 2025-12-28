@@ -860,7 +860,7 @@ namespace text_complex {
                 buf[1u] = data[state.index];
                 len = buf[1u] + ((buf[0u]&63u)<<8) + 64u;
               } else len = buf[0u]&63u;
-              if (buf[0u]&128u) {
+              if ((buf[0u]&128u) == 0u) {
                 /* insert */
                 if (state.index+1u >= state.backward || len == 0u) {
                   ae = api_error::Sanitize;
