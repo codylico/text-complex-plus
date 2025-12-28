@@ -73,6 +73,8 @@ namespace text_complex {
       uint32 checksum;
       /** @brief Output internal bit count. */
       uint32 bit_cap;
+      /** @brief Scratch space for last byte generated. */
+      unsigned char write_scratch;
 
     public: /** @name rule-of-zero*//** @{ */
       /**

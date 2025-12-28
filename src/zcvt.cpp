@@ -600,6 +600,9 @@ namespace text_complex {
     {
       unsigned int i;
       api_error ae = api_error::Success;
+      // Restore in-progress byte.
+      y = state.write_scratch;
+      state.write_scratch = 0;
       for (i = state.bit_index; i < 8u && ae == api_error::Success; ++i) {
         unsigned int x = 0u;
         if ((!(state.h_end&1u))/* if end marker not activated yet */
@@ -623,13 +626,10 @@ namespace text_complex {
           }
           /* try compress the data */if (state.count == 0u) {
             bool dynamic = false;
-            /* unstash the byte */{
-              y = static_cast<unsigned char>(state.bits);
-            }
             if (state.buffer.input_size() == 0u && (!state.h_end)) {
               /* stash the current byte to the side */
-              state.bits = y;
               ae = api_error::Partial;
+              break;
             } else {
               state.buffer.clear_output();
               state.buffer.try_block(ae);
@@ -1016,8 +1016,11 @@ namespace text_complex {
             } else state.state = 15u;
           } break;
         }
-        if (ae > api_error::Success)
+        if (ae > api_error::Success) {
+          if (ae == api_error::Partial)
+            state.write_scratch = y;
           /* halt the read position here: */break;
+        }
         else y |= (x<<i);
       }
       state.bit_index = i&7u;
@@ -1047,7 +1050,7 @@ namespace text_complex {
         lit_histogram(288u), dist_histogram(32u), seq_histogram(19u),
         bits(0u), bit_length(0u), state(0u), bit_index(0u),
         backward(0u), count(0u), checksum(0u),
-        bit_cap(0u)
+        bit_cap(0u), write_scratch(0)
     {
       inscopy_preset(values, insert_copy_preset::Deflate);
       inscopy_codesort(values);
