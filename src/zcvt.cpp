@@ -720,12 +720,14 @@ namespace text_complex {
                   break;
                 else/* plant two trees */{
                   /* dynamic Huffman codes */{
-                    unsigned int j;
-                    for (j = 0u; j < 288u; ++j) {
+                    for (unsigned j = 0u; j < 288u; ++j) {
                       state.literals[j].value = j;
                     }
-                    for (j = 0u; j < 32u; ++j) {
+                    for (unsigned j = 0u; j < 32u; ++j) {
                       state.distances[j].value = j;
+                    }
+                    for (unsigned j = 0u; j < 19u; ++j) {
+                      state.sequence[j].value = j;
                     }
                   }
                   /* lengths */{
@@ -959,6 +961,7 @@ namespace text_complex {
             state.index = 0u;
             state.bit_length = 0u;
             state.bits = 0u;
+            fixlist_valuesort(state.sequence, ae);
           } break;
         case 14: /* code lengths code lengths */
           if (state.bit_length == 0u) {
@@ -989,7 +992,7 @@ namespace text_complex {
             state.extra_length = line.len;
           }
           if (state.bit_length < state.extra_length) {
-            x = (state.bits>>(state.extra_length-1u-state.bit_length));
+            x = (state.bits>>(state.extra_length-1u-state.bit_length))&1u;
             state.bit_length += 1u;
           }
           if (state.bit_length >= state.extra_length) {
