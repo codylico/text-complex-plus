@@ -1369,6 +1369,10 @@ namespace text_complex {
       for (to_out = to; to_out < to_end && ae == api_error::Success;
           ++to_out)
       {
+        if (state.state == 7) {
+          ae = api_error::EndOfFile;
+          break;
+        }
         switch (state.state) {
         case 0: /* initial state */
           if (state.count == 0u) {
@@ -1478,7 +1482,7 @@ namespace text_complex {
           ae = zcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         }
-        if (ae > api_error::Success)
+        if (ae >= api_error::Partial)
           break;
       }
       from_next = p;
