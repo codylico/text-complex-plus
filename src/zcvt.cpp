@@ -582,8 +582,8 @@ namespace text_complex {
         unsigned int i;
         api_error ae;
         s.push_back(static_cast<unsigned char>(len), ae);
-        for (i = 1u; i < len && ae == api_error::Success; ) {
-          unsigned int const x = len-i;
+        for (i = 1u; i < count && ae == api_error::Success; ) {
+          unsigned int const x = count-i;
           if (x > 6u) {
             ae = zcvt_post_two(s, 16u, 3u);
             i += 6u;
