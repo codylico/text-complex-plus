@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <vector>
 #include <climits>
+#include <cassert>
 
 namespace text_complex {
   namespace access {
@@ -740,10 +741,12 @@ namespace text_complex {
     }
 
     uint32& prefix_histogram::operator[](size_t i) noexcept {
+      assert(i < n);
       return this->p[i];
     }
 
     uint32 const& prefix_histogram::operator[](size_t i) const noexcept {
+      assert(i < n);
       return this->p[i];
     }
 
