@@ -709,7 +709,7 @@ namespace text_complex {
                     /* encode distance */if (ae == api_error::Success) {
                       uint32 extra;
                       unsigned int const dist_code =
-                        state.try_ring.encode(distance, extra, 0, ae);
+                        state.try_ring.encode(distance+1, extra, 0, ae);
                       if (ae == api_error::Success) {
                         bit_count += extra;
                         state.dist_histogram[dist_code] += 1u;
@@ -1001,7 +1001,7 @@ namespace text_complex {
             } else {
               uint32 dist_extra = 0;
               unsigned const dist_index = state.ring.encode(
-                static_cast<unsigned>(distance), dist_extra, 0, ae);
+                static_cast<unsigned>(distance)+1u, dist_extra, 0, ae);
               if (ae != api_error::Success)
                 break;
               prefix_line const& line = state.distances[dist_index];
