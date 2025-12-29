@@ -893,7 +893,7 @@ namespace text_complex {
                   break;
                 } else {
                   insert_copy_row const& irow = state.values[copy_index];
-                  unsigned char const alpha = copy_index;
+                  unsigned short const alpha = irow.code;
                   prefix_line const& line = state.literals[alpha];
                   state.bit_cap = line.len;
                   state.bits = line.code;
@@ -949,9 +949,9 @@ namespace text_complex {
           if (state.bit_length >= state.bit_cap) {
             state.index += 1u;
             state.count -= 1u;
-            if (state.count == 0u) {
+            if (state.count == 0u)
               state.state = 8u;
-            } else state.bit_length = 0u;
+            state.bit_length = 0u;
           } break;
         case 9: /* copy bits */
           if (state.bit_length < state.bit_cap) {
