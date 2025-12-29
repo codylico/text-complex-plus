@@ -1433,7 +1433,7 @@ namespace text_complex {
             state.count += 1u;
           } else if (state.count < 4u) {
             *to_out = static_cast<unsigned char>(
-                  ~(state.extra_length>>(8u*(2u-state.count)))
+                  ~(state.extra_length>>(8u*(state.count-2u)))
                 );
             state.count += 1u;
           }
