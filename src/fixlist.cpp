@@ -558,10 +558,12 @@ namespace text_complex {
     }
 
     prefix_line& prefix_list::operator[](size_t i) noexcept {
+      assert(i < n);
       return this->p[i];
     }
 
     prefix_line const& prefix_list::operator[](size_t i) const noexcept {
+      assert(i < n);
       return this->p[i];
     }
 
