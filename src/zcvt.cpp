@@ -654,6 +654,9 @@ namespace text_complex {
                     state.dist_histogram.end(), 0u);
                 std::fill(state.seq_histogram.begin(),
                     state.seq_histogram.end(), 0u);
+                inscopy_lengthsort(state.values, ae);
+                if (ae != api_error::Success)
+                  break;
               }
               /* calculate histogram */{
                 for (uint32 buffer_pos = 0u; buffer_pos < buffer_size; ++buffer_pos) {
@@ -666,7 +669,7 @@ namespace text_complex {
                       ae = api_error::Sanitize;
                       break;
                     } else {
-                      len = ((byt&63u)<<8)|(buffer_str[buffer_pos+1u]&255u);
+                      len = (((byt&63u)<<8)|(buffer_str[buffer_pos+1u]&255u))+64u;
                       buffer_pos += 1u;
                     }
                   } else len = byt&63u;
@@ -676,12 +679,12 @@ namespace text_complex {
                     size_t const lit_index =
                       inscopy_encode(state.values, 0u, len, false);
                     uint32 distance = 0u;
-                    if (lit_index >= 288u) {
+                    if (lit_index >= state.values.size()) {
                       ae = api_error::InsCopyMissing;
                       break;
                     } else {
                       insert_copy_row const& lit = state.values[lit_index];
-                      state.lit_histogram[lit_index] += 1u;
+                      state.lit_histogram[lit.code] += 1u;
                       bit_count += lit.copy_bits;
                     }
                     /* distance */switch (buffer_str[buffer_pos+1u] & 192u) {
@@ -737,6 +740,11 @@ namespace text_complex {
                       (state.literals, state.lit_histogram, 15u, lit_ae);
                     fixlist_gen_lengths
                       (state.distances, state.dist_histogram, 15u, dist_ae);
+                    ae = zcvt_nonzero(lit_ae, dist_ae);
+                    if (ae != api_error::Success)
+                      break;
+                    fixlist_valuesort(state.literals, lit_ae);
+                    fixlist_valuesort(state.distances, dist_ae);
                     ae = zcvt_nonzero(lit_ae, dist_ae);
                     if (ae != api_error::Success)
                       break;
