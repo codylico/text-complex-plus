@@ -103,10 +103,10 @@ MunitPlusResult test_zcvt_in_none
     unsigned char *const check_buffer = buf+7+len;
     munit_plus_rand_memory(len, static_cast<munit_plus_uint8_t*>(buf+7));
     checksum = text_complex::access::zutil_adler32(len, buf+7);
-    buf[3] = (len>>8)&0xff;
-    buf[4] = (len)&0xff;
-    buf[5] = ((~len)>>8)&0xff;
-    buf[6] = (~len)&0xff;
+    buf[3] = (len)&0xff;
+    buf[4] = (len>>8)&0xff;
+    buf[5] = (~len)&0xff;
+    buf[6] = ((~len)>>8)&0xff;
     check_buffer[0] = (checksum>>24)&0xff;
     check_buffer[1] = (checksum>>16)&0xff;
     check_buffer[2] = (checksum>> 8)&0xff;
