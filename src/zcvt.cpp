@@ -1145,7 +1145,7 @@ namespace text_complex {
         literals(288u), distances(32u), sequence(19u), values(286u),
         ring(false,4,0), try_ring(false,4,0),
         lit_histogram(288u), dist_histogram(32u), seq_histogram(19u),
-        bits(0u), bit_length(0u), state(0u), bit_index(0u),
+        bits(0u), h_end(0u), bit_length(0u), state(0u), bit_index(0u),
         backward(0u), count(0u), checksum(0u),
         bit_cap(0u), write_scratch(0)
     {
