@@ -1264,12 +1264,12 @@ namespace text_complex {
           break;
         case 4: /* no compression: LEN and NLEN */
           if (state.count < 4u) {
-            state.backward = (state.backward <<8) | (*p);
+            state.backward |= (*p << (state.count*8));
             state.count += 1u;
           }
           if (state.count >= 4u) {
-            unsigned int const len = (state.backward>>16)&65535u;
-            unsigned int const nlen = (~state.backward)&65535u;
+            unsigned int const len = (state.backward)&65535u;
+            unsigned int const nlen = (~state.backward>>16)&65535u;
             if (len != nlen) {
               ae = api_error::Sanitize;
             } else {
