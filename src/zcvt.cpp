@@ -954,11 +954,11 @@ namespace text_complex {
             state.bit_length = 0u;
           } break;
         case 9: /* copy bits */
-          if (state.bit_length < state.bit_cap) {
+          if (state.bit_length < state.extra_length) {
             x = (state.count>>state.bit_length)&1u;
             state.bit_length += 1;
           }
-          if (state.bit_length >= state.bit_cap) {
+          if (state.bit_length >= state.extra_length) {
             state.state = 10u;
             state.bit_length = 0u;
           }
