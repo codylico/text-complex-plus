@@ -918,6 +918,7 @@ namespace text_complex {
               state.count = 0u;
             } else if (state.state == 20u) {
               state.count -= 1u;
+              state.index += 1u;
               if (state.count == 0u) {
                 state.state = 8u;
               }
@@ -942,7 +943,7 @@ namespace text_complex {
             }
           }
           if (state.bit_length < state.bit_cap) {
-            x = (state.bits>>state.bit_length)&1u;
+            x = (state.bits>>(state.bit_cap-1u-state.bit_length))&1u;
             state.bit_length += 1u;
           }
           if (state.bit_length >= state.bit_cap) {
