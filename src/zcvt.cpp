@@ -561,8 +561,8 @@ namespace text_complex {
       } else if (len == 0u) {
         unsigned int i;
         api_error ae = api_error::Success;
-        for (i = 0u; i < len && ae == api_error::Success; ) {
-          unsigned int const x = len-i;
+        for (i = 0u; i < count && ae == api_error::Success; ) {
+          unsigned int const x = count-i;
           if (x > 138u) {
             ae = zcvt_post_two(s, 18u, 127u);
             i += 138u;
