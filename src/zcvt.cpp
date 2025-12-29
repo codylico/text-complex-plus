@@ -588,7 +588,7 @@ namespace text_complex {
             ae = zcvt_post_two(s, 16u, 3u);
             i += 6u;
           } else if (x >= 3u) {
-            ae = zcvt_post_two(s, 17u, x-3u);
+            ae = zcvt_post_two(s, 16u, x-3u);
             i += x;
           } else {
             s.push_back(static_cast<unsigned char>(len), ae);
