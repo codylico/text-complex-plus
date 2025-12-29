@@ -1454,7 +1454,7 @@ namespace text_complex {
           }
           if (state.extra_length == 0u) {
             zcvt_noconv_next(state);
-          }
+          } break;
         case 6: /* end-of-stream checksum */
           if (state.count < 4u) {
             *to_out = (state.checksum>>(24u-8u*state.count));
