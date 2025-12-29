@@ -953,7 +953,81 @@ namespace text_complex {
             } else state.bit_length = 0u;
           } break;
         case 9: /* copy bits */
-          /* TODO this */;
+          if (state.bit_length < state.bit_cap) {
+            x = (state.count>>state.bit_length)&1u;
+            state.bit_length += 1;
+          }
+          if (state.bit_length >= state.bit_cap) {
+            state.state = 10u;
+            state.bit_length = 0u;
+          }
+          break;
+        case 10: /* distance Huffman code */
+          if (state.bit_length == 0u) {
+            unsigned char buf[4] = {0};
+            unsigned long distance = 0;
+            unsigned char const* const data = state.buffer.str().data();
+            assert(state.index < state.backward);
+            buf[0u] = data[state.index];
+            state.index += 1;
+            if ((buf[0]&128u) == 0u) {
+              /* zlib stream does not support Brotli references */
+              ae = api_error::Sanitize;
+              break;
+            } else if (state.index >= state.backward) {
+              /* also, index needs to be in range */
+              ae = api_error::OutOfRange;
+              break;
+            }
+            if (buf[0u] & 64u) {
+              if (state.backward - state.index < 3u) {
+                ae = api_error::OutOfRange;
+                break;
+              }
+              std::memcpy(buf+1, data+state.index, 3);
+              state.index += 2;
+              distance = ((buf[0]&63ul)<<24)
+                + ((buf[1]&255ul)<<16) + ((buf[2]&255u)<<8)
+                + (buf[3]&255u) + 16384ul;
+            } else {
+              buf[1] = data[state.index];
+              distance = ((buf[0]&63)<<8) + (buf[1]&255);
+            }
+            if (distance > 32768) {
+              /* zlib lacks support for large distances */
+              ae = api_error::Sanitize;
+              break;
+            } else {
+              uint32 dist_extra = 0;
+              unsigned const dist_index = state.ring.encode(
+                static_cast<unsigned>(distance), dist_extra, 0, ae);
+              if (ae != api_error::Success)
+                break;
+              prefix_line const& line = state.distances[dist_index];
+              state.bit_cap = line.len;
+              state.bits = line.code;
+              state.count = dist_extra;
+              state.extra_length = state.ring.bit_count(dist_index);
+            }
+          }
+          if (state.bit_length < state.bit_cap) {
+            x = (state.bits>>(state.bit_cap-1u-state.bit_length))&1u;
+            state.bit_length += 1u;
+          }
+          if (state.bit_length >= state.bit_cap) {
+            state.bit_length = 0u;
+            state.state = (state.extra_length>0u ? 11u : 8u);
+            state.index += 1u;
+          } break;
+        case 11: /* distance extra bits */
+          if (state.bit_length < state.extra_length) {
+            x = (state.count>>state.bit_length)&1u;
+            state.bit_length += 1;
+          }
+          if (state.bit_length >= state.extra_length) {
+            state.state = 8u;
+            state.bit_length = 0u;
+          }
           break;
         case 13: /* hcounts */
           if (state.bit_length == 0u) {
@@ -1389,6 +1463,9 @@ namespace text_complex {
           ae = api_error::EndOfFile;
           break;
         case 8: /* encode */
+        case 9:
+        case 10:
+        case 11:
         case 13: /* hcounts */
         case 14: /* code lengths code lengths */
         case 15: /* literals and distances */
@@ -1396,6 +1473,7 @@ namespace text_complex {
         case 17: /* copy zero length */
         case 18: /* copy zero length + 11 */
         case 19: /* generate code trees */
+        case 20:
           ae = zcvt_out_bits(state, from, from_end, p, *to_out);
           break;
         }
