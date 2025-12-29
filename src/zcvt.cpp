@@ -719,6 +719,8 @@ namespace text_complex {
                     state.lit_histogram[buffer_str[buffer_pos+1u]] += 1u;
                   }
                 }
+                // Ensure the stop code.
+                state.lit_histogram[256] = 1;
                 if (ae != api_error::Success)
                   break;
                 else/* plant two trees */{
