@@ -7,6 +7,7 @@
 #include <new>
 #include <limits>
 #include <cstring>
+#include <cassert>
 
 namespace text_complex {
   namespace access {
@@ -184,6 +185,7 @@ namespace text_complex {
     }
 
     unsigned char const& slide_ring::operator[](uint32 i) const noexcept {
+      assert(i < sz);
       if (i >= pos)
         return p[n-(i-pos)-1u];
       else return p[pos-i-1u];

@@ -191,7 +191,7 @@ namespace text_complex {
           uint32 const y = here-chain[--chain_i]-1u;
           if (y < pos)
             continue;
-          else if (y > size)
+          else if (y >= size)
             return npos;
           else {
             unsigned char tmp[3];
