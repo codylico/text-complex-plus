@@ -1430,7 +1430,7 @@ namespace text_complex {
             state.extra_length =
               static_cast<unsigned short>(diff<65535u ? diff : 65535u);
           }
-          if (state.count < 4u) {
+          if (state.count < 2u) {
             *to_out = static_cast<unsigned char>(
                   state.extra_length>>(8u*state.count)
                 );
