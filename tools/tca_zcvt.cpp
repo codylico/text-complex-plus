@@ -45,7 +45,61 @@ int do_in(std::istream& in, std::ostream& out) {
 
 static
 int do_out(std::istream& in, std::ostream& out) {
-  return EXIT_FAILURE;
+  unsigned char inbuf[256];
+  unsigned char outbuf[256];
+  int ec = EXIT_SUCCESS;
+  bool done = false;
+  namespace tca = text_complex::access;
+  tca::zcvt_state state(sizeof(inbuf), 32768, 1);
+  while (ec == EXIT_SUCCESS) {
+    if (in.eof())
+      break;
+    else if (in.fail()) {
+      ec = EXIT_FAILURE;
+      break;
+    }
+    in.read(reinterpret_cast<char*>(inbuf), 256);
+    std::streamsize const in_count = in.gcount();
+    for (unsigned char const* src = inbuf;
+      ec == EXIT_SUCCESS && src<inbuf+in_count; )
+    {
+      unsigned char* dst;
+      tca::api_error const res = tca::zcvt_out
+        (state, src, inbuf+in_count, src,
+        outbuf, outbuf+sizeof(outbuf), dst);
+      if (res < tca::api_error::Success || dst == outbuf) {
+        ec = EXIT_FAILURE;
+        std::cerr << "error code from conversion:\n\t"
+          << tca::api_error_toa(res) << std::endl;
+      } else {
+        out.write(reinterpret_cast<char*>(outbuf), dst-outbuf);
+        if (out.bad()) {
+          ec = EXIT_FAILURE;
+          std::cerr << "error from file write" << std::endl;
+        }
+      }
+    }
+  }
+  if (ec != EXIT_SUCCESS)
+    return ec;
+  while (ec == EXIT_SUCCESS && !done) {
+    unsigned char* dst;
+    tca::api_error res = tca::zcvt_unshift(state, outbuf,
+      outbuf+sizeof(outbuf), dst);
+    if (res < tca::api_error::Success) {
+      ec = EXIT_FAILURE;
+      std::cerr << "error code from conclusion:\n\t"
+        << tca::api_error_toa(res) << std::endl;
+    } else {
+      out.write(reinterpret_cast<char*>(outbuf), dst-outbuf);
+      if (out.bad()) {
+        ec = EXIT_FAILURE;
+        std::cerr << "error from file write" << std::endl;
+      }
+      done = (res == tca::api_error::EndOfFile);
+    }
+  }
+  return ec;
 }
 
 int main(int argc, char**argv) {
