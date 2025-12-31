@@ -48,6 +48,13 @@ namespace text_complex {
     api_error api_exception::to_error() const noexcept {
       return v;
     }
+
+    inline
+    void api_throw(api_error ae) {
+      if (ae < api_error::Success) {
+        throw api_exception(ae);
+      } else return;
+    }
   };
 };
 #endif //TextComplexAccessP_NO_EXCEPT

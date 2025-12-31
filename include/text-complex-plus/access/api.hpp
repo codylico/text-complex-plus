@@ -131,6 +131,13 @@ namespace text_complex {
        */
       api_error to_error() const noexcept;
     };
+
+    /**
+     * @brief Throw an exception if the given error code is negative.
+     * @param ae the error code to check
+     * @throw api_exception only if `ae` is negative
+     */
+    void api_throw(api_error ae);
   };
 };
 #endif //TextComplexAccessP_NO_EXCEPT
