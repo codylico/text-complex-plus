@@ -8,6 +8,8 @@
 #include <limits>
 #include <new>
 #include <algorithm>
+#include <cstring>
+#include <cassert>
 
 namespace text_complex {
   namespace access {
