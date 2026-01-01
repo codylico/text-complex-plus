@@ -876,7 +876,7 @@ namespace text_complex {
         }
         /* */{
           size_t i;
-          for (i = 0u; i < table.size(); ++i) {
+          for (i = 0u; i < dst.size(); ++i) {
             if (table[i] > 0u) {
               struct prefix_ref const ref =
                 { static_cast<unsigned int>(i), table[i] };
