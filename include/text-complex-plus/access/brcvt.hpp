@@ -112,12 +112,6 @@ namespace text_complex {
       prefix_list distance_blockcount;
       /** @brief Context transcode prefixes. */
       prefix_list context_tree;
-      /** @brief ... */
-      prefix_list literals;
-      /** @brief ... */
-      prefix_list distances;
-      /** @brief ... */
-      prefix_list sequence;
       /** @brief Fixed window size Huffman code table. */
       prefix_list wbits;
       /** @brief ... */
