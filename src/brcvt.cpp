@@ -3555,7 +3555,7 @@ namespace text_complex {
             break;
           }
           if (state.metablock_pos < state.backward) {
-            if (!state.buffer.bypass(p, 1))
+            if (!state.buffer.bypass(p, 1, ae))
               ae = api_error::Memory;
             (*to_out) = (*p);
             to_out += 1;
