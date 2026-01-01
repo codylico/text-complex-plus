@@ -370,6 +370,9 @@ namespace text_complex {
      */
     static api_error brcvt_inflow_literal(brcvt_state& ps, unsigned ch,
       unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept;
+
+    static void brcvt_dec_literal_rem(brcvt_state& state);
+
     /**
      * @brief Bring in the next distance command.
      * @param ps state to update
@@ -551,6 +554,13 @@ namespace text_complex {
       return api_error::Success;
     }
 
+    static void brcvt_dec_literal_rem(brcvt_state& state) {
+      if (state.blocktypeL_remaining > 0)
+        state.blocktypeL_remaining -= 1;
+      if (state.blocktypeL_remaining == 0 && state.fwd.literal_i < state.fwd.literal_total)
+        state.state = BrCvt_LiteralRestart;
+    }
+
     api_error brcvt_inflow_distextra(brcvt_state& ps) noexcept {
       size_t const window = (size_t)((1ul<<ps.wbits_select)-16u);
       size_t const cutoff = (ps.fwd.accum > window ? window : ps.fwd.accum);
@@ -706,6 +716,8 @@ namespace text_complex {
             if (to_next >= to_end)
               return api_error::Partial;
             brcvt_inflow_literal(ps, ps.literal_skip, to, to_end, to_next);
+	    ps.fwd.literal_i += 1;
+            brcvt_dec_literal_rem(ps);
             continue;
           } else return api_error::Success;
         case BrCvt_Distance:
@@ -1648,6 +1660,7 @@ namespace text_complex {
               break;
             brcvt_inflow_literal(state, line, to, to_end, to_next);
             state.fwd.literal_i ++;
+            brcvt_dec_literal_rem(state);
             state.bit_length = 0;
             state.bits = 0;
             ae = brcvt_handle_inskip(state, to, to_end, to_next);
