@@ -907,6 +907,7 @@ namespace text_complex {
         out.first = data[fwd.i];
         fwd.i += 1;
         fwd.literal_i += 1;
+        fwd.pos += 1;
         if (fwd.i >= size)
           fwd.ostate = BrCvt_Done;
         else if (fwd.literal_i >= fwd.literal_total) {
@@ -2416,7 +2417,7 @@ namespace text_complex {
           state.extra_bits[0] = state.bits;
           state.extra_length = state.bit_cap;
           state.bit_cap = 0;
-          if (!brcvt_outflow_lookup(state, state.literal_blocktype, context, ae))
+          if (!brcvt_outflow_lookup(state, state.literal_blocktype, context+2, ae))
             return ae;
         }
         break;
@@ -2474,7 +2475,7 @@ namespace text_complex {
         ? static_cast<unsigned char>(state.guesses.modes[0]) : 0;
       for (unsigned ctxt_i = 0; ctxt_i < state.guesses.count; ++ctxt_i) {
         context_map_mode const mode = state.guesses.modes[ctxt_i];
-        assert(mode < context_map_mode::ModeMax);
+        assert(mode >= context_map_mode::LSB6 && mode < context_map_mode::ModeMax);
         if (state.ctxt_mode_map[static_cast<unsigned>(mode)] >= 4) {
           /* allocate a spot */
           assert(ctxt_mode_alloc < 4);
@@ -2537,7 +2538,7 @@ namespace text_complex {
         unsigned char const* const data = state.buffer.str().data();
         std::size_t stop = (state.guesses.count > 1
             ? state.guesses.offsets[1] : state.guesses.total_bytes);
-        std::array<uint32, CtxtSpan_Size> literal_lengths;
+        std::array<uint32, CtxtSpan_Size> literal_lengths = {};
         uint32 literal_counter = 0;
         uint32 next_copy = 0;
         brcvt_state::forward_box try_fwd = {};
@@ -2550,7 +2551,7 @@ namespace text_complex {
         for (std::size_t i = 0; i < size; ++i) {
           brcvt_token next =
             brcvt_next_token(try_fwd, state.guesses, data, size, state.wbits_select, state.blocktypeL_skip);
-          if (try_fwd.i <= i)
+          if (try_fwd.i <= i && next.state != BrCvt_LiteralRestart)
             return api_error::Sanitize;
           i = try_fwd.i-1;
           switch (next.state) {
@@ -2596,6 +2597,7 @@ namespace text_complex {
             return api_error::Sanitize;
           }
         }
+        assert(ctxt_i < literal_lengths.size());
         literal_lengths[ctxt_i] = literal_counter;
         /* apply histograms to the trees */
         api_error ae {};
@@ -2629,7 +2631,7 @@ namespace text_complex {
         brcvt_token const next =
           brcvt_next_token(state.fwd, state.guesses, buffer.data(), size, state.wbits_select,
             state.blocktypeL_skip);
-        if (state.fwd.i <= old_fwd_index)
+        if (state.fwd.i <= old_fwd_index && next.state != BrCvt_LiteralRestart)
           return api_error::Sanitize;
         state.state = next.state;
         api_error const ae = brcvt_apply_token(state, next);
@@ -2917,7 +2919,7 @@ namespace text_complex {
               assert(state.backward);
               break;
             }
-            state.bit_length = 1;
+            state.bit_length = 0;
             x = 0;
             state.state = BrCvt_BlockTypesL;
           } break;
@@ -2980,6 +2982,8 @@ namespace text_complex {
             unsigned short blockcountL_skip = brcvt_NoSkip;
             unsigned blockcountL_population = 0;
             for (std::size_t j = 0; j < state.guesses.count; ++j) {
+              if (state.guess_lengths[j] == 0)
+                continue;
               size_t const v = inscopy_encode(state.blockcounts, state.guess_lengths[j], 0, 0);
               if (v >= 26) {
                 ae = api_error::Sanitize;
@@ -2992,7 +2996,7 @@ namespace text_complex {
               histogram[v] += 1;
               total += state.guess_lengths[j];
             }
-            assert(total < state.buffer.input_data().size());
+            assert(total <= state.buffer.input_data().size());
             if (ae != api_error::Success)
               break;
             ae = util_move_make(state.literal_blockcount, 26);
@@ -3156,11 +3160,12 @@ namespace text_complex {
             state.count += 1;
           }
           if (state.count >= state.bit_length) {
-            std::size_t const btypes = state.literals_map.contexts();
+            std::size_t const btypes = state.literals_map.block_types();
             constexpr unsigned HistogramSize = 10;
             prefix_histogram histogram(HistogramSize);
             unsigned int const rlemax = state.rlemax;
             unsigned char const alphabits = static_cast<unsigned char>(rlemax+btypes);
+            std::fill(histogram.begin(), histogram.end(), 0);
             /* calculate prefix tree */
             try {
               state.context_tree = prefix_list(alphabits);
@@ -3168,6 +3173,8 @@ namespace text_complex {
               ae = api_error::Memory;
               break;
             }
+            for (std::size_t j = 0; j < state.context_tree.size(); ++j)
+              state.context_tree[j].value = static_cast<unsigned>(j);
             for (std::size_t j = 0; j < state.context_encode.size(); ++j) {
               unsigned char const ch = state.context_encode[j];
               if (ch < brcvt_ZeroBit) {
