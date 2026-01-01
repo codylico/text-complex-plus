@@ -58,7 +58,7 @@ namespace text_complex {
     #else
         int out = 0;
         int i;
-        for (i = 0; i < std::numeric_limits<unsigned>::digits(); ++i, x >>= 1) {
+        for (i = 0; i < std::numeric_limits<unsigned>::digits; ++i, x >>= 1) {
             out += (x&1);
         }
         return out;
