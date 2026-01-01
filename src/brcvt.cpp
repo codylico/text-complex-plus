@@ -2952,9 +2952,10 @@ namespace text_complex {
           }
           if (state.count >= state.bit_length) {
             state.bit_length = 0;
-            if (state.literal_blocktype.size() > 1)
+            if (state.literal_blocktype.size() > 1) {
               state.state += 1;
-            else
+              state.alphabits = util_bitwidth(static_cast<unsigned>(state.literal_blocktype.size()+1));
+            } else
               state.state += 4;
           } break;
         case BrCvt_BlockTypesLAlpha:
@@ -3002,8 +3003,8 @@ namespace text_complex {
             ae = util_move_make(state.literal_blockcount, 26);
             if (ae != api_error::Success)
               break;
-            for (unsigned i = 0; i < 26; ++i) {
-              state.literal_blockcount[i].value = i;
+            for (unsigned j = 0; j < 26; ++j) {
+              state.literal_blockcount[j].value = j;
             }
             fixlist_gen_lengths(state.literal_blockcount, histogram, 15, ae);
             if (ae != api_error::Success)
