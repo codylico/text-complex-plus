@@ -2691,6 +2691,12 @@ namespace text_complex {
           return 0;
         } else bit_count += 1;
       }
+      if (tree.size() == 1) {
+        // Fix up single-leaf trees for later passes.
+        auto& zero_line = tree[0];
+        if (zero_line.len == 0 && histogram[zero_line.value] > 0)
+          zero_line.len = 1;
+      }
       return bit_count;
     }
 
