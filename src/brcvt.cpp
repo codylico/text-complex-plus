@@ -3563,6 +3563,7 @@ namespace text_complex {
           }
           if (state.metablock_pos >= state.backward) {
             state.metatext = nullptr;
+            state.fwd.accum += state.backward;
             state.state = (state.h_end
               ? BrCvt_Done : BrCvt_LastCheck);
             if (state.h_end)
