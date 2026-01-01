@@ -128,8 +128,8 @@ MunitPlusResult test_brcvt_metadata_cycle
   /* store */
   {
     tca::brotli_meta& meta = p->get_metadata();
-    tca::api_error res;
-    meta.emplace(text_len);
+    tca::api_error res = {};
+    meta.emplace(text_len, res);
     munit_plus_assert(res == tca::api_error::Success);
     std::memcpy(&meta.at(0)[0], text, text_len);
   }
