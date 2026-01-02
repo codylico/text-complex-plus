@@ -546,7 +546,7 @@ namespace text_complex {
       bool end = false;
       // Adjust destination state by extra bits.
       ps.extra_length = row.copy_bits;
-      ps.state = BrCvt_Literals;
+      ps.state = BrCvt_Literal;
       if (row.copy_bits)
         ps.state = BrCvt_DataCopyExtra;
       if (row.insert_bits) {
@@ -1656,7 +1656,7 @@ namespace text_complex {
               state.state = BrCvt_DataCopyExtra;
             else {
               bool end = false;
-              state.state = BrCvt_Literals;
+              state.state = BrCvt_Literal;
               ae = brcvt_land_insert_copy(state, end);
               if (end)
                 return ae;
@@ -1672,7 +1672,7 @@ namespace text_complex {
             state.fwd.stop += state.bits;
             state.bits = 0;
             bool end = false;
-            state.state = BrCvt_Literals;
+            state.state = BrCvt_Literal;
             ae = brcvt_land_insert_copy(state, end);
             if (end)
               return ae;
