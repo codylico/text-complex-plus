@@ -2226,6 +2226,7 @@ namespace text_complex {
             break;
           assert(treety.bit_length == 0);
           if (treety.nonzero >= 16) {
+            /* TODO: Determine if this case should exist. */
             treety.state = treety.nonzero;
             treety.index = 1;
             assert(treety.sequence_list.size() >= 2);
@@ -2542,6 +2543,7 @@ namespace text_complex {
       if (blocktype_tree == prefix_preset::BrotliComplex)
         return api_error::Sanitize;
       accum += 4;
+      /* TODO: Delay this context map generation until after the tokens are generated. */
       std::size_t const btypes = state.literal_blocktype.size();
       accum += (blocktype_tree >= prefix_preset::BrotliSimple3 ? 3 : 2) * btypes;
       accum += (blocktype_tree >= prefix_preset::BrotliSimple4A);
@@ -2594,6 +2596,7 @@ namespace text_complex {
           std::fill(gram.begin(), gram.end(), 0);
         unsigned ctxt_i = 0;
         for (std::size_t i = 0; i < size; ++i) {
+          /* Use context mode change instead of state.blocktypeL_skip to activate LiteralRestart. */
           brcvt_token next =
             brcvt_next_token(try_fwd, state.guesses, data, size, state.wbits_select, state.blocktypeL_skip);
           if (try_fwd.i <= i && next.state != BrCvt_LiteralRestart)
@@ -2644,6 +2647,7 @@ namespace text_complex {
         }
         assert(ctxt_i < literal_lengths.size());
         literal_lengths[ctxt_i] = literal_counter;
+        /* TODO: Move context creation here to avoid the zero-item prefix list. */
         /* apply histograms to the trees */
         api_error ae {};
         try_bit_count += brcvt_apply_histogram(
