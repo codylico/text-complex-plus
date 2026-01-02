@@ -512,15 +512,41 @@ namespace text_complex {
     }
 
 
+    static api_error brcvt_land_insert_copy(brcvt_state& state, bool& end) noexcept {
+      if (state.state == BrCvt_DataInsertExtra
+          || state.state == BrCvt_DataCopyExtra)
+      {
+        return api_error::Success;
+      } else if (state.fwd.literal_total == 0) {
+        // Go to distance codes.
+        if (brcvt_metaterm(state, true)) {
+          end = true;
+          return brcvt_meta_endcode(state);
+        }
+        state.state = (state.blocktypeD_remaining
+          ? BrCvt_Distance : BrCvt_DistanceRestart);
+        state.fwd.literal_i = 0;
+        state.fwd.literal_total = state.fwd.stop;
+        state.fwd.stop = 0;
+      }
+      else if (state.blocktypeL_remaining)
+        state.state = BrCvt_Literal;
+      else
+        state.state = BrCvt_LiteralRestart;
+      end = false;
+      return api_error::Success;
+    }
 
     api_error brcvt_inflow_insert(brcvt_state& ps, unsigned insert) noexcept {
       if (insert >= ps.values.size())
         return api_error::Sanitize;
       insert_copy_row const& row = ps.values[insert];
       ps.blocktypeI_remaining -= 1;
-      ps.state = ((ps.blocktypeL_remaining || (row.insert_first==0))
-        ? BrCvt_Literal : BrCvt_LiteralRestart);
+      ps.fwd.literal_total = row.insert_first;
+      bool end = false;
+      // Adjust destination state by extra bits.
       ps.extra_length = row.copy_bits;
+      ps.state = BrCvt_Literals;
       if (row.copy_bits)
         ps.state = BrCvt_DataCopyExtra;
       if (row.insert_bits) {
@@ -534,7 +560,7 @@ namespace text_complex {
       ps.fwd.literal_total = row.insert_first;
       ps.fwd.stop = row.copy_first;
       ps.fwd.ctxt_i = row.zero_distance_tf;
-      return api_error::Success;
+      return brcvt_land_insert_copy(ps, end);
     }
 
     api_error brcvt_inflow_literal(brcvt_state& ps, unsigned ch,
@@ -1629,8 +1655,11 @@ namespace text_complex {
             if (state.extra_length > 0)
               state.state = BrCvt_DataCopyExtra;
             else {
-              state.state = (state.blocktypeL_remaining
-                ? BrCvt_Literal : BrCvt_LiteralRestart);
+              bool end = false;
+              state.state = BrCvt_Literals;
+              ae = brcvt_land_insert_copy(state, end);
+              if (end)
+                return ae;
               ae = brcvt_handle_inskip(state, to, to_end, to_next);
             }
           } break;
@@ -1642,8 +1671,11 @@ namespace text_complex {
           if (state.count >= state.extra_length) {
             state.fwd.stop += state.bits;
             state.bits = 0;
-            state.state = (state.blocktypeL_remaining
-              ? BrCvt_Literal : BrCvt_LiteralRestart);
+            bool end = false;
+            state.state = BrCvt_Literals;
+            ae = brcvt_land_insert_copy(state, end);
+            if (end)
+              return ae;
             ae = brcvt_handle_inskip(state, to, to_end, to_next);
           } break;
         case BrCvt_Literal:
