@@ -523,6 +523,7 @@ namespace text_complex {
           end = true;
           return brcvt_meta_endcode(state);
         }
+        state.bit_length = 0;
         state.state = (state.blocktypeD_remaining
           ? BrCvt_Distance : BrCvt_DistanceRestart);
         state.fwd.literal_i = 0;
@@ -531,8 +532,10 @@ namespace text_complex {
       }
       else if (state.blocktypeL_remaining)
         state.state = BrCvt_Literal;
-      else
+      else {
+        state.bit_length = 0;
         state.state = BrCvt_LiteralRestart;
+      }
       end = false;
       return api_error::Success;
     }
@@ -583,8 +586,10 @@ namespace text_complex {
     static void brcvt_dec_literal_rem(brcvt_state& state) {
       if (state.blocktypeL_remaining > 0)
         state.blocktypeL_remaining -= 1;
-      if (state.blocktypeL_remaining == 0 && state.fwd.literal_i < state.fwd.literal_total)
+      if (state.blocktypeL_remaining == 0 && state.fwd.literal_i < state.fwd.literal_total) {
+        state.bit_length = 0;
         state.state = BrCvt_LiteralRestart;
+      }
     }
 
     api_error brcvt_inflow_distextra(brcvt_state& ps) noexcept {
@@ -773,6 +778,7 @@ namespace text_complex {
           }
           if (brcvt_metaterm(ps, true))
             return brcvt_meta_endcode(ps);
+          ps.bit_length = 0;
           ps.state = (ps.blocktypeI_remaining ? BrCvt_DataInsertCopy
             : BrCvt_InsertRestart);
           break;
@@ -784,6 +790,7 @@ namespace text_complex {
               return api_error::Partial;
             brcvt_inflow_literal(ps, fwd.bstore[fwd.literal_i], to, to_end, to_next);
           }
+          ps.bit_length = 0;
           ps.state = (ps.blocktypeI_remaining ? BrCvt_DataInsertCopy
             : BrCvt_InsertRestart);
           break;
@@ -813,7 +820,6 @@ namespace text_complex {
         case BrCvt_DataDistanceExtra:
           return api_error::Success;
         case BrCvt_InsertRestart:
-          ps.bit_length = 0;
           if (ps.blocktypeI_skip == brcvt_NoSkip)
             return api_error::Success;
           ps.blocktypeI_index = brcvt_switch_blocktype(ps.blocktypeI_index, ps.blocktypeI_max, ps.blocktypeI_skip);
@@ -821,7 +827,6 @@ namespace text_complex {
           ps.extra_length = 0;
           break;
         case BrCvt_DistanceRestart:
-          ps.bit_length = 0;
           if (ps.blocktypeD_skip == brcvt_NoSkip)
             return api_error::Success;
           ps.blocktypeD_index = brcvt_switch_blocktype(ps.blocktypeD_index, ps.blocktypeD_max, ps.blocktypeD_skip);
@@ -830,7 +835,6 @@ namespace text_complex {
           ps.extra_length = 0;
           break;
         case BrCvt_LiteralRestart:
-          ps.bit_length = 0;
           if (ps.blocktypeL_skip == brcvt_NoSkip)
             return api_error::Success;
           ps.blocktypeL_index = brcvt_switch_blocktype(ps.blocktypeL_index, ps.blocktypeL_max, ps.blocktypeL_skip);
