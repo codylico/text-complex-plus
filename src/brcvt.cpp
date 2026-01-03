@@ -2517,8 +2517,6 @@ namespace text_complex {
         brcvt_Margin);
       if (state.literal_blocktype.size() != 4)
         state.literal_blocktype = prefix_list(4);
-      state.guess_offset = (state.guesses.count > 0)
-        ? static_cast<unsigned char>(state.guesses.modes[0]) : 0;
       for (unsigned ctxt_i = 0; ctxt_i < state.guesses.count; ++ctxt_i) {
         context_map_mode const mode = state.guesses.modes[ctxt_i];
         assert(mode >= context_map_mode::LSB6 && mode < context_map_mode::ModeMax);
@@ -3445,7 +3443,7 @@ namespace text_complex {
         backward(0u), metablock_pos(0u), count(0u), index(0u),
         wbits_select(0u), emptymeta(false), alphabits(0u), write_scratch(0),
         bit_cap(0u), meta_index(0), metatext(nullptr), max_len_meta(1024),
-        treety{}, guesses{}, guess_offset(0u),
+        treety{}, guesses{},
         blocktypeL_index(brcvt_btype_zero), blocktypeL_max(0),
         blocktypeI_index(brcvt_btype_zero), blocktypeI_max(0),
         blocktypeD_index(brcvt_btype_zero), blocktypeD_max(0),

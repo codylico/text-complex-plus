@@ -183,8 +183,6 @@ namespace text_complex {
       treety_box treety;
       /** @brief Context span guess for outflow. */
       context_span guesses;
-      /** @brief Context mode offset for outflow. */
-      unsigned char guess_offset;
       /** @brief Current literal block type. */
       block_box blocktypeL_index;
       /** @brief Maximum literal block type. */
