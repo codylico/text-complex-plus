@@ -716,6 +716,29 @@ namespace text_complex {
       return state.h_end ? api_error::EndOfFile : api_error::Success;
     }
 
+
+    static api_error brcvt_inflow_do_copy(brcvt_state& state,
+      unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept
+    {
+      brcvt_state::forward_box& fwd = state.fwd;
+      for (; fwd.literal_i < fwd.literal_total; ++fwd.literal_i) {
+        unsigned char ch_byte = 0;
+        if (to_next >= to_end)
+          return api_error::Partial;
+        api_error ae = {};
+        ch_byte = state.buffer.peek(fwd.pos - 1u, ae);
+        if (ae != api_error::Success)
+          return ae;
+        brcvt_inflow_literal(state, ch_byte, to, to_end, to_next);
+      }
+      if (brcvt_metaterm(state, true))
+        return brcvt_meta_endcode(state);
+      state.bit_length = 0;
+      state.state = (state.blocktypeI_remaining ? BrCvt_DataInsertCopy
+        : BrCvt_InsertRestart);
+      return api_error::Success;
+    }
+
     api_error brcvt_handle_inskip(brcvt_state& ps,
       unsigned char* to, unsigned char* to_end, unsigned char*& to_next) noexcept
     {
@@ -766,22 +789,11 @@ namespace text_complex {
             continue;
           } else return api_error::Success;
         case BrCvt_DoCopy:
-          for (; fwd.literal_i < fwd.literal_total; ++fwd.literal_i) {
-            unsigned char ch_byte = 0;
-            if (to_next >= to_end)
-              return api_error::Partial;
-            api_error ae = {};
-            ch_byte = ps.buffer.peek(ps.fwd.pos-1u, ae);
+          {
+            api_error const ae = brcvt_inflow_do_copy(ps, to, to_end, to_next);
             if (ae != api_error::Success)
               return ae;
-            brcvt_inflow_literal(ps, ch_byte, to, to_end, to_next);
-          }
-          if (brcvt_metaterm(ps, true))
-            return brcvt_meta_endcode(ps);
-          ps.bit_length = 0;
-          ps.state = (ps.blocktypeI_remaining ? BrCvt_DataInsertCopy
-            : BrCvt_InsertRestart);
-          break;
+          } break;
         case BrCvt_BDict:
           if (fwd.literal_total > sizeof(fwd.bstore))
             return api_error::Sanitize;
