@@ -789,11 +789,7 @@ namespace text_complex {
             continue;
           } else return api_error::Success;
         case BrCvt_DoCopy:
-          {
-            api_error const ae = brcvt_inflow_do_copy(ps, to, to_end, to_next);
-            if (ae != api_error::Success)
-              return ae;
-          } break;
+          return api_error::Success;
         case BrCvt_BDict:
           if (fwd.literal_total > sizeof(fwd.bstore))
             return api_error::Sanitize;
@@ -1724,7 +1720,7 @@ namespace text_complex {
             api_error const res = brcvt_inflow_distance(state, line);
             state.blocktypeD_remaining -= 1;
             if (res == api_error::Partial)
-              ae = brcvt_handle_inskip(state, to, to_end, to_next);
+              ae = brcvt_inflow_do_copy(state, to, to_end, to_next);
           } break;
         case BrCvt_DataDistanceExtra:
           if (state.count < state.extra_length) {
@@ -1732,16 +1728,19 @@ namespace text_complex {
             state.count++;
           }
           if (state.count >= state.extra_length) {
-            brcvt_inflow_distextra(state);
+            api_error const res = brcvt_inflow_distextra(state);
             state.extra_length = 0;
             state.bit_length = 0;
             state.bits = 0;
             state.count = 0;
-            ae = brcvt_handle_inskip(state, to, to_end, to_next);
+            if (res == api_error::Partial)
+              ae = brcvt_inflow_do_copy(state, to, to_end, to_next);
+            else
+              ae = res;
           } break;
         case BrCvt_DoCopy:
         case BrCvt_BDict:
-          ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          ae = brcvt_inflow_do_copy(state, to, to_end, to_next);
           break;
         case BrCvt_InsertRestart:
           if (!brcvt_inflow_restart(state, state.insert_blocktype,
