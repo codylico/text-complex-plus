@@ -789,7 +789,7 @@ namespace text_complex {
             continue;
           } else return api_error::Success;
         case BrCvt_DoCopy:
-          return api_error::Success;
+          return brcvt_inflow_do_copy(ps, to, to_end, to_next);
         case BrCvt_BDict:
           if (fwd.literal_total > sizeof(fwd.bstore))
             return api_error::Sanitize;
@@ -1652,7 +1652,6 @@ namespace text_complex {
             if (line >= 704)
               break;
             brcvt_inflow_insert(state, line);
-            ae = brcvt_handle_inskip(state, to, to_end, to_next);
           } break;
         case BrCvt_DataInsertExtra:
           if (state.count < (state.extra_length&31)) {
@@ -1672,7 +1671,6 @@ namespace text_complex {
               ae = brcvt_land_insert_copy(state, end);
               if (end)
                 return ae;
-              ae = brcvt_handle_inskip(state, to, to_end, to_next);
             }
           } break;
         case BrCvt_DataCopyExtra:
@@ -1688,7 +1686,6 @@ namespace text_complex {
             ae = brcvt_land_insert_copy(state, end);
             if (end)
               return ae;
-            ae = brcvt_handle_inskip(state, to, to_end, to_next);
           } break;
         case BrCvt_Literal:
           if (to_next >= to_end)
@@ -1707,7 +1704,6 @@ namespace text_complex {
             brcvt_dec_literal_rem(state);
             state.bit_length = 0;
             state.bits = 0;
-            ae = brcvt_handle_inskip(state, to, to_end, to_next);
           } break;
         case BrCvt_Distance:
           {
@@ -1740,7 +1736,6 @@ namespace text_complex {
           } break;
         case BrCvt_DoCopy:
         case BrCvt_BDict:
-          ae = brcvt_inflow_do_copy(state, to, to_end, to_next);
           break;
         case BrCvt_InsertRestart:
           if (!brcvt_inflow_restart(state, state.insert_blocktype,
@@ -1772,6 +1767,14 @@ namespace text_complex {
         }
         if (ae > api_error::Success)
           /* halt the read position here: */break;
+        else if (ae == api_error::Success)
+        {
+          ae = brcvt_handle_inskip(state, to, to_end, to_next);
+          if (ae != api_error::Success)
+          {
+            return ae;
+          }
+        }
       }
       state.bit_index = i&7u;
       return ae;
