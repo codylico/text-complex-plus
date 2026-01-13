@@ -1099,7 +1099,7 @@ namespace text_complex {
       }
     }
 
-    prefix_preset fixlist_match_preset(prefix_list& dst) noexcept {
+    prefix_preset fixlist_match_preset(prefix_list& dst, bool zero_force) noexcept {
       std::size_t nonzero_start = dst.size();
       if (dst.size() == 0)
         return prefix_preset::BrotliComplex;
@@ -1110,6 +1110,13 @@ namespace text_complex {
           continue;
         nonzero_start = i;
         break;
+      }
+      if (nonzero_start >= dst.size() && !zero_force) {
+        // Enable the last code to comply with RFC 7932, section 3.5, paragraph 3.
+        // "A complex prefix code must have at least two non-zero code lengths."
+        nonzero_start = dst.size()-1;
+        dst[nonzero_start].len = 1;
+        dst[nonzero_start].code = 0;
       }
       std::size_t const nonzero_total = dst.size() - nonzero_start;
       if (nonzero_total < 1 || nonzero_total > 4)

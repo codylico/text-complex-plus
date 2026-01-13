@@ -599,8 +599,8 @@ namespace text_complex {
      * @note Useful for encoding to a compressed stream.
      * @note Modifies `dst`.
      */
-    TCMPLX_AP_API
-    prefix_preset fixlist_match_preset(prefix_list& dst) noexcept;
+    TCMPLX_AP_API prefix_preset fixlist_match_preset(
+      prefix_list& dst, bool zero_force = false) noexcept;
     //END   prefix list / namespace local
     /** @} */
   };
