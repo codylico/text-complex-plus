@@ -2505,7 +2505,6 @@ namespace text_complex {
 
     api_error brcvt_check_compress(brcvt_state& state) {
       int guess_nonzero = 0;
-      size_t accum = 0;
       std::size_t try_bit_count = 0;
       state.buffer.clear_output();
       /* try to compress the block */{
@@ -2642,11 +2641,11 @@ namespace text_complex {
         prefix_preset blocktype_tree = fixlist_match_preset(state.literal_blocktype);
         if (blocktype_tree == prefix_preset::BrotliComplex)
           return api_error::Sanitize;
-        accum += 4;
+        try_bit_count += 4;
         /* NOTE: This context map generation is delayed until after the tokens are generated. */
         std::size_t const btypes = state.literal_blocktype.size();
-        accum += (blocktype_tree >= prefix_preset::BrotliSimple3 ? 3 : 2) * btypes;
-        accum += (blocktype_tree >= prefix_preset::BrotliSimple4A);
+        try_bit_count += (blocktype_tree >= prefix_preset::BrotliSimple3 ? 3 : 2) * btypes;
+        try_bit_count += (blocktype_tree >= prefix_preset::BrotliSimple4A);
         if (btypes != state.literals_map.block_types()) {
           try {
             state.literals_map = context_map(btypes, 64);
