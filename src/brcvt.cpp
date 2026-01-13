@@ -2535,61 +2535,13 @@ namespace text_complex {
         brcvt_Margin);
       if (state.literal_blocktype.size() != 4)
         state.literal_blocktype = prefix_list(4);
-      for (unsigned ctxt_i = 0; ctxt_i < state.guesses.count; ++ctxt_i) {
-        context_map_mode const mode = state.guesses.modes[ctxt_i];
-        assert(mode >= context_map_mode::LSB6 && mode < context_map_mode::ModeMax);
-        if (state.ctxt_mode_map[static_cast<unsigned>(mode)] >= 4) {
-          /* allocate a spot */
-          assert(ctxt_mode_alloc < 4);
-          state.ctxt_mode_map[static_cast<unsigned>(mode)] = ctxt_mode_alloc;
-          ctxt_mode_revmap[ctxt_mode_alloc] = mode;
-          ctxt_mode_alloc += 1;
-        }
-        ctxt_histogram[state.ctxt_mode_map[static_cast<unsigned>(mode)]] += 1;
-      }
-      for (unsigned ctxt_i = 0; ctxt_i < 4u; ++ctxt_i) {
-        prefix_line& line = state.literal_blocktype[ctxt_i];
-        line.value = ctxt_i+2;
-        if (ctxt_histogram[ctxt_i] > 0)
-          guess_nonzero += 1;
-      }
-      fixlist_gen_lengths(state.literal_blocktype, ctxt_histogram, 3);
-      fixlist_gen_codes(state.literal_blocktype);
-      prefix_preset blocktype_tree = fixlist_match_preset(state.literal_blocktype);
-      if (blocktype_tree == prefix_preset::BrotliComplex)
-        return api_error::Sanitize;
-      accum += 4;
-      /* TODO: Delay this context map generation until after the tokens are generated. */
-      std::size_t const btypes = state.literal_blocktype.size();
-      accum += (blocktype_tree >= prefix_preset::BrotliSimple3 ? 3 : 2) * btypes;
-      accum += (blocktype_tree >= prefix_preset::BrotliSimple4A);
-      if (btypes != state.literals_map.block_types()) {
-        try {
-          state.literals_map = context_map(btypes, 64);
-        } catch (std::bad_alloc const&) {
-          return api_error::Memory;
-        }
-      }
-      for (std::size_t btype_j = 0; btype_j < btypes; ++btype_j) {
-        prefix_line const& line = state.literal_blocktype[btype_j];
-        state.literals_map.set_mode(btype_j, ctxt_mode_revmap[line.value-2]);
-        for (unsigned ctxt_i = 0; ctxt_i < 64; ++ctxt_i)
-          state.literals_map(btype_j, ctxt_i) = static_cast<unsigned char>(btype_j);
-      }
       state.context_encode.clear();
+      /* prepare the fixed-size forests */
       try {
-        /* prepare the fixed-size forests */
         if (state.insert_forest.size() != 1)
           state.insert_forest = gasp_vector(1);
         if (state.distance_forest.size() != 1)
           state.distance_forest = gasp_vector(1);
-        /* prepare the variable-size forest */
-        if (state.literals_forest.size() != btypes)
-          state.literals_forest = gasp_vector(btypes);
-        if (btypes <= 1)
-          state.blocktypeL_skip = 0;
-        else
-          state.blocktypeL_skip = brcvt_NoSkip;
       } catch (std::bad_alloc const& ) {
         return api_error::Memory;
       }
@@ -2663,7 +2615,63 @@ namespace text_complex {
         }
         assert(ctxt_i < literal_lengths.size());
         literal_lengths[ctxt_i] = literal_counter;
-        /* TODO: Move context creation here to avoid the zero-item prefix list. */
+        /* NOTE: Context creation moved here to avoid the zero-item prefix list. */
+        for (unsigned ctxt_j = 0; ctxt_j <= ctxt_i; ++ctxt_j) {
+          if (literal_lengths[ctxt_j] == 0)
+            continue;
+          context_map_mode const mode = state.guesses.modes[ctxt_j];
+          auto const mode_index = static_cast<unsigned>(mode);
+          assert(mode >= context_map_mode::LSB6 && mode < context_map_mode::ModeMax);
+          if (state.ctxt_mode_map[mode_index] >= 4) {
+            /* allocate a spot */
+            assert(ctxt_mode_alloc < 4);
+            state.ctxt_mode_map[mode_index] = ctxt_mode_alloc;
+            ctxt_mode_revmap[ctxt_mode_alloc] = mode;
+            ctxt_mode_alloc += 1;
+          }
+          ctxt_histogram[state.ctxt_mode_map[mode_index]] += 1;
+        }
+        for (unsigned ctxt_i = 0; ctxt_i < 4u; ++ctxt_i) {
+          prefix_line& line = state.literal_blocktype[ctxt_i];
+          line.value = ctxt_i + 2;
+          if (ctxt_histogram[ctxt_i] > 0)
+            guess_nonzero += 1;
+        }
+        fixlist_gen_lengths(state.literal_blocktype, ctxt_histogram, 3);
+        fixlist_gen_codes(state.literal_blocktype);
+        prefix_preset blocktype_tree = fixlist_match_preset(state.literal_blocktype);
+        if (blocktype_tree == prefix_preset::BrotliComplex)
+          return api_error::Sanitize;
+        accum += 4;
+        /* NOTE: This context map generation is delayed until after the tokens are generated. */
+        std::size_t const btypes = state.literal_blocktype.size();
+        accum += (blocktype_tree >= prefix_preset::BrotliSimple3 ? 3 : 2) * btypes;
+        accum += (blocktype_tree >= prefix_preset::BrotliSimple4A);
+        if (btypes != state.literals_map.block_types()) {
+          try {
+            state.literals_map = context_map(btypes, 64);
+          }
+          catch (std::bad_alloc const&) {
+            return api_error::Memory;
+          }
+        }
+        for (std::size_t btype_j = 0; btype_j < btypes; ++btype_j) {
+          prefix_line const& line = state.literal_blocktype[btype_j];
+          state.literals_map.set_mode(btype_j, ctxt_mode_revmap[line.value - 2]);
+          for (unsigned ctxt_i = 0; ctxt_i < 64; ++ctxt_i)
+            state.literals_map(btype_j, ctxt_i) = static_cast<unsigned char>(btype_j);
+        }
+        /* prepare the variable-size forest */
+        try {
+          if (state.literals_forest.size() != btypes)
+            state.literals_forest = gasp_vector(btypes);
+          if (btypes <= 1)
+            state.blocktypeL_skip = 0;
+          else
+            state.blocktypeL_skip = brcvt_NoSkip;
+        } catch (std::bad_alloc const&) {
+          return api_error::Memory;
+        }
         /* apply histograms to the trees */
         api_error ae {};
         try_bit_count += brcvt_apply_histogram(
