@@ -722,11 +722,12 @@ namespace text_complex {
     {
       brcvt_state::forward_box& fwd = state.fwd;
       for (; fwd.literal_i < fwd.literal_total; ++fwd.literal_i) {
-        unsigned char ch_byte = 0;
         if (to_next >= to_end)
           return api_error::Partial;
         api_error ae = {};
-        ch_byte = state.buffer.peek(fwd.pos - 1u, ae);
+        unsigned char const ch_byte = (state.state == BrCvt_BDict)
+          ? fwd.bstore[fwd.literal_i]
+          : state.buffer.peek(fwd.pos - 1u, ae);
         if (ae != api_error::Success)
           return ae;
         brcvt_inflow_literal(state, ch_byte, to, to_end, to_next);
