@@ -851,7 +851,7 @@ namespace text_complex {
           ps.extra_length = 0;
           break;
         default:
-          return api_error::Sanitize;
+          return api_error::Success;
         }
       }
       return api_error::Success;
@@ -1771,9 +1771,7 @@ namespace text_complex {
         {
           ae = brcvt_handle_inskip(state, to, to_end, to_next);
           if (ae != api_error::Success)
-          {
-            return ae;
-          }
+            break;
         }
       }
       state.bit_index = i&7u;
