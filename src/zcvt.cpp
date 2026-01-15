@@ -701,7 +701,7 @@ namespace text_complex {
                         distance = ((static_cast<uint32>(buffer_str[buffer_pos+1u]&63u)<<24)
                           | (static_cast<uint32>(buffer_str[buffer_pos+2u])<<16)
                           | (buffer_str[buffer_pos+3u]<<8) | buffer_str[buffer_pos+4u]) + 16384u;
-                        buffer_pos += 2u;
+                        buffer_pos += 4u;
                       } else ae = api_error::BlockOverflow;
                       break;
                     default:
