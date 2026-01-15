@@ -12,7 +12,20 @@ struct MunitPlusArgument_;
 namespace mmaptwo {
   class mmaptwo_i;
 };
+namespace text_complex {
+  namespace access {
+    enum struct api_error : int;
+  };
+};
 
+template <typename A>
+struct munit_plus_formatter;
+
+
+template <>
+struct munit_plus_formatter<text_complex::access::api_error> {
+  static std::string format(text_complex::access::api_error const& ae);
+};
 
 enum tcmplxAtest_testfont {
   /**
@@ -37,6 +50,34 @@ enum tcmplxAtest_testfont {
 struct tcmplxAtest_arg {
   std::string font_path;
 };
+
+class tcmplxAtest_fixlist_lex {
+private:
+  char const* p;
+  std::size_t total;
+  std::size_t left;
+  int prefix_len;
+public:
+  tcmplxAtest_fixlist_lex(void) noexcept;
+  /**
+   * @brief Start a code string parsing.
+   * @param s the string to parse
+   * @return zero on success, other nonzero on parse error
+   */
+  int start(char const* s) noexcept;
+  /**
+   * @brief Acquire the next code length from a string.
+   * @return a length, or -1 at end of parser
+   */
+  int next(void) noexcept;
+  std::size_t size(void) const noexcept;
+};
+
+inline
+std::size_t tcmplxAtest_fixlist_lex::size(void) const noexcept {
+  return total;
+}
+
 
 /**
  * @brief Generate some data.
@@ -79,6 +120,14 @@ int testfont_rand_int_range(int a, int b);
  * @return a number
  */
 std::size_t testfont_rand_size_range(std::size_t a, std::size_t b);
+/**
+ * @brief Like `munit_plus_rand_int_range`, but protects against
+ *   empty intervals.
+ * @param a min
+ * @param b max
+ * @return a number
+ */
+unsigned int testfont_rand_uint_range(unsigned int a, unsigned int b);
 /**
  * @brief Get an argument list for munit-plus.
  * @return the argument list

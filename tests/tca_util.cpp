@@ -1,12 +1,12 @@
 
-#include "../tcmplx-access-plus/util.hpp"
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include "text-complex-plus/access/util.hpp"
 #include "munit-plus/munit.hpp"
 #include <new>
 #include <memory>
 #include <utility>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #ifndef NDEBUG
 #  define test_sharp2(s) #s
@@ -43,6 +43,8 @@ static MunitPlusResult test_util_unique_a_stdptr
     (const MunitPlusParameter params[], void* data);
 static MunitPlusResult test_util_unique_a_index
     (const MunitPlusParameter params[], void* data);
+static MunitPlusResult test_util_exchange
+    (const MunitPlusParameter params[], void* data);
 
 static MunitPlusTest tests_util[] = {
   {(char*)"alloc", test_util_alloc, nullptr,nullptr,
@@ -58,6 +60,8 @@ static MunitPlusTest tests_util[] = {
   {(char*)"unique_a/stdptr", test_util_unique_a_stdptr, nullptr,nullptr,
     MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
   {(char*)"unique_a/index", test_util_unique_a_index, nullptr,nullptr,
+    MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
+  {(char*)"exchange", test_util_exchange, nullptr,nullptr,
     MUNIT_PLUS_TEST_OPTION_NONE,nullptr},
   {nullptr, nullptr, nullptr,nullptr, MUNIT_PLUS_TEST_OPTION_NONE,nullptr}
 };
@@ -309,6 +313,22 @@ MunitPlusResult test_util_unique_a_index
       munit_plus_assert_uint(p[i],==,nums[i]);
     }
   }
+  return MUNIT_PLUS_OK;
+}
+
+
+MunitPlusResult test_util_exchange
+    (const MunitPlusParameter params[], void* data)
+{
+  unsigned int b;
+  unsigned int const a = static_cast<unsigned int>(munit_plus_rand_uint32());
+  unsigned int const c = static_cast<unsigned int>(munit_plus_rand_uint32());
+  b = a;
+  /* */{
+    unsigned int const d = text_complex::access::util_exchange(b, c);
+    munit_plus_assert_uint(d, ==, a);
+  }
+  munit_plus_assert_uint(b, ==, c);
   return MUNIT_PLUS_OK;
 }
 

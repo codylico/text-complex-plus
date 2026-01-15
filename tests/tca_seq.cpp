@@ -1,16 +1,16 @@
 /**
  * @brief Test program for sequential
  */
-#include "../tcmplx-access-plus/seq.hpp"
+#include "testfont.hpp"
+#include "text-complex-plus/access/seq.hpp"
+#include "mmaptwo-plus/mmaptwo.hpp"
+#include "munit-plus/munit.hpp"
+#include <memory>
+#include <ios>
+#include <vector>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include "munit-plus/munit.hpp"
-#include <memory>
-#include "testfont.hpp"
-#include "../mmaptwo-plus/mmaptwo.hpp"
-#include <ios>
-#include <vector>
 
 #ifndef NDEBUG
 #  define test_sharp2(s) #s
